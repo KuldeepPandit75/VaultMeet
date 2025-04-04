@@ -18,11 +18,11 @@ export interface SentMsg {
     type: string;
     payload: string;
   }
-  export interface SetUser {
+  export interface setUser {
     type: string;
     payload: string;
   }
-  export interface SetNotification {
+  export interface setNotification {
     type: string;
     payload: string;
   }

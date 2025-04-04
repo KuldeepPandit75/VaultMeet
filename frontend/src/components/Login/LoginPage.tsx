@@ -69,7 +69,7 @@ function LoginPage() {
             Welcome to VaultMeet
           </h1>
 
-          <img src="/google.png" className="h-6" alt="Google logo" onClick={login} />
+          <img src="/google.png" className="h-10" alt="Google logo" onClick={login} />
         </div>
       </div>
     </>
