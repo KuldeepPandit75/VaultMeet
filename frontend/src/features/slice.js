@@ -1,8 +1,9 @@
 import {createSlice} from '@reduxjs/toolkit'
 
 const initialState={
-    sentMsg:[],
-    recMsg:[]
+    recMsg:[],
+    user:null,
+    notifications:[]
 }
 
 export const slice=createSlice({
@@ -11,9 +12,6 @@ export const slice=createSlice({
     reducers:{
         setUser(state,action){
             state.user=action.payload;
-        },
-        setSentMsgRedux(state,action){
-            state.sentMsg.push({msg:action.payload});
         },
         setRecMsgRedux(state,action){
             state.recMsg.push(action.payload);
