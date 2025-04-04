@@ -1,4 +1,3 @@
-import Header from "../Header/Header";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
@@ -10,8 +9,7 @@ function Home() {
   }
 
   return (
-    <div className="bg-[#111] min-h-[100vh] w-[100vw] !pt-8 !px-16">
-      <Header />
+    <div className="bg-[#111] w-[100vw] ">
       <div className="text-white flex justify-around items-center h-[80vh]">
         <div className="text-center">
           <div className="slogan text-[5vw]">

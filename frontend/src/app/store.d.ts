@@ -1,6 +1,4 @@
-import { Store } from 'redux';
 import { configureStore } from '@reduxjs/toolkit';
-import meetReducer from '../features/slice';
 
 declare const store: ReturnType<typeof configureStore>;
 

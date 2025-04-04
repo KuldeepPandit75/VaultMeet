@@ -1,7 +1,7 @@
 
 function Header() {
   return (
-    <div className="flex justify-between ">
+    <div className="flex justify-between !pt-8 !px-16">
       <div className="flex items-center gap-8">
         <img src="/Asset 2.png" className="h-10" />
         <h1 className="text-2xl font-bold text-white">
