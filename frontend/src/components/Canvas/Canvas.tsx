@@ -1,4 +1,4 @@
-import PhaserGame from "./PhaserGame.js";
+import PhaserGame from "./PhaserGame.tsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMessage,
