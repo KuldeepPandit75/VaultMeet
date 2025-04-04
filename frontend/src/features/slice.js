@@ -1,32 +1,23 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit'
 
-interface Message {
-  msg: string;
+const initialState={
+    sentMsg:[],
+    recMsg:[]
 }
 
-interface VaultMeetState {
-  sentMsg: Message[];
-  recMsg: string[];
-}
+export const slice=createSlice({
+    name:'VaultMeet',
+    initialState,
+    reducers:{
+        setSentMsgRedux(state,action){
+            state.sentMsg.push({msg:action.payload});
+        },
+        setRecMsgRedux(state,action){
+            state.recMsg.push(action.payload);
+        }
+    }
+})
 
-const initialState: VaultMeetState = {
-  sentMsg: [],
-  recMsg: [],
-};
+export const {setSentMsgRedux,setRecMsgRedux} = slice.actions;
 
-export const slice = createSlice({
-  name: 'VaultMeet',
-  initialState,
-  reducers: {
-    setSentMsgRedux(state, action: PayloadAction<string>) {
-      state.sentMsg.push({ msg: action.payload });
-    },
-    setRecMsgRedux(state, action: PayloadAction<string>) {
-      state.recMsg.push(action.payload);
-    },
-  },
-});
-
-export const { setSentMsgRedux, setRecMsgRedux } = slice.actions;
-
-export default slice.reducer;
+export default slice.reducer
