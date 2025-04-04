@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { getSocket } from '../../../features/socket.ts';
+import { getSocket } from '../../../features/socket.js';
 import store from '../../../app/store.js'
 import { setRecMsgRedux } from '../../../features/slice.js';
 

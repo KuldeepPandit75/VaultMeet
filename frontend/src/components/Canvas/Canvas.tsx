@@ -43,17 +43,20 @@ function Canvas() {
     if (!typedMsg.trim()) return;
     
     const socket = getSocket();
-    const newMessage = {
+    if (!socket?.id) {
+      console.error('Socket ID is undefined');
+      return;
+    }
+
+    const newMessage: Message = {
       message: typedMsg,
       senderId: socket.id,
       timestamp: Date.now()
     };
     
     socket.emit("sendMsg", { message: typedMsg });
-    if(!socket?.id) return;
     setMessages(prev => [...prev, newMessage]);
     setTypedMsg("");
-    console.log(messages)
   };
 
 
