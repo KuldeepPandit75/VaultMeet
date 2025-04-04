@@ -1,7 +1,31 @@
-declare module "../../features/slice.js" {
-  import { AnyAction } from "redux";
+// src/features/slice.d.ts
 
-  export const setUser: (user: any) => AnyAction;
-  export const setNotification: (notification: any) => AnyAction;
-  export const setRecMsgRedux: (msg: any) => AnyAction;
+import { Action } from "@reduxjs/toolkit";
+
+interface UserInfo {
+  // Define your actual user structure if you know it
+  [key: string]: any;
 }
+
+interface Notification {
+  noti: string;
+  notiType: string;
+}
+
+interface VaultMeetState {
+  user: UserInfo | null;
+  recMsg: any[]; // You can type messages more strictly if needed
+  notifications: Notification[];
+}
+
+type SetUserAction = Action<"VaultMeet/setUser"> & {
+  payload: UserInfo;
+};
+
+type SetNotificationAction = Action<"VaultMeet/setNotification"> & {
+  payload: Notification;
+};
+
+type SetRecMsgReduxAction = Action<"VaultMeet/setRecMsgRedux"> & {
+  payload: any;
+};
