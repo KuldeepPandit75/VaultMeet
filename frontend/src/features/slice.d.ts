@@ -6,26 +6,30 @@ export interface SentMsg {
     sentMsg: SentMsg[];
     recMsg: string[];
     notifications: string[];
-    user: string;
+    user: string | null;
   }
   
   // Action types
   export interface SetSentMsgReduxAction {
     type: string;
     payload: string;
+    [key: string]: any; // Add index signature to make it compatible with UnknownAction
   }
   
   export interface SetRecMsgReduxAction {
     type: string;
     payload: string;
+    [key: string]: any; // Add index signature to make it compatible with UnknownAction
   }
   export interface SetUserAction {
     type: string;
-    payload: string;
+    payload: any;
+    [key: string]: any; // Add index signature to make it compatible with UnknownAction
   }
   export interface SetNotificationAction {
     type: string;
-    payload: string;
+    payload: any;
+    [key: string]: any; // Add index signature to make it compatible with UnknownAction
   }
   
   // Export the action creators
