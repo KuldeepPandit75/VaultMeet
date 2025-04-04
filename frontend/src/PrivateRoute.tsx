@@ -1,33 +1,38 @@
 import { Navigate } from "react-router-dom";
 import { getAccessToken } from "./utils/common-utils.js";
-import { useEffect, useState } from "react";
-import Loader from "./components/loader/Loader"
+import { useEffect, useState, ReactNode } from "react";
+import Loader from "./components/loader/Loader";
 import axios from "axios";
 
-const PrivateRoute = ({ children }) => {
-    const [valid, setValid] = useState(null);
-    const accessToken = getAccessToken();
+interface PrivateRouteProps {
+  children: ReactNode;
+}
 
-    useEffect(() => {
-        const googleTokenInfoUrl = `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`;
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+  const [valid, setValid] = useState<boolean | null>(null);
+  const accessToken = getAccessToken();
 
-        const validateToken=async()=>{
-            try {
-                let response=await axios.get(googleTokenInfoUrl);
-                setValid(true);
-            } catch (error) {
-                setValid(false)
-                console.log("invalid token")
-            }
-        }
-        validateToken();
-    },[accessToken])
+  useEffect(() => {
+    const googleTokenInfoUrl = `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`;
 
-    if(valid===null){
-        return <Loader/>
-    }
+    const validateToken = async () => {
+      try {
+        await axios.get(googleTokenInfoUrl);
+        setValid(true);
+      } catch (error) {
+        setValid(false);
+        console.log("Invalid token");
+      }
+    };
 
-    return valid ? children : <Navigate to="/login" />;
+    validateToken();
+  }, [accessToken]);
+
+  if (valid === null) {
+    return <Loader />;
+  }
+
+  return valid ? <>{children}</> : <Navigate to="/login" />;
 };
 
-export default PrivateRoute; 
+export default PrivateRoute;
