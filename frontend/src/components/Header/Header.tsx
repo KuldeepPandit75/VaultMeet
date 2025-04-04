@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { setUser } from '../../features/slice.js';
+import { setUser } from '../../features/slice';
 import Cookies from 'js-cookie'
 
 

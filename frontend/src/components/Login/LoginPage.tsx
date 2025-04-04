@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { API } from "../../service/api.js";
-import { setNotification, setUser } from "../../features/slice.js";
+import { setNotification, setUser } from "../../features/slice";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 

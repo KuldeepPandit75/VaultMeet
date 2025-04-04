@@ -1,4 +1,3 @@
-declare module './slice.js';
 export interface SentMsg {
     msg: string;
   }
@@ -28,4 +27,12 @@ export interface SentMsg {
     type: string;
     payload: string;
   }
+  
+  // Export the action creators
+  export const setUser: (user: any) => SetUserAction;
+  export const setRecMsgRedux: (msg: string) => SetRecMsgReduxAction;
+  export const setNotification: (notification: any) => SetNotificationAction;
+  
+  // Export the reducer
+  export const reducer: any;
   
