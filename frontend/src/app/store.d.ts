@@ -1,0 +1,2 @@
+declare module './store.js'
+  
