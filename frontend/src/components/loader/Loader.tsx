@@ -1,4 +1,3 @@
-import React from 'react';
 import './Loader.css'; // Import the CSS file for styles
 
 function Loader() {
