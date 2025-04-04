@@ -3,8 +3,8 @@ import { useEffect, useRef } from "react";
 import Lobby from "./Scenes/Lobby.js";
 
 const PhaserGame = () => {
-  const gameContainer = useRef(null);
-  const gameRef = useRef(null);
+  const gameContainer = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
     const config = {
