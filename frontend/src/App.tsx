@@ -9,6 +9,7 @@ import Canvas from "./components/Canvas/Canvas";
 import Home from "./components/Home/Home";
 import LoginPage from "./components/Login/LoginPage";
 import Layout from "./Layout";
+import PrivateRoute from './PrivateRoute'
 
 function App() {
   const router = createBrowserRouter(
@@ -16,7 +17,7 @@ function App() {
       <>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Layout />}>
-          <Route path="/" element={<Home/>}/>
+          <Route path="/" element={<PrivateRoute><Home/></PrivateRoute>}/>
           <Route path="/meta" element={<Canvas />} />
         </Route>
       </>
