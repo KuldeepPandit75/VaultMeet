@@ -3,5 +3,11 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": false,
+    "checkJs": false
+  },
+  "include": ["src"]
 }
