@@ -25,7 +25,8 @@ function Canvas() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typedMsg, setTypedMsg] = useState("");
   
-  const recMsgs = useSelector((state: any) => state.recMsg);
+  const recMsgs = useSelector((state: any) => state.recMsg) as Message[];
+
   
   useEffect(() => {
     if (recMsgs && recMsgs.length > 0) {
@@ -49,6 +50,7 @@ function Canvas() {
     };
     
     socket.emit("sendMsg", { message: typedMsg });
+    if(!socket?.id) return;
     setMessages(prev => [...prev, newMessage]);
     setTypedMsg("");
     console.log(messages)
