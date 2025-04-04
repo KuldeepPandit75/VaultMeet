@@ -1,19 +1,23 @@
 import {createSlice} from '@reduxjs/toolkit'
 
 const initialState={
-    user:null
+    sentMsg:[],
+    recMsg:[]
 }
 
 export const slice=createSlice({
     name:'VaultMeet',
     initialState,
     reducers:{
-        setUser(state,action){
-            state.user=action.payload
+        setSentMsgRedux(state,action){
+            state.sentMsg.push({msg:action.payload});
+        },
+        setRecMsgRedux(state,action){
+            state.recMsg.push(action.payload);
         }
     }
 })
 
-export const {setUser} = slice.actions;
+export const {setSentMsgRedux,setRecMsgRedux} = slice.actions;
 
 export default slice.reducer

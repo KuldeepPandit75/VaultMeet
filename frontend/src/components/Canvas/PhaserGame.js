@@ -4,6 +4,7 @@ import Lobby from './Scenes/Lobby.js'
 
 const PhaserGame = () => {
   const gameContainer = useRef(null);
+  const gameRef = useRef(null);
 
     useEffect(() => {
         const config = {
@@ -23,6 +24,7 @@ const PhaserGame = () => {
         };
 
     const game = new Phaser.Game(config);
+    gameRef.current = game;
 
     const handleResize = () => {
       game.scale.resize(window.innerWidth, window.innerHeight);

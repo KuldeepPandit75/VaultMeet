@@ -1,5 +1,7 @@
 import Phaser from 'phaser'
-import io from 'socket.io-client'
+import { getSocket } from '../../../features/socket';
+import store from '../../../app/store.js'
+import { setRecMsgRedux } from '../../../features/slice.js';
 
 class Lobby extends Phaser.Scene {
     constructor() {
@@ -29,17 +31,13 @@ class Lobby extends Phaser.Scene {
         this.load.image('well', 'meta/Well.png');
     }
 
-    initializeSocket() {
+    initializeSocket = () => {
         if (this.socket) {
             // Clean up existing socket if it exists
             this.socket.disconnect();
         }
 
-        this.socket = io('http://localhost:2020', {
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
-        });
+        this.socket = getSocket();
 
         // Handle connection events
         this.socket.on('connect', () => {
@@ -84,6 +82,20 @@ class Lobby extends Phaser.Scene {
                 delete this.otherPlayers[playerId];
             }
         });
+
+        // Handle room joining
+        this.socket.on('joinedRoom', (roomId) => {
+            console.log(`Joined room: ${roomId}`);
+        });
+
+        // Handle room leaving
+        this.socket.on('leftRoom', (roomId) => {
+            console.log(`Left room: ${roomId}`);
+        });
+
+        this.socket.on('receiveMessage',(data)=>{
+            store.dispatch(setRecMsgRedux({ message: data.message, senderId: data.senderId, timestamp: Date.now()  }));
+        })
     }
 
     create() {
@@ -184,13 +196,11 @@ class Lobby extends Phaser.Scene {
         }
 
         // create and normalize the direction vector
-
         const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
         const normalizedDirX = magnitude === 0 ? 0 : dirX / magnitude;
         const normalizedDirY = magnitude === 0 ? 0 : dirY / magnitude;
 
         // apply velocity using the vector
-
         this.player.setVelocity(normalizedDirX * speed, normalizedDirY * speed);
 
         if (dirX < 0) {
@@ -207,25 +217,37 @@ class Lobby extends Phaser.Scene {
             this.player.anims.stop();
         }
 
-        Object.values(this.otherPlayers).forEach(otherPlayer=>{
-
+        // Track nearby players
+        const nearbyPlayers = [];
+        Object.keys(this.otherPlayers).forEach(otherPlayer => {
             this.distBwUnP = Phaser.Math.Distance.Between(
                 this.player.x,
                 this.player.y,
-                otherPlayer.x,
-                otherPlayer.y
-            )
+                this.otherPlayers[otherPlayer].x,
+                this.otherPlayers[otherPlayer].y
+            );
 
-            if(this.distBwUnP<20){
-                
+            if (this.distBwUnP < 20) {
+                nearbyPlayers.push(otherPlayer);
             }
-        })
+        });
 
-
+        // Handle room joining/leaving based on nearby players
+        if (nearbyPlayers.length > 0) {
+            // Create a room ID based on all nearby players
+            const roomId = [this.socket.id, ...nearbyPlayers].sort().join('-');
+            this.socket.emit('joinRoom', { 
+                roomId, 
+                playerIds: [this.socket.id, ...nearbyPlayers]
+            });
+        } else {
+            // Leave any existing room if no players are nearby
+            this.socket.emit('leaveRoom', { 
+                playerId: this.socket.id 
+            });
+        }
 
         this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y });
-
-
     }
 
     shutdown() {
