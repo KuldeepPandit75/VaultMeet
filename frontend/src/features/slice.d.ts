@@ -18,4 +18,12 @@ export interface SentMsg {
     type: string;
     payload: string;
   }
+  export interface SetUser {
+    type: string;
+    payload: string;
+  }
+  export interface SetNotification {
+    type: string;
+    payload: string;
+  }
   
