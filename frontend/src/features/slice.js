@@ -1,27 +1,27 @@
-import {createSlice} from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit'
 
-const initialState={
-    recMsg:[],
-    user:null,
-    notifications:[]
+const initialState = {
+    recMsg: [],
+    user: null,
+    notifications: []
 }
 
-export const slice=createSlice({
-    name:'VaultMeet',
+export const slice = createSlice({
+    name: 'VaultMeet',
     initialState,
-    reducers:{
-        setUser(state,action){
-            state.user=action.payload;
+    reducers: {
+        setUser(state, action) {
+            state.user = action.payload;
         },
-        setRecMsgRedux(state,action){
+        setRecMsgRedux(state, action) {
             state.recMsg.push(action.payload);
         },
-        setNotification(state,action){
+        setNotification(state, action) {
             state.notifications.push(action.payload);
         }
     }
 })
 
-export const {setSentMsgRedux,setRecMsgRedux, setUser, setNotification} = slice.actions;
+export const { setUser, setRecMsgRedux, setNotification } = slice.actions;
 
 export default slice.reducer
