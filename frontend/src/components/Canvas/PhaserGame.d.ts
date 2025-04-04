@@ -1,6 +1,6 @@
 import { RefObject } from 'react';
 import Phaser from 'phaser';
-import Lobby from './Scenes/Lobby';
+import Lobby from './Scenes/Lobby.js';
 
 declare module 'PhaserGame' {
   import { FunctionComponent } from 'react';

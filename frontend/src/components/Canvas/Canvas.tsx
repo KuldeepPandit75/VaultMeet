@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { getSocket } from '../../features/socket.js';
 
-interface Message {
+type Message = {
   message: string;
   senderId: string;
   timestamp: number;
