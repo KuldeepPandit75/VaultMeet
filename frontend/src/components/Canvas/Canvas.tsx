@@ -1,4 +1,4 @@
-import PhaserGame from "./PhaserGame.js";
+import PhaserGame from "./PhaserGame.ts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMessage,
@@ -10,7 +10,7 @@ import {
 import { faMicrophoneSlash } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { getSocket } from '../../features/socket.js';
+import { getSocket } from '../../features/socket.ts';
 
 interface Message {
   message: string;
