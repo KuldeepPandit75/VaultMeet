@@ -23,25 +23,19 @@ const handleSocketEvents = (io) => {
             socket.broadcast.emit("playerMoved", data);
         });
 
-        // Handle room joining
         socket.on('joinRoom', ({ roomId, playerIds }) => {
-            // Check if all players exist and are connected
             const validPlayers = playerIds.filter(id => connectedPlayers.has(id));
             
             if (validPlayers.length > 0) {
-                // Join the room
                 socket.join(roomId);
                 
-                // Track the room for this player
                 playerRooms.set(socket.id, roomId);
                 
-                // Track players in this room
                 if (!roomPlayers.has(roomId)) {
                     roomPlayers.set(roomId, new Set());
                 }
                 roomPlayers.get(roomId).add(socket.id);
                 
-                // Notify all players in the room
                 io.to(roomId).emit('joinedRoom', {
                     roomId,
                     players: Array.from(roomPlayers.get(roomId))
@@ -51,27 +45,21 @@ const handleSocketEvents = (io) => {
             }
         });
 
-        // Handle room leaving
         socket.on('leaveRoom', ({ playerId }) => {
             const roomId = playerRooms.get(playerId);
             if (roomId) {
-                // Leave the room
                 socket.leave(roomId);
                 
-                // Remove player from room tracking
                 if (roomPlayers.has(roomId)) {
                     roomPlayers.get(roomId).delete(playerId);
                     
-                    // If room is empty, delete it
                     if (roomPlayers.get(roomId).size === 0) {
                         roomPlayers.delete(roomId);
                     }
                 }
                 
-                // Remove room tracking for player
                 playerRooms.delete(playerId);
                 
-                // Notify remaining players in the room
                 if (roomPlayers.has(roomId)) {
                     io.to(roomId).emit('leftRoom', {
                         roomId,
@@ -84,11 +72,9 @@ const handleSocketEvents = (io) => {
             }
         });
 
-        // Handle room-specific messages
         socket.on('sendMsg', (data) => {
             const roomId = playerRooms.get(socket.id);
             if (roomId) {
-                // Send message to all players in the room
                 io.to(roomId).emit('receiveMessage', {
                     message: data.message,
                     senderId: socket.id
@@ -98,20 +84,16 @@ const handleSocketEvents = (io) => {
 
         socket.on("disconnect", () => {
             console.log(`A user disconnected: ${socket.id}`);
-            // Leave all rooms when disconnecting
             const roomId = playerRooms.get(socket.id);
             if (roomId) {
                 socket.leave(roomId);
                 
-                // Remove player from room tracking
                 if (roomPlayers.has(roomId)) {
                     roomPlayers.get(roomId).delete(socket.id);
                     
-                    // If room is empty, delete it
                     if (roomPlayers.get(roomId).size === 0) {
                         roomPlayers.delete(roomId);
                     } else {
-                        // Notify remaining players
                         io.to(roomId).emit('leftRoom', {
                             roomId,
                             playerId: socket.id,

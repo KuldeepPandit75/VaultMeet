@@ -16,7 +16,6 @@ function LoginPage() {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // Use the token to fetch user info
         const { access_token } = tokenResponse;
 
         Cookies.set("access_token", access_token, { expires: 1, path: "" });
@@ -32,13 +31,10 @@ function LoginPage() {
         if (response.isSuccess) {
           console.log("User Info:", response.data);
 
-          // Dispatch user info to Redux
           dispatch(setUser(response.data));
 
-          // Store user info in session storage (optional)
           sessionStorage.setItem("user", JSON.stringify(response.data));
 
-          // Navigate to home or dashboard
           navigate("/");
         } else {
           setNoti("Login Failed! Retry after 40-50 sec.");

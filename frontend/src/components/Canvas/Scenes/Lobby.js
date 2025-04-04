@@ -33,13 +33,11 @@ class Lobby extends Phaser.Scene {
 
     initializeSocket = () => {
         if (this.socket) {
-            // Clean up existing socket if it exists
             this.socket.disconnect();
         }
 
         this.socket = getSocket();
 
-        // Handle connection events
         this.socket.on('connect', () => {
             console.log('Connected to server');
         });
@@ -48,7 +46,6 @@ class Lobby extends Phaser.Scene {
             console.error('Connection error:', error);
         });
 
-        // Handle list of current players when joining
         this.socket.on('currentPlayers', (players) => {
             console.log("Received existing players:", players);
             players.forEach(player => {
@@ -58,7 +55,6 @@ class Lobby extends Phaser.Scene {
             });
         });
 
-        // Handle new player connections
         this.socket.on('playerJoined', (id) => {
             if (id !== this.socket.id) {
                 console.log("new player joined:", id);
@@ -68,14 +64,12 @@ class Lobby extends Phaser.Scene {
             }
         });
 
-        // Handle player movements
         this.socket.on('playerMoved', (data) => {
             if (this.socket.id !== data.id && this.otherPlayers[data.id]) {
                 this.otherPlayers[data.id].setPosition(data.x, data.y);
             }
         });
 
-        // Handle player disconnections
         this.socket.on('playerDisconnected', (playerId) => {
             if (this.otherPlayers[playerId]) {
                 this.otherPlayers[playerId].destroy();
@@ -83,12 +77,10 @@ class Lobby extends Phaser.Scene {
             }
         });
 
-        // Handle room joining
         this.socket.on('joinedRoom', (roomId) => {
             console.log(`Joined room: ${roomId}`);
         });
 
-        // Handle room leaving
         this.socket.on('leftRoom', (roomId) => {
             console.log(`Left room: ${roomId}`);
         });
@@ -120,13 +112,12 @@ class Lobby extends Phaser.Scene {
             map.addTilesetImage('Collider (1)', 'collider'),
         ]
 
-        // Add all layers
         const layers = {};
         map.layers.forEach((layer) => {
             if (layer.name === 'Collider') {
                 layers[layer.name] = map.createLayer(layer.name, tileset, 16, 0);
                 layers[layer.name].setCollisionByExclusion([-1]);
-                layers[layer.name].setAlpha(0); // Make the collider invisible
+                layers[layer.name].setAlpha(0); 
             } else {
 
                 layers[layer.name] = map.createLayer(layer.name, tileset, 0, 0);
@@ -140,7 +131,6 @@ class Lobby extends Phaser.Scene {
         this.player.setOrigin(0.5, 0.5);
         this.player.setCollideWorldBounds(true);
 
-        // Add collision between player and collider layer after player is created
         if (layers['Collider']) {
             this.physics.add.collider(this.player, layers['Collider']);
         }
@@ -195,7 +185,6 @@ class Lobby extends Phaser.Scene {
             dirY = 1;
         }
 
-        // create and normalize the direction vector
         const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
         const normalizedDirX = magnitude === 0 ? 0 : dirX / magnitude;
         const normalizedDirY = magnitude === 0 ? 0 : dirY / magnitude;
@@ -217,7 +206,6 @@ class Lobby extends Phaser.Scene {
             this.player.anims.stop();
         }
 
-        // Track nearby players
         const nearbyPlayers = [];
         Object.keys(this.otherPlayers).forEach(otherPlayer => {
             this.distBwUnP = Phaser.Math.Distance.Between(
@@ -232,42 +220,19 @@ class Lobby extends Phaser.Scene {
             }
         });
 
-        // Handle room joining/leaving based on nearby players
         if (nearbyPlayers.length > 0) {
-            // Create a room ID based on all nearby players
             const roomId = [this.socket.id, ...nearbyPlayers].sort().join('-');
             this.socket.emit('joinRoom', { 
                 roomId, 
                 playerIds: [this.socket.id, ...nearbyPlayers]
             });
         } else {
-            // Leave any existing room if no players are nearby
             this.socket.emit('leaveRoom', { 
                 playerId: this.socket.id 
             });
         }
 
         this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y });
-    }
-
-    shutdown() {
-        // Clean up socket connection
-        if (this.socket) {
-            this.socket.disconnect();
-            this.socket = null;
-        }
-
-        // Clean up other players
-        Object.values(this.otherPlayers).forEach(player => {
-            player.destroy();
-        });
-        this.otherPlayers = {};
-
-        // Clean up the player
-        if (this.player) {
-            this.player.destroy();
-            this.player = null;
-        }
     }
 }
 
