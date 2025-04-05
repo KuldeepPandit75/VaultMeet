@@ -67,6 +67,22 @@ class Lobby extends Phaser.Scene {
         this.socket.on('playerMoved', (data) => {
             if (this.socket.id !== data.id && this.otherPlayers[data.id]) {
                 this.otherPlayers[data.id].setPosition(data.x, data.y);
+                if(data.dirX<0){
+                    this.otherPlayers[data.id].setScale(-1,1);
+                    this.otherPlayers[data.id].anims.play("walkR&L",true);
+                } 
+                else if(data.dirX>0){
+                    this.otherPlayers[data.id].setScale(1,1);
+                    this.otherPlayers[data.id].anims.play("walkR&L",true);
+                }
+                else if(data.dirY<0){
+                    this.otherPlayers[data.id].anims.play("walkU",true);
+                }
+                else if(data.dirY>0){
+                    this.otherPlayers[data.id].anims.play("walkD",true);
+                }else{
+                    this.otherPlayers[data.id].anims.stop();
+                }
             }
         });
 
@@ -85,8 +101,8 @@ class Lobby extends Phaser.Scene {
             console.log(`Left room: ${roomId}`);
         });
 
-        this.socket.on('receiveMessage',(data)=>{
-            store.dispatch(setRecMsgRedux({ message: data.message, senderId: data.senderId, timestamp: Date.now()  }));
+        this.socket.on('receiveMessage', (data) => {
+            store.dispatch(setRecMsgRedux({ message: data.message, senderId: data.senderId, timestamp: Date.now() }));
         })
     }
 
@@ -117,7 +133,7 @@ class Lobby extends Phaser.Scene {
             if (layer.name === 'Collider') {
                 layers[layer.name] = map.createLayer(layer.name, tileset, 16, 0);
                 layers[layer.name].setCollisionByExclusion([-1]);
-                layers[layer.name].setAlpha(0); 
+                layers[layer.name].setAlpha(0);
             } else {
 
                 layers[layer.name] = map.createLayer(layer.name, tileset, 0, 0);
@@ -134,6 +150,7 @@ class Lobby extends Phaser.Scene {
         if (layers['Collider']) {
             this.physics.add.collider(this.player, layers['Collider']);
         }
+        layers['Top Part'].setDepth(1)
 
         this.cameras.main.startFollow(this.player);
         this.cameras.main.setZoom(2.5);
@@ -165,6 +182,22 @@ class Lobby extends Phaser.Scene {
             repeat: -1
         });
 
+        //Boundaries
+
+        const boundary1 = this.add.rectangle(352, 340, 14, 2);
+        this.physics.add.existing(boundary1, true);
+        const boundary2 = this.add.rectangle(585, 205, 60, 50);
+        this.physics.add.existing(boundary2, true);
+        const boundary3 = this.add.rectangle(630, 200, 50, 30);
+        this.physics.add.existing(boundary3, true);
+        // boundary3.setStrokeStyle(2, 0x00ff00);
+
+        this.physics.add.collider(this.player, boundary1); // Restrict movement
+        this.physics.add.collider(this.player, boundary2); // Restrict movement
+        this.physics.add.collider(this.player, boundary3); // Restrict movement
+
+
+
     }
 
     update() {
@@ -177,12 +210,16 @@ class Lobby extends Phaser.Scene {
             dirX = -1;
         } else if (this.cursors.right.isDown) {
             dirX = 1;
+        }else{
+            dirX=0;
         }
 
         if (this.cursors.up.isDown) {
             dirY = -1;
         } else if (this.cursors.down.isDown) {
             dirY = 1;
+        }else{
+            dirY=0;
         }
 
         const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
@@ -206,6 +243,7 @@ class Lobby extends Phaser.Scene {
             this.player.anims.stop();
         }
 
+
         const nearbyPlayers = [];
         Object.keys(this.otherPlayers).forEach(otherPlayer => {
             this.distBwUnP = Phaser.Math.Distance.Between(
@@ -222,17 +260,17 @@ class Lobby extends Phaser.Scene {
 
         if (nearbyPlayers.length > 0) {
             const roomId = [this.socket.id, ...nearbyPlayers].sort().join('-');
-            this.socket.emit('joinRoom', { 
-                roomId, 
+            this.socket.emit('joinRoom', {
+                roomId,
                 playerIds: [this.socket.id, ...nearbyPlayers]
             });
         } else {
-            this.socket.emit('leaveRoom', { 
-                playerId: this.socket.id 
+            this.socket.emit('leaveRoom', {
+                playerId: this.socket.id
             });
         }
+        this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y, dirX , dirY });
 
-        this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y });
     }
 }
 
