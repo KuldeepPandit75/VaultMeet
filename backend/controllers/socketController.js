@@ -6,17 +6,22 @@ const handleSocketEvents = (io) => {
     io.on("connection", (socket) => {
         console.log(`A user connected: ${socket.id}`);
 
+        // First, add the player to the connected players list
+        connectedPlayers.set(socket.id, { x: 300, y: 300 });
+
+        // Then, get the existing players and send them to the new player
         const existingPlayers = Array.from(connectedPlayers.entries()).map(([id, pos]) => ({
             id,
             x: pos.x,
             y: pos.y
         }));
         
+        // Emit current players to the new player
         socket.emit('currentPlayers', existingPlayers);
 
-        connectedPlayers.set(socket.id, { x: 300, y: 300 });
-
+        // Notify other players about the new player
         socket.broadcast.emit('playerJoined', socket.id);
+        socket.broadcast.emit('webrtcPlayerJoined', socket.id);
 
         socket.on("playerMove", (data) => {
             connectedPlayers.set(socket.id, { x: data.x, y: data.y });

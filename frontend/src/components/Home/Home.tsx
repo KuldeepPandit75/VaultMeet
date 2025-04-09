@@ -5,6 +5,7 @@ function Home() {
   const navigate=useNavigate();
 
   const opengame=()=>{
+
     navigate('/meta')
   }
 

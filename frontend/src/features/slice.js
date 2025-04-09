@@ -3,7 +3,8 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
     recMsg: [],
     user: null,
-    notifications: []
+    notifications: [],
+    connectionState: false,
 }
 
 export const slice = createSlice({
@@ -18,10 +19,13 @@ export const slice = createSlice({
         },
         setNotification(state, action) {
             state.notifications.push(action.payload);
+        },
+        setConnectionState(state,action){
+            state.connectionState=action.payload
         }
     }
 })
 
-export const { setUser, setRecMsgRedux, setNotification } = slice.actions;
+export const { setUser, setRecMsgRedux, setNotification,setConnectionState } = slice.actions;
 
 export default slice.reducer

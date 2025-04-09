@@ -1,7 +1,9 @@
 import Phaser from 'phaser'
-import { getSocket } from '../../../features/socket.js';
 import store from '../../../app/store.js'
 import { setRecMsgRedux } from '../../../features/slice.js';
+import { setConnectionState } from '../../../features/slice.js';
+import socket from '../../../features/socket.js';
+import { getSocket } from '../../../features/socket.js';
 
 class Lobby extends Phaser.Scene {
     constructor() {
@@ -32,14 +34,12 @@ class Lobby extends Phaser.Scene {
     }
 
     initializeSocket = () => {
-        if (this.socket) {
-            this.socket.disconnect();
-        }
 
         this.socket = getSocket();
 
         this.socket.on('connect', () => {
             console.log('Connected to server');
+            store.dispatch(setConnectionState(false));
         });
 
         this.socket.on('connect_error', (error) => {
