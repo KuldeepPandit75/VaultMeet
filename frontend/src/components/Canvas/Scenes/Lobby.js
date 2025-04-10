@@ -35,7 +35,7 @@ class Lobby extends Phaser.Scene {
 
     initializeSocket = () => {
 
-        this.socket=getSocket();
+        this.socket = getSocket();
 
         console.log(this.socket.connected)
 
@@ -69,20 +69,20 @@ class Lobby extends Phaser.Scene {
         this.socket.on('playerMoved', (data) => {
             if (this.socket.id !== data.id && this.otherPlayers[data.id]) {
                 this.otherPlayers[data.id].setPosition(data.x, data.y);
-                if(data.dirX<0){
-                    this.otherPlayers[data.id].setScale(-1,1);
-                    this.otherPlayers[data.id].anims.play("walkR&L",true);
-                } 
-                else if(data.dirX>0){
-                    this.otherPlayers[data.id].setScale(1,1);
-                    this.otherPlayers[data.id].anims.play("walkR&L",true);
+                if (data.dirX < 0) {
+                    this.otherPlayers[data.id].setScale(-1, 1);
+                    this.otherPlayers[data.id].anims.play("walkR&L", true);
                 }
-                else if(data.dirY<0){
-                    this.otherPlayers[data.id].anims.play("walkU",true);
+                else if (data.dirX > 0) {
+                    this.otherPlayers[data.id].setScale(1, 1);
+                    this.otherPlayers[data.id].anims.play("walkR&L", true);
                 }
-                else if(data.dirY>0){
-                    this.otherPlayers[data.id].anims.play("walkD",true);
-                }else{
+                else if (data.dirY < 0) {
+                    this.otherPlayers[data.id].anims.play("walkU", true);
+                }
+                else if (data.dirY > 0) {
+                    this.otherPlayers[data.id].anims.play("walkD", true);
+                } else {
                     this.otherPlayers[data.id].anims.stop();
                 }
             }
@@ -97,6 +97,8 @@ class Lobby extends Phaser.Scene {
 
         this.socket.on('joinedRoom', (roomId) => {
             console.log(`Joined room: ${roomId}`);
+            document.getElementById('user-2').style.display = 'block'
+
         });
 
         this.socket.on('leftRoom', (roomId) => {
@@ -212,16 +214,16 @@ class Lobby extends Phaser.Scene {
             dirX = -1;
         } else if (this.cursors.right.isDown) {
             dirX = 1;
-        }else{
-            dirX=0;
+        } else {
+            dirX = 0;
         }
 
         if (this.cursors.up.isDown) {
             dirY = -1;
         } else if (this.cursors.down.isDown) {
             dirY = 1;
-        }else{
-            dirY=0;
+        } else {
+            dirY = 0;
         }
 
         const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
@@ -267,11 +269,13 @@ class Lobby extends Phaser.Scene {
                 playerIds: [this.socket.id, ...nearbyPlayers]
             });
         } else {
+            document.getElementById('user-2').style.display = 'none'
+
             this.socket.emit('leaveRoom', {
                 playerId: this.socket.id
             });
         }
-        this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y, dirX , dirY });
+        this.socket.emit('playerMove', { id: this.socket.id, x: this.player.x, y: this.player.y, dirX, dirY });
 
     }
 }

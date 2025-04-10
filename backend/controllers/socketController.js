@@ -35,6 +35,13 @@ const handleSocketEvents = (io) => {
             const validPlayers = playerIds.filter(id => connectedPlayers.has(id));
             
             if (validPlayers.length > 0) {
+                if(roomPlayers.get(roomId)){
+
+                    if(roomPlayers.get(roomId).has(playerIds[0])){
+                        return;
+                    }
+                }
+                // console.log(roomPlayers.get(roomId).has(roomId))
                 socket.join(roomId);
                 
                 playerRooms.set(socket.id, roomId);

@@ -30,13 +30,20 @@ export const getSocket = () => {
 };
 
 let setupWebRTC = async (socket) => {
-    socket.on("playerJoined", handlePlayerJoined);
+    socket.on("playerJoined", handlePlayerJoinRoom);
+    socket.on('playerDisconnected',handlePlayerLeave)
 
     socket.on('messageFromPeer', handleMessageFromPeer)
 
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    document.getElementById('user-1').srcObject = localStream;
+    const localVideo = document.getElementById('user-1');
+    localVideo.srcObject = localStream;
+    localVideo.muted = true;
 
+}
+
+let handlePlayerLeave=async()=>{
+    // document.getElementById('user-2').style.display='none'
 }
 
 let handleMessageFromPeer = async (msg, id) => {
@@ -57,16 +64,16 @@ let handleMessageFromPeer = async (msg, id) => {
 
 }
 
-let handlePlayerJoined = async (socketId) => {
-    console.log("webrtc noti for user joined:", socketId)
+let handlePlayerJoinRoom = async (socketId) => {
     createOffer(socketId);
 }
 
 let createPeerConnection = async (id) => {
     peerConnection = new RTCPeerConnection(servers);
-
+    
     remoteStream = new MediaStream();
     document.getElementById('user-2').srcObject = remoteStream;
+    document.getElementById('user-2').style.display='block'
 
     if (!localStream) {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
