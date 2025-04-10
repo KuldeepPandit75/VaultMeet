@@ -34,7 +34,7 @@ let setupWebRTC = async (socket) => {
 
     socket.on('messageFromPeer', handleMessageFromPeer)
 
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     document.getElementById('user-1').srcObject = localStream;
 
 }
