@@ -35,7 +35,9 @@ class Lobby extends Phaser.Scene {
 
     initializeSocket = () => {
 
-        this.socket = getSocket();
+        this.socket=getSocket();
+
+        console.log(this.socket.connected)
 
         this.socket.on('connect', () => {
             console.log('Connected to server');
