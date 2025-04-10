@@ -13,7 +13,6 @@ const servers = {
     ]
 }
 
-// Define consistent media constraints
 const mediaConstraints = { video: true, audio: true };
 
 export const getSocket = () => {
@@ -35,10 +34,9 @@ export const getSocket = () => {
 let setupWebRTC = async (socket) => {
     socket.on("joinedRoom", handlePlayerJoinRoom)
     socket.on('playerDisconnected',handlePlayerLeave)
-    // socket.on('leftRoom',closeWebRTCConnection)
+    socket.on('leftRoom',closeWebRTCConnection)
     socket.on('messageFromPeer', handleMessageFromPeer)
 
-    // Get user media only once and store it
     if (!localStream) {
         localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
         const localVideo = document.getElementById('user-1');
@@ -48,37 +46,17 @@ let setupWebRTC = async (socket) => {
 }
 
 const closeWebRTCConnection = () => {
+    console.log("Closing WebRTC connection");
+    
     if (peerConnection) {
-        // peerConnection.getSenders().forEach(sender => {
-        //     if (sender.track) {
-        //         sender.track.stop();
-        //     }
-        // });
         peerConnection.close();
-        // peerConnection = null;
+        peerConnection = null;
     }
-
-    // if (localStream) {
-    //     localStream.getTracks().forEach(track => track.stop());
-    //     // localStream = null;
-    // }
 
     if (remoteStream) {
         remoteStream.getTracks().forEach(track => track.stop());
-        // remoteStream = null;
+        remoteStream = null;
     }
-
-    // Optionally hide or reset video elements
-    // const remoteVideo = document.getElementById('user-2');
-    // if (remoteVideo) {
-    //     remoteVideo.srcObject = null;
-    //     remoteVideo.style.display = 'none';
-    // }
-
-    // const localVideo = document.getElementById('user-1');
-    // if (localVideo) {
-    //     localVideo.srcObject = null;
-    // }
 
     console.log("WebRTC connection closed.");
 };
@@ -119,7 +97,6 @@ let createPeerConnection = async (id) => {
     document.getElementById('user-2').srcObject = remoteStream;
     document.getElementById('user-2').style.display='block'
 
-    // Use the existing localStream instead of creating a new one
     if (!localStream) {
         localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
         document.getElementById('user-1').srcObject = localStream;
