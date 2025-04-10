@@ -53,7 +53,8 @@ const handleSocketEvents = (io) => {
                 
                 io.to(roomId).emit('joinedRoom', {
                     roomId,
-                    players: Array.from(roomPlayers.get(roomId))
+                    players: Array.from(roomPlayers.get(roomId)),
+                    socketId:socket.id
                 });
                 
                 console.log(`Player ${socket.id} joined room ${roomId}`);

@@ -13,6 +13,9 @@ const servers = {
     ]
 }
 
+// Define consistent media constraints
+const mediaConstraints = { video: true, audio: true };
+
 export const getSocket = () => {
     const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -30,17 +33,55 @@ export const getSocket = () => {
 };
 
 let setupWebRTC = async (socket) => {
-    socket.on("playerJoined", handlePlayerJoinRoom);
+    socket.on("joinedRoom", handlePlayerJoinRoom)
     socket.on('playerDisconnected',handlePlayerLeave)
-
+    // socket.on('leftRoom',closeWebRTCConnection)
     socket.on('messageFromPeer', handleMessageFromPeer)
 
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    const localVideo = document.getElementById('user-1');
-    localVideo.srcObject = localStream;
-    localVideo.muted = true;
-
+    // Get user media only once and store it
+    if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+        const localVideo = document.getElementById('user-1');
+        localVideo.srcObject = localStream;
+        localVideo.muted = true;
+    }
 }
+
+const closeWebRTCConnection = () => {
+    if (peerConnection) {
+        // peerConnection.getSenders().forEach(sender => {
+        //     if (sender.track) {
+        //         sender.track.stop();
+        //     }
+        // });
+        peerConnection.close();
+        // peerConnection = null;
+    }
+
+    // if (localStream) {
+    //     localStream.getTracks().forEach(track => track.stop());
+    //     // localStream = null;
+    // }
+
+    if (remoteStream) {
+        remoteStream.getTracks().forEach(track => track.stop());
+        // remoteStream = null;
+    }
+
+    // Optionally hide or reset video elements
+    // const remoteVideo = document.getElementById('user-2');
+    // if (remoteVideo) {
+    //     remoteVideo.srcObject = null;
+    //     remoteVideo.style.display = 'none';
+    // }
+
+    // const localVideo = document.getElementById('user-1');
+    // if (localVideo) {
+    //     localVideo.srcObject = null;
+    // }
+
+    console.log("WebRTC connection closed.");
+};
 
 let handlePlayerLeave=async()=>{
     // document.getElementById('user-2').style.display='none'
@@ -64,8 +105,11 @@ let handleMessageFromPeer = async (msg, id) => {
 
 }
 
-let handlePlayerJoinRoom = async (socketId) => {
-    createOffer(socketId);
+let handlePlayerJoinRoom = async ({socketId}) => {
+    if(socketId!=socket.id){
+
+        createOffer(socketId);
+    }
 }
 
 let createPeerConnection = async (id) => {
@@ -75,8 +119,9 @@ let createPeerConnection = async (id) => {
     document.getElementById('user-2').srcObject = remoteStream;
     document.getElementById('user-2').style.display='block'
 
+    // Use the existing localStream instead of creating a new one
     if (!localStream) {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
         document.getElementById('user-1').srcObject = localStream;
     }
 
