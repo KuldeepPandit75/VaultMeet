@@ -7,7 +7,7 @@ export default function HostPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
 
   return (
-    <div className="min-h-screen px-[80px] py-[40px] text-white">
+    <div className="min-h-screen px-[40px] md:px-[80px] py-[40px] text-white">
       {/* Header Section */}
       <div className="text-center mb-16">
         <h1 

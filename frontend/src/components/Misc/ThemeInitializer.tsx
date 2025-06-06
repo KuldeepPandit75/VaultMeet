@@ -1,14 +1,19 @@
 'use client'
+
 import { useEffect } from "react";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 
-export default function ThemeInitializer() {
-  const {setDarkMode} = useThemeStore();
+// Constants
+const STORAGE_KEY = "isDarkMode";
 
+// Components
+const ThemeInitializer = () => {
+  const { setDarkMode } = useThemeStore();
+
+  // Effects
   useEffect(() => {
-    const savedMode = localStorage.getItem("isDarkMode");
+    const savedMode = localStorage.getItem(STORAGE_KEY);
     if (savedMode !== null) {
-        console.log(savedMode)
       setDarkMode(JSON.parse(savedMode));
     } else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -17,4 +22,7 @@ export default function ThemeInitializer() {
   }, [setDarkMode]);
 
   return null;
-} 
+};
+
+// Exports
+export default ThemeInitializer; 
