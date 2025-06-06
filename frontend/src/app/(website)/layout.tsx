@@ -1,37 +1,56 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { Inter } from "next/font/google";
-import "../global.css";
+import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
-import SEO from "@/components/SEO/SEO";
-import { generateSEO } from "@/config/seo.config";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// Default SEO metadata for the entire application
-const defaultSeo = generateSEO({
-  title: 'HackMeet - Virtual Hackathon Platform',
-  description: 'Join HackMeet, the innovative virtual hackathon platform. Connect with developers worldwide, participate in exciting challenges, and showcase your skills in our immersive 2D virtual environment.',
-  keywords: [
-    'hackathon',
-    'virtual hackathon',
-    'coding competition',
-    'developer platform',
-    'tech events'
-  ]
-});
+export const metadata: Metadata = {
+  metadataBase: new URL('https://hackmeet.com'),
+  title: {
+    default: 'HackMeet',
+    template: '%s | HackMeet'
+  },
+  description: 'Host & Join Hackathons in a 2D Virtual World',
+  keywords: ['hackathon', 'virtual hackathon', 'HackMeet', 'coding competition', 'developer community'],
+  authors: [{ name: 'HackMeet Team' }],
+  creator: 'HackMeet',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://hackmeet.com',
+    siteName: 'HackMeet',
+    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    description: 'Host & Join Hackathons in a 2D Virtual World',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    description: 'Host & Join Hackathons in a 2D Virtual World',
+    creator: '@hackmeet',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
   return (
     <html lang="en">
-      <SEO {...defaultSeo} />
       <body 
         className={inter.className}
         style={{

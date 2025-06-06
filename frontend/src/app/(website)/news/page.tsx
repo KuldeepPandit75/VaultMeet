@@ -1,6 +1,8 @@
 'use client';
 
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
+import Image from "next/image";
+import { useState, useMemo } from "react";
 
 // Types
 interface NewsItem {
@@ -12,6 +14,9 @@ interface NewsItem {
   date: string;
   category: string;
 }
+
+// Constants
+const CATEGORIES = ['All', 'AI', 'Hardware', 'Software', 'Automotive', 'Quantum Computing', 'AR/VR'];
 
 const SAMPLE_NEWS: NewsItem[] = [
       {
@@ -77,12 +82,14 @@ const NewsCard = ({ news }: { news: NewsItem }) => {
 
   return (
     <div 
-      className="bg-white rounded-xl overflow-hidden shadow-lg transition-transform duration-300 hover:scale-105"
+      className="bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
       style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
     >
-      <img 
+      <Image 
         src={news.imageUrl} 
         alt={news.title}
+        width={500}
+        height={500}
         className="w-full h-48 object-cover"
       />
       <div className="p-6">
@@ -120,7 +127,7 @@ const NewsCard = ({ news }: { news: NewsItem }) => {
             {news.source}
           </span>
           <button
-            className="px-4 py-2 rounded-lg font-semibold transition-colors duration-300"
+            className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105"
             style={{
               background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
               color: '#222'
@@ -134,8 +141,44 @@ const NewsCard = ({ news }: { news: NewsItem }) => {
   );
 };
 
+const CategoryButton = ({ 
+  category, 
+  isActive, 
+  onClick 
+}: { 
+  category: string; 
+  isActive: boolean; 
+  onClick: () => void;
+}) => {
+  const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300
+        ${isActive ? 'font-bold shadow-lg scale-105' : 'font-normal opacity-70'}
+        hover:opacity-100 hover:font-medium hover:scale-105 hover:shadow-md
+      `}
+      style={{ 
+        color: '#fff',
+        backgroundColor: isActive ? `${primaryAccentColor}30` : `${primaryAccentColor}10`,
+        border: `1px solid ${isActive ? primaryAccentColor : 'transparent'}`
+      }}
+    >
+      {category}
+    </button>
+  );
+};
+
 const NewsPage = () => {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const filteredNews = useMemo(() => {
+    if (selectedCategory === 'All') return SAMPLE_NEWS;
+    return SAMPLE_NEWS.filter(news => news.category === selectedCategory);
+  }, [selectedCategory]);
 
   return (
     <div className="min-h-screen px-4 sm:px-6 md:px-8 lg:px-[80px] py-8 md:py-12">
@@ -147,15 +190,27 @@ const NewsPage = () => {
           Latest News
         </h1>
         <p 
-          className="text-base md:text-xl max-w-2xl mx-auto"
+          className="text-base md:text-xl max-w-2xl mx-auto mb-12"
           style={{ color: primaryAccentColor }}
         >
           Stay updated with the latest trends and developments in the tech world
         </p>
+
+        {/* Category Filter Buttons */}
+        <div className="flex flex-wrap justify-center gap-3 mb-16">
+          {CATEGORIES.map((category) => (
+            <CategoryButton
+              key={category}
+              category={category}
+              isActive={selectedCategory === category}
+              onClick={() => setSelectedCategory(category)}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {SAMPLE_NEWS.map((news) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+        {filteredNews.map((news) => (
           <NewsCard key={news.id} news={news} />
         ))}
       </div>

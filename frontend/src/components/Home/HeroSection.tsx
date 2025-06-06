@@ -2,9 +2,19 @@
 
 import { useThemeStore } from '../../Zustand_Store/ThemeStore';
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import TypingText from '../Misc/TypingText';
+import { useRouter } from 'next/navigation';
 
 export default function HeroSection() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const router = useRouter();
+
+  const words = [
+    "Build.",
+    "Connect.",
+    "Compete.",
+    "All in One Place."
+  ];
 
   return (
     <section className="flex flex-col-reverse md:flex-row items-center justify-between min-h-[60vh] px-8 lg:px-[80px] md:py-[80px]">
@@ -19,7 +29,12 @@ export default function HeroSection() {
           className="text-xl sm:text-2xl font-semibold mb-6 md:mb-8"
           style={{ color: primaryAccentColor }}
         >
-          Build. Connect. Compete. All in One Place.
+          <TypingText 
+            words={words}
+            typingSpeed={50}
+            deletingSpeed={20}
+            pauseTime={2000}
+          />
         </h2>
         <div className="flex flex-col sm:flex-row gap-8 md:gap-8 items-center mt-10 mb-10 md:mb-0">
           <button
@@ -28,6 +43,7 @@ export default function HeroSection() {
               background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
               color: '#222',
             }}
+            onClick={() => router.push('/events')}
           >
             Explore Hackathons
           </button>

@@ -34,13 +34,13 @@ function RegisterPage() {
       <div className="overflow-hidden h-[100vh] bg-[url('/1355025.jpeg')] bg-cover bg-left-bottom">
         <div className="absolute inset-0 bg-[#111111b3]"></div>
         <div 
-          className="h-auto min-h-[60vh] w-[90vw] sm:w-[70vw] md:w-[50vw] lg:w-[35vw] z-1 relative rounded-3xl top-[50vh] left-[50vw] -translate-x-[50%] -translate-y-[50%] flex justify-around text-center p-6 md:p-8 flex-col items-center shadow-2xl"
+          className="h-auto min-h-[60vh] w-[90vw] sm:w-[70vw] md:w-[50vw] lg:w-[30vw] z-1 relative rounded-3xl top-[50vh] left-[50vw] -translate-x-[50%] -translate-y-[50%] flex justify-around text-center p-6 md:p-8 flex-col items-center shadow-2xl"
           style={{
             backgroundColor: `${primaryAccentColor}`,
           }}
         >
-          <h1 className="font-extrabold text-2xl md:text-3xl w-full mb-4 text-black">
-            Welcome to VaultMeet
+          <h1 className="text-3xl font-bold text-center mb-6 px-24">
+            Welcome to HackMeet
           </h1>
 
           {/* Register Form */}
@@ -161,7 +161,7 @@ function RegisterPage() {
           {/* Sign In Link */}
           <p className="text-sm" style={{ color: 'black' }}>
             Already have an account?{" "}
-            <a href="/login" className="font-semibold hover:text-black/80 transition-colors" style={{ color: secondaryAccentColor }}>
+            <a href="/login" className="font-semibold hover:text-white/50 transition-colors text-white/80">
               Sign in
             </a>
           </p>

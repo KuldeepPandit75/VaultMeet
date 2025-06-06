@@ -148,7 +148,7 @@ export default function StudentHostPage() {
           {/* Hackathon Details */}
           <div 
             className="p-6 rounded-xl"
-            style={{ backgroundColor: `${primaryAccentColor}20` }}
+            style={{ backgroundColor: `${secondaryAccentColor}20` }}
           >
             <h2 
               className="text-2xl font-semibold mb-4"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 
 // Types
@@ -22,6 +22,7 @@ const NAV_LINKS: NavLink[] = [
   { href: "/news", label: "News" },
   { href: "/events", label: "Events" },
   { href: "/host", label: "Host" },
+  { href: "/about", label: "About" },
 ];
 
 const NAV_BUTTONS: NavButton[] = [
@@ -30,12 +31,34 @@ const NAV_BUTTONS: NavButton[] = [
 ];
 
 // Components
-const NavLink = ({ href, label }: NavLink) => (
-  <Link href={href}>{label}</Link>
-);
+const NavLink = ({ href, label }: NavLink) => {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  const { primaryAccentColor } = useThemeStore();
+
+  return (
+    <Link 
+      href={href}
+      className={`
+        transition-all duration-200 
+        ${isActive ? 'font-bold' : 'font-normal opacity-60'} 
+        hover:opacity-100 hover:font-medium
+        px-4 py-1 rounded-xl
+      `}
+      style={{ 
+        color: '#000',
+        backgroundColor: isActive ? `${primaryAccentColor}20` : 'transparent',
+      }}
+    >
+      {label}
+    </Link>
+  );
+};
 
 const NavButton = ({ href, label, isPrimary }: NavButton) => {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const pathname = usePathname();
+  const isActive = pathname === href;
   
   return (
     <Link 
@@ -87,20 +110,20 @@ const Navbar = () => {
       </button>
 
       {/* Desktop Navigation */}
-        <div 
-          className="rounded-[25px] w-[450px] py-1 text-[18px] hidden md:flex justify-around items-center"
-          style={{ backgroundColor: primaryAccentColor }}
-        >
-          {NAV_LINKS.map((link) => (
-            <NavLink key={link.href} {...link} />
-          ))}
-        </div>
+      <div 
+        className="rounded-[25px] w-[450px] py-1 ml-[50px] text-[18px] hidden md:flex justify-around items-center"
+        style={{ backgroundColor: primaryAccentColor }}
+      >
+        {NAV_LINKS.map((link) => (
+          <NavLink key={link.href} {...link} />
+        ))}
+      </div>
 
-        <div className="hidden md:flex gap-[30px] text-[18px] items-center ml-8">
-          {NAV_BUTTONS.map((button) => (
-            <NavButton key={button.label} {...button} />
-          ))}
-        </div>
+      <div className="hidden md:flex gap-[30px] text-[18px] items-center ml-8">
+        {NAV_BUTTONS.map((button) => (
+          <NavButton key={button.label} {...button} />
+        ))}
+      </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
