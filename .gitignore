@@ -39,3 +39,18 @@ frontend/.vercel
 # typescript
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+
+# Backend
+backend/**/node_modules/
+backend/**/dist/
+backend/**/.env*
+backend/**/npm-debug.log*
+backend/**/yarn-debug.log*
+backend/**/yarn-error.log*
+backend/**/.DS_Store
+backend/**/*.tsbuildinfo
+backend/**/coverage/
+backend/**/.env.local
+backend/**/.env.development.local
+backend/**/.env.test.local
+backend/**/.env.production.local
