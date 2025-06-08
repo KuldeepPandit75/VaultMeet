@@ -41,7 +41,7 @@ module.exports.registerUser = async (req, res) => {
 
   res.cookie('token',token,{
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'None'
   });
   
@@ -72,7 +72,7 @@ module.exports.loginUser=async(req,res)=>{
 
     res.cookie('token',token,{
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'None'
     });
 
@@ -320,7 +320,7 @@ module.exports.googleLogin = async (req, res) => {
         const token = user.generateAuthToken();
         res.cookie('token', token,{
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'None'
         });
         res.status(200).json({ token, user });
