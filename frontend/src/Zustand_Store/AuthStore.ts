@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import axios, { AxiosError } from 'axios';
-import { cookies } from 'next/headers';
 
 export enum Role {
   Admin = 'admin',
