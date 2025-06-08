@@ -24,5 +24,4 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         process.exit(1);
     }
 });
-console.log("shishir is madharchod 2");
 exports.default = connectDB;

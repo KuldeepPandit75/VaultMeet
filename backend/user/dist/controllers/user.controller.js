@@ -288,10 +288,10 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const token = user.generateAuthToken();
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false,
-            sameSite: "none",
-            path: "/",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            secure: true,
+            sameSite: 'None',
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         res.status(200).json({ token, user });
     }

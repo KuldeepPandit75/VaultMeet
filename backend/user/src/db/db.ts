@@ -11,6 +11,4 @@ const connectDB = async () => {
     }
 };
 
-console.log("shishir is madharchod 2")
-
 export default connectDB;
