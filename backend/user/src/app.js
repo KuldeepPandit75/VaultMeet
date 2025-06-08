@@ -16,7 +16,7 @@ app.use(cors({
     origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://hack-meet-five.vercel.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie']
 }));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));

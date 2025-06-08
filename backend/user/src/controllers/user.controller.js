@@ -45,7 +45,9 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None'
+        sameSite: 'none',
+        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
+        path: '/'
     });
     res.status(201).json({ token, user });
 });
@@ -68,7 +70,9 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None'
+        sameSite: 'none',
+        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
+        path: '/'
     });
     res.status(200).json({ token, user });
 });
@@ -283,7 +287,9 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'None'
+            sameSite: 'none',
+            domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
+            path: '/'
         });
         res.status(200).json({ token, user });
     }
