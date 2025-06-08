@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-
 const blacklistTokenSchema = new mongoose.Schema({
     token: {
         type: String,
@@ -12,5 +11,4 @@ const blacklistTokenSchema = new mongoose.Schema({
         expires: 86400 // 24 hours in seconds
     }
 });
-
-export const BlacklistToken = mongoose.model('BlacklistToken', blacklistTokenSchema);
+export const BlacklistTokenModel = mongoose.model('BlacklistToken', blacklistTokenSchema);

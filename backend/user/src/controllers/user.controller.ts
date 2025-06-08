@@ -5,7 +5,7 @@ const BlacklistToken = require("../models/blacklistToken.model");
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs').promises;  // Add fs promises for async file operations
 
-module.exports.registerUser = async (req, res) => {
+export const registerUser = async (req:any, res:any) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -48,7 +48,7 @@ module.exports.registerUser = async (req, res) => {
   res.status(201).json({token, user});
 };
 
-module.exports.loginUser=async(req,res)=>{
+export const loginUser=async(req:any,res:any)=>{
     const errors=validationResult(req);
     if(!errors.isEmpty()){
         return res.status(400).json({errors:errors.array()});
@@ -79,7 +79,7 @@ module.exports.loginUser=async(req,res)=>{
     res.status(200).json({token,user});
 }
 
-module.exports.getUserProfile=async(req,res)=>{
+export const getUserProfile=async(req:any,res:any)=>{
     const user=await userModel.findById(req.user._id);
     if(!user){
         return res.status(404).json({message:"User not found"});
@@ -87,7 +87,7 @@ module.exports.getUserProfile=async(req,res)=>{
     res.status(200).json({user});
 }
 
-module.exports.logoutUser=async(req,res)=>{
+export const logoutUser=async(req:any,res:any)=>{
     res.cookie('token', '', {
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production', 
@@ -101,7 +101,7 @@ module.exports.logoutUser=async(req,res)=>{
     res.status(200).json({message:"Logged out successfully"});
 }
 
-module.exports.updateUser = async (req, res) => {
+export const updateUser = async (req:any, res:any) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -162,7 +162,7 @@ module.exports.updateUser = async (req, res) => {
     }
 };
 
-module.exports.checkUsernameAvailability = async (req, res) => {
+export const checkUsernameAvailability = async (req:any, res:any) => {
     const { username } = req.params;
 
     if (!username) {
@@ -187,7 +187,7 @@ module.exports.checkUsernameAvailability = async (req, res) => {
     }
 };
 
-module.exports.updateBanner = async (req, res) => {
+export const updateBanner = async (req:any, res:any) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -235,7 +235,7 @@ module.exports.updateBanner = async (req, res) => {
     }
 };
 
-module.exports.updateProfilePicture = async (req, res) => {
+export const updateProfilePicture = async (req:any, res:any) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -283,7 +283,7 @@ module.exports.updateProfilePicture = async (req, res) => {
     }
 };
 
-module.exports.googleLogin = async (req, res) => {
+export const googleLogin = async (req:any, res:any) => {
     try {
         const { email, name, picture, googleId } = req.body;
 

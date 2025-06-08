@@ -42,7 +42,6 @@ frontend/next-env.d.ts
 
 # Backend
 backend/**/node_modules/
-backend/**/dist/
 backend/**/.env*
 backend/**/npm-debug.log*
 backend/**/yarn-debug.log*

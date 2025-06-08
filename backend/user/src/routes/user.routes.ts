@@ -1,10 +1,10 @@
-const express=require('express');
-const router=express.Router();
-const {body}=require('express-validator');
-const userController=require('../controllers/user.controller');
-const authMiddleware=require('../middlewares/auth.middleware');
-const multer = require('multer');
-const path = require('path');
+import express from 'express';
+import { body } from 'express-validator';
+import * as userController from '../controllers/user.controller';
+import authMiddleware from '../middlewares/auth.middleware';
+import multer from 'multer';
+import path from 'path';
+const router = express.Router();
 
 router.post('/register',[
     body('fullname.firstname').notEmpty().withMessage('First name is required').isLength({min:3}).withMessage('First name must be at least 3 characters long'),
