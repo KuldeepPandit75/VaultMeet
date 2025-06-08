@@ -48,7 +48,7 @@ function LoginPage() {
       });
       
       toast.success("Logged in successfully with Google");
-      // router.push('/');
+      router.push('/');
     } catch (err) {
       console.error('Google login failed:', err);
       toast.error("Failed to login with Google");

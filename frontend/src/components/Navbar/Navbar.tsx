@@ -119,7 +119,7 @@ const Navbar = () => {
 
       {/* Desktop Navigation */}
       <div
-        className="rounded-[25px] w-[450px] py-1 ml-[50px] text-[18px] hidden md:flex justify-around items-center"
+        className={`rounded-[25px] w-[450px] py-1 ${isAuthenticated ? "ml-0" : "ml-[50px]"} text-[18px] hidden md:flex justify-around items-center`}
         style={{ backgroundColor: primaryAccentColor }}
       >
         {NAV_LINKS.map((link) => (
