@@ -20,4 +20,8 @@ router.get('/profile',authMiddleware,userController.getUserProfile);
 
 router.post('/logout',authMiddleware,userController.logoutUser);
 
+router.put('/update',authMiddleware,userController.updateUser);
+
+router.get('/check-username/:username',userController.checkUsernameAvailability);
+
 module.exports=router;

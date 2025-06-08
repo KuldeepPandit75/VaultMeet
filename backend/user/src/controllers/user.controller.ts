@@ -9,9 +9,18 @@ module.exports.registerUser = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { fullname, email, password, role } = req.body;
+  const { fullname, email, password, role, username } = req.body;
 
-  console.log(req.body);
+  const existingUser = await userModel.findOne({ username });
+
+  if (existingUser) {
+    return res.status(400).json({ message: "Username already exists" });
+  }
+
+  const existingEmail = await userModel.findOne({ email });
+  if (existingEmail) {
+    return res.status(400).json({ message: "Email already exists" });
+  }
 
   const hashedPassword = await userModel.hashPassword(password);
 
@@ -23,11 +32,13 @@ module.exports.registerUser = async (req, res) => {
     email,
     password: hashedPassword,
     role,
+    username,
   });
 
   const token= user.generateAuthToken();
 
-
+  res.cookie('token',token);
+  
   res.status(201).json({token, user});
 };
 
@@ -79,3 +90,88 @@ module.exports.logoutUser=async(req,res)=>{
 
     res.status(200).json({message:"Logged out successfully"});
 }
+
+module.exports.updateUser = async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const allowedUpdates = [
+        'fullname',
+        'username', 
+        'avatar',
+        'bio',
+        'location',
+        'college',
+        'skills',
+        'interests',
+        'social',
+        'featuredProject'
+    ];
+
+    const updates: Record<string, any> = {};
+    
+    Object.keys(req.body).forEach(key => {
+        if (allowedUpdates.includes(key)) {
+            updates[key] = req.body[key];
+        }
+    });
+
+    // Handle featured projects update
+    if (req.body.featuredProjects) {
+        updates.featuredProject = {
+            title: req.body.featuredProjects.title,
+            description: req.body.featuredProjects.description,
+            link: req.body.featuredProjects.link,
+            techUsed: req.body.featuredProjects.techUsed
+        };
+    }
+
+    try {
+        const user = await userModel.findByIdAndUpdate(
+            req.user._id,
+            { $set: updates },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({ user });
+    } catch (error: any) {
+        if (error.code === 11000) {
+            return res.status(400).json({ 
+                message: "Username or email already exists" 
+            });
+        }
+        res.status(400).json({ message: error.message });
+    }
+};
+
+module.exports.checkUsernameAvailability = async (req, res) => {
+    const { username } = req.params;
+
+    if (!username) {
+        return res.status(400).json({ 
+            message: "Username is required" 
+        });
+    }
+
+    try {
+        const existingUser = await userModel.findOne({ username });
+        
+        res.status(200).json({
+            available: !existingUser,
+            message: existingUser 
+                ? "Username is already taken" 
+                : "Username is available"
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: "Error checking username availability" 
+        });
+    }
+};

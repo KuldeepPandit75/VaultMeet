@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 // Types
 interface NavLink {
@@ -27,7 +28,7 @@ const NAV_LINKS: NavLink[] = [
 
 const NAV_BUTTONS: NavButton[] = [
   { href: "/login", label: "Login", isPrimary: false },
-  { href: "/signup", label: "Sign Up", isPrimary: true },
+  { href: "/register", label: "Sign Up", isPrimary: true },
 ];
 
 // Components
@@ -57,8 +58,6 @@ const NavLink = ({ href, label }: NavLink) => {
 
 const NavButton = ({ href, label, isPrimary }: NavButton) => {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
-  const pathname = usePathname();
-  const isActive = pathname === href;
   
   return (
     <Link 
@@ -76,6 +75,8 @@ const Navbar = () => {
   const router = useRouter();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuthStore();
 
   return (
     <nav className="px-[20px] md:px-[40px] lg:px-[80px] py-[20px] flex justify-between items-center relative z-[100000]">
@@ -120,9 +121,64 @@ const Navbar = () => {
       </div>
 
       <div className="hidden md:flex gap-[30px] text-[18px] items-center ml-8">
-        {NAV_BUTTONS.map((button) => (
-          <NavButton key={button.label} {...button} />
-        ))}
+        {isAuthenticated ? (
+          <div className="relative">
+            <div 
+              className="flex items-center gap-2 cursor-pointer" 
+              style={{ color: primaryAccentColor }}
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <div 
+                className="flex items-center justify-center h-[40px] w-[40px] rounded-full"
+                style={{ backgroundColor: secondaryAccentColor }}
+              >
+                <p className="text-[18px] text-black font-bold">{user?.fullname.firstname.charAt(0).toUpperCase()}</p>
+              </div>
+              <svg 
+                className={`w-4 h-4 ml-1 inline-block transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round" 
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+
+            {/* Dropdown Menu */}
+            <div 
+              className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white transform transition-all duration-200 ease-in-out ${
+                isDropdownOpen 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 -translate-y-2 pointer-events-none'
+              }`}
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => router.push('/profile')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          NAV_BUTTONS.map((button) => (
+            <NavButton key={button.label} {...button} />
+          ))
+        )}
       </div>
 
       {/* Mobile Menu */}
@@ -136,7 +192,7 @@ const Navbar = () => {
               <NavLink key={link.href} {...link} />
             ))}
             <Link href="/login" className="text-[18px] text-black rounded-[20px] px-[18px] py-1">Login</Link>
-            <Link href="/signup" className="text-[18px] text-black rounded-[20px] px-[18px] py-1">Sign Up</Link>
+            <Link href="/register" className="text-[18px] text-black rounded-[20px] px-[18px] py-1">Sign Up</Link>
           </div>
         </div>
       )}

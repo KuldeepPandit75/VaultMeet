@@ -3,19 +3,31 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useThemeStore } from "../../../Zustand_Store/ThemeStore";
+import useAuthStore from "@/Zustand_Store/AuthStore";
+import { useRouter } from "next/navigation";
 
 function LoginPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { error, login } = useAuthStore();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log('Login form submitted:', formData);
+    setIsLoading(true);
+    try {
+      await login(formData.email, formData.password);
+      router.push('/');
+    } catch (err) {
+      console.error('Login failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +51,12 @@ function LoginPage() {
             Welcome Back to HackMeet!
           </h1>
 
+          {error && (
+            <div className="w-full p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+              {error}
+            </div>
+          )}
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="w-full space-y-6 mb-8">
             {/* Email Input */}
@@ -51,6 +69,7 @@ function LoginPage() {
                 required
                 className="w-full px-4 py-3 rounded-lg bg-white/20 border border-black/30 text-black placeholder-black/70 focus:outline-none focus:border-black/50 focus:ring-2 focus:ring-black/20 transition-all"
                 placeholder="Enter your email"
+                disabled={isLoading}
               />
             </div>
 
@@ -64,6 +83,7 @@ function LoginPage() {
                 required
                 className="w-full px-4 py-3 rounded-lg bg-white/20 border border-black/30 text-black placeholder-black/70 focus:outline-none focus:border-black/50 focus:ring-2 focus:ring-black/20 transition-all"
                 placeholder="Enter your password"
+                disabled={isLoading}
               />
             </div>
 
@@ -77,6 +97,7 @@ function LoginPage() {
                   checked={formData.rememberMe}
                   onChange={handleChange}
                   className="h-4 w-4 rounded border-black/30 bg-white/20 checked:bg-black/40 focus:ring-2 focus:ring-black/20"
+                  disabled={isLoading}
                 />
                 <label htmlFor="rememberMe" className="ml-2 text-black">
                   Remember me
@@ -90,13 +111,14 @@ function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full rounded-lg px-6 py-3 text-lg font-bold shadow-lg cursor-pointer transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full rounded-lg px-6 py-3 text-lg font-bold shadow-lg cursor-pointer transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: `${secondaryAccentColor}`,
                 color: '#222',
               }}
+              disabled={isLoading}
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
@@ -111,6 +133,7 @@ function LoginPage() {
           <div className="w-full mb-8">
             <button
               className="w-full flex items-center justify-center hover:scale-[1.02] active:scale-[0.98] transition-transform"
+              disabled={isLoading}
             >
               <Image src="/google.png" width={200} height={200} alt="Google logo" />
             </button>

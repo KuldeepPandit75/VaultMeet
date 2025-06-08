@@ -158,6 +158,115 @@ Success Response (200):
 }
 ```
 
+### 5. Update User Profile
+#### PUT /profile
+
+Update the authenticated user's profile information.
+
+##### Headers
+- `Authorization`: Bearer token
+- `Cookie`: token (if using cookie-based auth)
+
+##### Request Body
+```json
+{
+  "fullname": {
+    "firstname": "John",
+    "lastname": "Doe"
+  },
+  "username": "johndoe",
+  "bio": "Software Developer",
+  "location": "New York",
+  "college": "University of Technology",
+  "skills": ["JavaScript", "Node.js", "React"],
+  "interests": ["AI/ML", "Web Development"],
+  "social": {
+    "github": "https://github.com/johndoe",
+    "linkedin": "https://linkedin.com/in/johndoe",
+    "twitter": "https://twitter.com/johndoe",
+  },
+  "website": "https://portfolio.com/",
+  "featuredProject": {
+    "title": "VedicVerse",
+    "description": "A 2D meta platform for vedas",
+    "link": "vedicverse.vercel.app",
+    "techUsed":["react","phaser.js"]
+  },
+}
+```
+
+##### Validation Rules
+- All fields are optional
+- If password is provided, it must be at least 8 characters long
+- Username must be unique if provided
+- Email cannot be updated through this endpoint
+
+##### Status Codes
+- `200 OK`: Profile updated successfully
+- `400 Bad Request`: Validation errors or duplicate username
+- `401 Unauthorized`: Invalid or missing token
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "user": {
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "username": "johndoe",
+    "email": "john.doe@example.com",
+    "bio": "Software Developer",
+    "location": "New York",
+    "college": "University of Technology",
+    "skills": ["JavaScript", "Node.js", "React"],
+    "interests": ["AI/ML", "Web Development"],
+    "social": {
+      "github": "https://github.com/johndoe",
+      "linkedin": "https://linkedin.com/in/johndoe",
+      "twitter": "https://twitter.com/johndoe",
+      "instagram": "https://instagram.com/johndoe",
+      "portfolio": "https://johndoe.com",
+      "devpost": "https://devpost.com/johndoe"
+    },
+    "_id": "user_id_here"
+  }
+}
+```
+
+### 6. Check Username Availability
+#### GET /check-username/:username
+
+Check if a username is available for use.
+
+##### Parameters
+- `username`: The username to check (in URL)
+
+##### Status Codes
+- `200 OK`: Username availability check completed
+- `400 Bad Request`: Username parameter missing
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "available": true,
+  "message": "Username is available"
+}
+```
+
+Or if username is taken:
+```json
+{
+  "available": false,
+  "message": "Username is already taken"
+}
+```
+
 ## Authentication Notes
 
 - JWT tokens expire after 24 hours
