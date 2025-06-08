@@ -1,6 +1,6 @@
-const User = require("../models/user.model");
+import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
-const BlacklistToken = require('../models/blacklistToken.model');
+import BlacklistToken from '../models/blacklistToken.model.js';
 
 interface JwtPayload {
   _id: string;

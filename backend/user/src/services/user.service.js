@@ -8,12 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const userModel = require('../models/user.model');
-module.exports.createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ fullname, email, password, role, username }) {
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const user_model_1 = __importDefault(require("../models/user.model"));
+const createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ fullname, email, password, role, username }) {
     if (!fullname || !email || !password) {
         throw new Error("All fields are required");
     }
-    const user = userModel.create({
+    const user = yield user_model_1.default.create({
         fullname: {
             firstname: fullname.firstname,
             lastname: fullname.lastname,
@@ -25,3 +29,6 @@ module.exports.createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({
     });
     return user;
 });
+exports.default = {
+    createUser
+};

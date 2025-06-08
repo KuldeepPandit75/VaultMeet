@@ -1,7 +1,21 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-const userSchema = new mongoose.Schema({
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const userSchema = new mongoose_1.default.Schema({
     fullname: {
         firstname: {
             type: String,
@@ -78,7 +92,7 @@ const userSchema = new mongoose.Schema({
     website: { type: String, default: "" },
     connections: [
         {
-            user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
             status: {
                 type: String,
                 enum: ["pending", "connected"],
@@ -88,8 +102,8 @@ const userSchema = new mongoose.Schema({
     ],
     hackathonsJoined: [
         {
-            hackathonId: { type: mongoose.Schema.Types.ObjectId, ref: "Hackathon" },
-            teamId: { type: mongoose.Schema.Types.ObjectId, ref: "Team" },
+            hackathonId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Hackathon" },
+            teamId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "Team" },
             status: {
                 type: String,
                 enum: ["pending", "confirmed"],
@@ -99,7 +113,7 @@ const userSchema = new mongoose.Schema({
     ],
     bookmarks: [
         {
-            type: mongoose.Schema.Types.ObjectId,
+            type: mongoose_1.default.Schema.Types.ObjectId,
             ref: "Hackathon",
         },
     ],
@@ -138,13 +152,20 @@ const userSchema = new mongoose.Schema({
     },
 });
 userSchema.methods.generateAuthToken = function () {
-    const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    const token = jsonwebtoken_1.default.sign({ _id: this._id }, process.env.JWT_SECRET, {
+        expiresIn: "7d",
+    });
     return token;
 };
-userSchema.methods.comparePassword = async function (password) {
-    return bcrypt.compare(password, this.password);
+userSchema.methods.comparePassword = function (password) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield bcrypt_1.default.compare(password, this.password);
+    });
 };
-userSchema.statics.hashPassword = async function (password) {
-    return await bcrypt.hash(password, 10);
+userSchema.statics.hashPassword = function (password) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield bcrypt_1.default.hash(password, 10);
+    });
 };
-export const UserModel = mongoose.model("User", userSchema);
+const User = mongoose_1.default.model("User", userSchema);
+exports.default = User;

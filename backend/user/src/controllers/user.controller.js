@@ -14,8 +14,8 @@ const userModel = require("../models/user.model");
 const userService = require("../services/user.service");
 const { validationResult } = require("express-validator");
 const BlacklistToken = require("../models/blacklistToken.model");
-const cloudinary = require('../config/cloudinary');
-const fs = require('fs').promises; // Add fs promises for async file operations
+const cloudinary = require("../config/cloudinary");
+const fs = require("fs").promises; // Add fs promises for async file operations
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -42,12 +42,10 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         username,
     });
     const token = user.generateAuthToken();
-    res.cookie('token', token, {
+    res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-        path: '/'
+        secure: false,
+        sameSite: "none",
     });
     res.status(201).json({ token, user });
 });
@@ -58,7 +56,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ errors: errors.array() });
     }
     const { email, password } = req.body;
-    const user = yield userModel.findOne({ email }).select('+password');
+    const user = yield userModel.findOne({ email }).select("+password");
     if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -67,12 +65,12 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(401).json({ message: "Invalid email or password" });
     }
     const token = user.generateAuthToken();
-    res.cookie('token', token, {
+    res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-        path: '/'
+        secure: false,
+        sameSite: "none",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.status(200).json({ token, user });
 });
@@ -87,10 +85,10 @@ const getUserProfile = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.getUserProfile = getUserProfile;
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    res.cookie('token', '', {
+    res.cookie("token", "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
     });
     const token = req.cookies.token || ((_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1]);
     yield BlacklistToken.create({ token });
@@ -103,20 +101,20 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(400).json({ errors: errors.array() });
     }
     const allowedUpdates = [
-        'fullname',
-        'username',
-        'avatar',
-        'bio',
-        'location',
-        'college',
-        'skills',
-        'interests',
-        'social',
-        'featuredProject',
-        'achievements'
+        "fullname",
+        "username",
+        "avatar",
+        "bio",
+        "location",
+        "college",
+        "skills",
+        "interests",
+        "social",
+        "featuredProject",
+        "achievements",
     ];
     const updates = {};
-    Object.keys(req.body).forEach(key => {
+    Object.keys(req.body).forEach((key) => {
         if (allowedUpdates.includes(key)) {
             updates[key] = req.body[key];
         }
@@ -127,7 +125,7 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             title: req.body.featuredProjects.title,
             description: req.body.featuredProjects.description,
             link: req.body.featuredProjects.link,
-            techUsed: req.body.featuredProjects.techUsed
+            techUsed: req.body.featuredProjects.techUsed,
         };
     }
     try {
@@ -140,7 +138,7 @@ const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     catch (error) {
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Username or email already exists"
+                message: "Username or email already exists",
             });
         }
         res.status(400).json({ message: error.message });
@@ -151,7 +149,7 @@ const checkUsernameAvailability = (req, res) => __awaiter(void 0, void 0, void 0
     const { username } = req.params;
     if (!username) {
         return res.status(400).json({
-            message: "Username is required"
+            message: "Username is required",
         });
     }
     try {
@@ -160,12 +158,12 @@ const checkUsernameAvailability = (req, res) => __awaiter(void 0, void 0, void 0
             available: !existingUser,
             message: existingUser
                 ? "Username is already taken"
-                : "Username is available"
+                : "Username is available",
         });
     }
     catch (error) {
         res.status(500).json({
-            message: "Error checking username availability"
+            message: "Error checking username availability",
         });
     }
 });
@@ -178,7 +176,7 @@ const updateBanner = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         // Upload to Cloudinary
         const result = yield cloudinary.uploader.upload(req.file.path, {
             folder: "banners",
-            resource_type: "auto"
+            resource_type: "auto",
         });
         // Update user's banner
         const user = yield userModel.findByIdAndUpdate(req.user._id, { banner: result.secure_url }, { new: true });
@@ -191,7 +189,7 @@ const updateBanner = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         yield fs.unlink(req.file.path);
         res.status(200).json({
             message: "Banner updated successfully",
-            banner: result.secure_url
+            banner: result.secure_url,
         });
     }
     catch (error) {
@@ -201,12 +199,12 @@ const updateBanner = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 yield fs.unlink(req.file.path);
             }
             catch (cleanupError) {
-                console.error('Error cleaning up temporary file:', cleanupError);
+                console.error("Error cleaning up temporary file:", cleanupError);
             }
         }
         res.status(500).json({
             message: "Error updating banner",
-            error: error.message
+            error: error.message,
         });
     }
 });
@@ -219,7 +217,7 @@ const updateProfilePicture = (req, res) => __awaiter(void 0, void 0, void 0, fun
         // Upload to Cloudinary
         const result = yield cloudinary.uploader.upload(req.file.path, {
             folder: "avatars",
-            resource_type: "auto"
+            resource_type: "auto",
         });
         // Update user's avatar
         const user = yield userModel.findByIdAndUpdate(req.user._id, { avatar: result.secure_url }, { new: true });
@@ -232,7 +230,7 @@ const updateProfilePicture = (req, res) => __awaiter(void 0, void 0, void 0, fun
         yield fs.unlink(req.file.path);
         res.status(200).json({
             message: "Profile picture updated successfully",
-            avatar: result.secure_url
+            avatar: result.secure_url,
         });
     }
     catch (error) {
@@ -242,12 +240,12 @@ const updateProfilePicture = (req, res) => __awaiter(void 0, void 0, void 0, fun
                 yield fs.unlink(req.file.path);
             }
             catch (cleanupError) {
-                console.error('Error cleaning up temporary file:', cleanupError);
+                console.error("Error cleaning up temporary file:", cleanupError);
             }
         }
         res.status(500).json({
             message: "Error updating profile picture",
-            error: error.message
+            error: error.message,
         });
     }
 });
@@ -259,20 +257,20 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         let user = yield userModel.findOne({ email });
         if (!user) {
             // Create new user if doesn't exist
-            const username = email.split('@')[0] + Math.random().toString(36).substring(2, 8);
-            const [firstname, ...lastnameParts] = name.split(' ');
-            const lastname = lastnameParts.join(' ');
+            const username = email.split("@")[0] + Math.random().toString(36).substring(2, 8);
+            const [firstname, ...lastnameParts] = name.split(" ");
+            const lastname = lastnameParts.join(" ");
             user = yield userService.createUser({
                 fullname: {
                     firstname,
-                    lastname
+                    lastname,
                 },
                 email,
                 password: Math.random().toString(36).slice(-8), // Random password for Google users
-                role: 'user',
+                role: "user",
                 username,
                 avatar: picture,
-                googleId
+                googleId,
             });
         }
         else if (!user.googleId) {
@@ -284,18 +282,20 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             yield user.save();
         }
         const token = user.generateAuthToken();
-        res.cookie('token', token, {
+        res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-            domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-            path: '/'
+            secure: false,
+            sameSite: "none",
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
         res.status(200).json({ token, user });
     }
     catch (error) {
-        console.error('Google login error:', error);
-        res.status(500).json({ message: 'Error during Google login', error: error.message });
+        console.error("Google login error:", error);
+        res
+            .status(500)
+            .json({ message: "Error during Google login", error: error.message });
     }
 });
 exports.googleLogin = googleLogin;

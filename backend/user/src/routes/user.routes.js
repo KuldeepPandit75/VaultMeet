@@ -88,4 +88,4 @@ router.put('/banner', auth_middleware_1.default, upload.single('banner'), userCo
 router.put('/avatar', auth_middleware_1.default, upload.single('avatar'), userController.updateProfilePicture);
 // Google login route
 router.post('/google-login', userController.googleLogin);
-module.exports = router;
+exports.default = router;

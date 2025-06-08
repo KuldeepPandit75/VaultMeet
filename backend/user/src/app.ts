@@ -1,17 +1,18 @@
-const dotenv = require('dotenv');
-dotenv.config();
 import express from 'express';
-const cors=require('cors');
-const app=express();
-const connectDB=require('./db/db');
-const userRoutes=require('./routes/user.routes');
-const cookieParser=require('cookie-parser');
+import cors from 'cors';
+import connectDB from './db/db.js';
+import userRoutes from './routes/user.routes.js';
+import cookieParser from 'cookie-parser';
+import "dotenv/config";
+
+const app = express();
 
 connectDB();
 
 app.use(cors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://hack-meet-five.vercel.app'],
+    origin: [process.env.FRONTEND_URL as string, 'http://localhost:3000', 'https://hack-meet-five.vercel.app'],
     credentials: true,
+    // secure: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie']
 }));

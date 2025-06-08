@@ -1,6 +1,59 @@
-import mongoose from "mongoose";
+import mongoose, { Document } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
+interface IUser extends Document {
+  fullname: {
+    firstname: string;
+    lastname: string;
+  };
+  email: string;
+  password: string;
+  role: "admin" | "user";
+  socketId: string;
+  username: string;
+  banner: string;
+  avatar: string;
+  bio: string;
+  location: string;
+  college: string;
+  skills: string;
+  interests: string;
+  social: {
+    github: string;
+    linkedin: string;
+    x: string;
+  };
+  website: string;
+  connections: {
+    user: mongoose.Types.ObjectId;
+    status: "pending" | "connected";
+  }[];
+  hackathonsJoined: {
+    hackathonId: mongoose.Types.ObjectId;
+    teamId: mongoose.Types.ObjectId;
+    status: "pending" | "confirmed";
+  }[];
+  bookmarks: mongoose.Types.ObjectId[];
+  notifications: {
+    type: string;
+    message: string;
+    isRead: boolean;
+    createdAt: Date;
+  }[];
+  createdAt: Date;
+  isVerified: boolean;
+  featuredProject: {
+    title: string;
+    description: string;
+    link: string;
+    techUsed: string[];
+  };
+  achievements: string;
+  googleId?: string;
+  generateAuthToken(): string;
+  comparePassword(password: string): Promise<boolean>;
+}
 
 const userSchema = new mongoose.Schema({
   fullname: {
@@ -159,7 +212,7 @@ const userSchema = new mongoose.Schema({
 
 userSchema.methods.generateAuthToken = function () {
   const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET as string, {
-    expiresIn: "24h",
+    expiresIn: "7d",
   });
   return token;
 };
@@ -172,6 +225,6 @@ userSchema.statics.hashPassword = async function (password:string) {
   return await bcrypt.hash(password, 10);
 };
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model<IUser>("User", userSchema);
 
-module.exports = User;
+export default User;

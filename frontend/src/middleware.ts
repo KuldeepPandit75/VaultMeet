@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   // Verify token with backend for profile pages
   if (isProfilePage && token) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

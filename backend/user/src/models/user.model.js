@@ -153,7 +153,7 @@ const userSchema = new mongoose_1.default.Schema({
 });
 userSchema.methods.generateAuthToken = function () {
     const token = jsonwebtoken_1.default.sign({ _id: this._id }, process.env.JWT_SECRET, {
-        expiresIn: "24h",
+        expiresIn: "7d",
     });
     return token;
 };
@@ -168,4 +168,4 @@ userSchema.statics.hashPassword = function (password) {
     });
 };
 const User = mongoose_1.default.model("User", userSchema);
-module.exports = User;
+exports.default = User;

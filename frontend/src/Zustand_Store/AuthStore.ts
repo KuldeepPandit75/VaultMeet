@@ -8,7 +8,9 @@ export enum Role {
   Host = 'host'
 }
 
+
 export const BackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+console.log("BackendUrl", BackendUrl, process.env.NEXT_PUBLIC_BACKEND_URL);
 
 // Create axios instance with default config
 const api = axios.create({
@@ -138,6 +140,7 @@ const useAuthStore = create<AuthState>()(
         set({ loading: true, error: null });
         try {
           const response = await api.post('/google-login', googleData);
+          console.log("google login response", response.data);
           const { token, user } = response.data;
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
