@@ -161,7 +161,7 @@ function LoginPage() {
           </div>
 
           {/* Google Sign In */}
-          <div className="w-full mb-8">
+          <div className="w-full mb-8 mx-auto">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
