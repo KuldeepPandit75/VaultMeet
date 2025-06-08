@@ -43,8 +43,6 @@ export const registerUser = async (req:any, res:any) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'none',
-    domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-    path: '/'
   });
   
   res.status(201).json({token, user});
@@ -74,10 +72,8 @@ export const loginUser=async(req:any,res:any)=>{
 
     res.cookie('token',token,{
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         sameSite: 'none',
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-        path: '/'
     });
 
     res.status(200).json({token,user});
@@ -324,10 +320,8 @@ export const googleLogin = async (req:any, res:any) => {
         const token = user.generateAuthToken();
         res.cookie('token', token,{
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-            domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined,
-            path: '/'
+            secure: true,
+            sameSite: 'none'
         });
         res.status(200).json({ token, user });
     } catch (error: any) {
