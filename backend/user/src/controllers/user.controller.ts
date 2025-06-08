@@ -39,7 +39,11 @@ module.exports.registerUser = async (req, res) => {
 
   const token= user.generateAuthToken();
 
-  res.cookie('token',token);
+  res.cookie('token',token,{
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None'
+  });
   
   res.status(201).json({token, user});
 };
@@ -66,7 +70,11 @@ module.exports.loginUser=async(req,res)=>{
 
     const token=user.generateAuthToken();
 
-    res.cookie('token',token);
+    res.cookie('token',token,{
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+    });
 
     res.status(200).json({token,user});
 }
@@ -310,7 +318,11 @@ module.exports.googleLogin = async (req, res) => {
         }
 
         const token = user.generateAuthToken();
-        res.cookie('token', token);
+        res.cookie('token', token,{
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
         res.status(200).json({ token, user });
     } catch (error: any) {
         console.error('Google login error:', error);
