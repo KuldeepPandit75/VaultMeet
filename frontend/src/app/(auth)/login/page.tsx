@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useThemeStore } from "../../../Zustand_Store/ThemeStore";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 
 function LoginPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
-  const { error, login } = useAuthStore();
+  const { error, login, googleLogin } = useAuthStore();
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
@@ -30,6 +30,35 @@ function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse | undefined) => {
+    try {
+      setIsLoading(true);
+      // Decode the JWT token
+      const decodedToken = JSON.parse(atob(credentialResponse?.credential?.split('.')[1] || ''));
+
+      console.log(decodedToken)
+      
+      await googleLogin({
+        email: decodedToken.email,
+        name: decodedToken.name,
+        picture: decodedToken.picture,
+        googleId: decodedToken.sub
+      });
+      
+      toast.success("Logged in successfully with Google");
+      router.push('/');
+    } catch (err) {
+      console.error('Google login failed:', err);
+      toast.error("Failed to login with Google");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast.error("Google login failed");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,12 +162,15 @@ function LoginPage() {
 
           {/* Google Sign In */}
           <div className="w-full mb-8">
-            <button
-              className="w-full flex items-center justify-center hover:scale-[1.02] active:scale-[0.98] transition-transform"
-              disabled={isLoading}
-            >
-              <Image src="/google.png" width={200} height={200} alt="Google logo" />
-            </button>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="filled_black"
+              shape="rectangular"
+              text="signin_with"
+              locale="en"
+            />
           </div>
 
           {/* Sign Up Link */}

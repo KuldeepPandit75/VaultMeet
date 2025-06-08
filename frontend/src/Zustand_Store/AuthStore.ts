@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 export enum Role {
   Admin = 'admin',
@@ -88,6 +88,7 @@ interface AuthState {
   error: string | null;
   setIsAuthenticated: (value: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (googleData: { email: string; name: string; picture: string; googleId: string }) => Promise<void>;
   register: (data: {
     fullname: { firstname: string; lastname: string };
     email: string;
@@ -123,10 +124,26 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/login', { email, password });
           const { token, user } = response.data;
           set({ token, user, isAuthenticated: true, loading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Login failed:', error);
           set({ 
-            error: error.response?.data?.message || 'Failed to login',
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to login',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      googleLogin: async (googleData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/google-login', googleData);
+          const { token, user } = response.data;
+          set({ token, user, isAuthenticated: true, loading: false });
+        } catch (error: unknown) {
+          console.error('Google login failed:', error);
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to login with Google',
             loading: false 
           });
           throw error;
@@ -139,10 +156,10 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/register', data);
           const { token, user } = response.data;
           set({ token, user, isAuthenticated: true, loading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Registration failed:', error);
           set({ 
-            error: error.response?.data?.message || 'Failed to register',
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to register',
             loading: false 
           });
           throw error;
@@ -208,10 +225,10 @@ const useAuthStore = create<AuthState>()(
           const response = await api.put('/update', data);
           console.log(response.data);
           set({ user: response.data.user, loading: false });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error updating profile:', error);
           set({ 
-            error: error.response?.data?.message || 'Failed to update profile',
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to update profile',
             loading: false 
           });
           throw error;
@@ -248,10 +265,10 @@ const useAuthStore = create<AuthState>()(
           } else {
             throw new Error('No avatar URL in response');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error updating avatar:', error);
           set({ 
-            error: error.response?.data?.message || 'Failed to update avatar',
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to update avatar',
             loading: false 
           });
           throw error;
@@ -278,10 +295,10 @@ const useAuthStore = create<AuthState>()(
           } else {
             throw new Error('No banner URL in response');
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error updating banner:', error);
           set({ 
-            error: error.response?.data?.message || 'Failed to update banner',
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to update banner',
             loading: false 
           });
           throw error;

@@ -58,4 +58,7 @@ const upload = multer({
 router.put('/banner', authMiddleware, upload.single('banner'), userController.updateBanner);
 router.put('/avatar', authMiddleware, upload.single('avatar'), userController.updateProfilePicture);
 
+// Google login route
+router.post('/google-login', userController.googleLogin);
+
 module.exports=router;

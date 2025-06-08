@@ -275,3 +275,46 @@ module.exports.updateProfilePicture = async (req, res) => {
     }
 };
 
+module.exports.googleLogin = async (req, res) => {
+    try {
+        const { email, name, picture, googleId } = req.body;
+
+        // Check if user exists
+        let user = await userModel.findOne({ email });
+
+        if (!user) {
+            // Create new user if doesn't exist
+            const username = email.split('@')[0] + Math.random().toString(36).substring(2, 8);
+            const [firstname, ...lastnameParts] = name.split(' ');
+            const lastname = lastnameParts.join(' ');
+
+            user = await userService.createUser({
+                fullname: {
+                    firstname,
+                    lastname
+                },
+                email,
+                password: Math.random().toString(36).slice(-8), // Random password for Google users
+                role: 'user',
+                username,
+                avatar: picture,
+                googleId
+            });
+        } else if (!user.googleId) {
+            // Update existing user with Google ID if not already set
+            user.googleId = googleId;
+            if (!user.avatar) {
+                user.avatar = picture;
+            }
+            await user.save();
+        }
+
+        const token = user.generateAuthToken();
+        res.cookie('token', token);
+        res.status(200).json({ token, user });
+    } catch (error: any) {
+        console.error('Google login error:', error);
+        res.status(500).json({ message: 'Error during Google login', error: error.message });
+    }
+};
+

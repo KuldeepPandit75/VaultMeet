@@ -150,7 +150,7 @@ const CategoryButton = ({
   isActive: boolean; 
   onClick: () => void;
 }) => {
-  const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { primaryAccentColor} = useThemeStore();
 
   return (
     <button

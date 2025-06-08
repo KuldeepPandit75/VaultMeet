@@ -5,9 +5,10 @@ import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
+import { AxiosError } from "axios";
 
 export default function ProfilePage() {
-  const { user, loading, updateProfile, updateAvatar, updateBanner } =
+  const { user, updateProfile, updateAvatar, updateBanner } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -79,8 +80,13 @@ export default function ProfilePage() {
       await updateProfile(formData);
       setIsEditing(false);
       toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error("Failed to update profile");
+    } catch (error: unknown) {
+      console.error("Error updating profile:", error);
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Failed to update profile");
+      } else {
+        toast.error("Failed to update profile");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -93,11 +99,13 @@ export default function ProfilePage() {
     try {
       await updateAvatar(file);
       toast.success("Profile picture updated successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating avatar:", err);
-      toast.error(
-        err.response?.data?.message || "Failed to update profile picture"
-      );
+      if (err instanceof AxiosError) {
+        toast.error(err.response?.data?.message || "Failed to update profile picture");
+      } else {
+        toast.error("Failed to update profile picture");
+      }
     }
   };
 
@@ -108,9 +116,13 @@ export default function ProfilePage() {
     try {
       await updateBanner(file);
       toast.success("Banner updated successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error updating banner:", err);
-      toast.error(err.response?.data?.message || "Failed to update banner");
+      if (err instanceof AxiosError) {
+        toast.error(err.response?.data?.message || "Failed to update banner");
+      } else {
+        toast.error("Failed to update banner");
+      }
     }
   };
 
@@ -894,7 +906,7 @@ export default function ProfilePage() {
                       </div>
                     ) : (
                       <p className="text-gray-500 italic">
-                        Add your interests to show what you're passionate about
+                        Add your interests to show what you&apos;re passionate about
                       </p>
                     )}
                   </div>

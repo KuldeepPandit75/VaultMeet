@@ -149,6 +149,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
 });
 
 userSchema.methods.generateAuthToken = function () {
