@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import axios, { AxiosError } from 'axios';
+import { cookies } from 'next/headers';
 
 export enum Role {
   Admin = 'admin',
@@ -142,6 +143,8 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/google-login', googleData);
           console.log("google login response", response.data);
           const { token, user } = response.data;
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Google login failed:', error);
