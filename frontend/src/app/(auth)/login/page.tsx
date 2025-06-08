@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useThemeStore } from "../../../Zustand_Store/ThemeStore";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 function LoginPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
@@ -22,6 +23,7 @@ function LoginPage() {
     setIsLoading(true);
     try {
       await login(formData.email, formData.password);
+      toast.success("Logged in successfully");
       router.push('/');
     } catch (err) {
       console.error('Login failed:', err);

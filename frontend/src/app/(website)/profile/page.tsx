@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
 
 export default function ProfilePage() {
-  const { user, loading, error, updateProfile } = useAuthStore();
+  const { user, loading, updateProfile, updateAvatar, updateBanner } =
+    useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullname: {
       firstname: "",
@@ -26,14 +29,15 @@ export default function ProfilePage() {
       x: "",
     },
     website: "",
-    skills: [] as string[],
-    interests: [] as string[],
+    skills: "",
+    interests: "",
     featuredProject: {
       title: "",
       description: "",
       link: "",
       techUsed: [] as string[],
     },
+    achievements: "" as string,
   });
 
   useEffect(() => {
@@ -53,14 +57,15 @@ export default function ProfilePage() {
           x: user.social?.x || "",
         },
         website: user.website || "",
-        skills: user.skills || [],
-        interests: user.interests || [],
+        skills: user.skills || "",
+        interests: user.interests || "",
         featuredProject: user.featuredProject || {
           title: "",
           description: "",
           link: "",
           techUsed: [],
         },
+        achievements: user.achievements || "",
       });
     }
   }, [user]);
@@ -81,41 +86,85 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-500">Error loading profile: {error}</div>
-      </div>
-    );
-  }
+    try {
+      await updateAvatar(file);
+      toast.success("Profile picture updated successfully");
+    } catch (err: any) {
+      console.error("Error updating avatar:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to update profile picture"
+      );
+    }
+  };
+
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await updateBanner(file);
+      toast.success("Banner updated successfully");
+    } catch (err: any) {
+      console.error("Error updating banner:", err);
+      toast.error(err.response?.data?.message || "Failed to update banner");
+    }
+  };
 
   return (
     <div className="min-h-screen">
+    
       {/* Banner */}
-
+      <input
+        type="file"
+        ref={bannerInputRef}
+        onChange={handleBannerChange}
+        accept="image/*"
+        className="hidden"
+      />
       {user?.banner ? (
         <div
           className="h-64 w-full relative overflow-hidden"
           style={{
-            backgroundColor: primaryAccentColor,
             backgroundImage: `url(${user.banner})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
           }}
-        ></div>
+        >
+          <div
+          onClick={() => bannerInputRef.current?.click()}
+          className="absolute bottom-4 right-10 rounded-full bg-white p-2"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="black"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+        </div>
       ) : (
         <div
           className="h-64 w-full relative overflow-hidden flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
           style={{ backgroundColor: `${primaryAccentColor}20` }}
+          onClick={() => bannerInputRef.current?.click()}
         >
           <div className="flex flex-col items-center text-white/70">
             <svg
@@ -131,7 +180,9 @@ export default function ProfilePage() {
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span className="text-lg font-medium text-white/70">Add Banner Image</span>
+            <span className="text-lg font-medium text-white/70">
+              Add Banner Image
+            </span>
           </div>
         </div>
       )}
@@ -140,10 +191,18 @@ export default function ProfilePage() {
         <div className="relative px-8 pt-8 pb-6 -mt-28">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
             {/* Profile Picture */}
+            <input
+              type="file"
+              ref={avatarInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              className="hidden"
+            />
             <div className="relative">
               <div
-                className="flex items-center justify-center h-40 w-40 rounded-full ring-4 ring-white shadow-lg"
+                className="flex items-center justify-center h-40 w-40 rounded-full ring-4 ring-white shadow-lg cursor-pointer"
                 style={{ backgroundColor: secondaryAccentColor }}
+                onClick={() => avatarInputRef.current?.click()}
               >
                 {user?.avatar ? (
                   <Image
@@ -159,7 +218,10 @@ export default function ProfilePage() {
                   </span>
                 )}
               </div>
-              <div className="absolute bottom-0 right-0 p-2 rounded-full bg-white shadow-lg cursor-pointer hover:bg-gray-100">
+              <div
+                className="absolute bottom-0 right-0 p-2 rounded-full bg-white shadow-lg cursor-pointer hover:bg-gray-100"
+                onClick={() => avatarInputRef.current?.click()}
+              >
                 <svg
                   className="w-6 h-6"
                   fill="none"
@@ -184,7 +246,7 @@ export default function ProfilePage() {
 
             {/* User Info */}
             <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-3 mb-8">
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-1">
                 <h1
                   className="text-4xl font-bold"
                   style={{ color: secondaryAccentColor }}
@@ -192,32 +254,34 @@ export default function ProfilePage() {
                   {user?.fullname.firstname} {user?.fullname.lastname}
                 </h1>
               </div>
-              <p className="text-white/80 text-lg">{user?.email}</p>
+              <div className="flex gap-[30px] items-center">
+                <p className="text-white/80 text-lg">{user?.email}</p>
 
-              {user?.location && (
-                <div className="flex items-center gap-2 mt-2 text-white/80">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  {user.location}
-                </div>
-              )}
+                {user?.location && (
+                  <div className="flex items-center gap-2 text-white/80">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    {user.location}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Edit Button */}
@@ -464,14 +528,11 @@ export default function ProfilePage() {
                       </label>
                       <input
                         type="text"
-                        value={formData.skills.join(", ")}
+                        value={formData.skills}
                         onChange={(e) =>
                           setFormData((prev) => ({
                             ...prev,
-                            skills: e.target.value
-                              .split(",")
-                              .map((skill) => skill.trim())
-                              .filter(Boolean),
+                            skills: e.target.value,
                           }))
                         }
                         className="w-full px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-opacity-50"
@@ -492,14 +553,11 @@ export default function ProfilePage() {
                       </label>
                       <input
                         type="text"
-                        value={formData.interests.join(", ")}
+                        value={formData.interests}
                         onChange={(e) =>
                           setFormData((prev) => ({
                             ...prev,
-                            interests: e.target.value
-                              .split(",")
-                              .map((interest) => interest.trim())
-                              .filter(Boolean),
+                            interests: e.target.value,
                           }))
                         }
                         className="w-full px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-opacity-50"
@@ -511,6 +569,34 @@ export default function ProfilePage() {
                         placeholder="e.g. AI/ML, Web Development, UI/UX"
                       />
                     </div>
+                  </div>
+
+                  {/* Achievements Input */}
+                  <div>
+                    <label
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: secondaryAccentColor }}
+                    >
+                      Achievements (comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.achievements}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          achievements: e.target.value,
+                        }));
+                        console.log(e);
+                      }}
+                      className="w-full px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={
+                        {
+                          "--tw-ring-color": secondaryAccentColor,
+                        } as React.CSSProperties
+                      }
+                      placeholder="e.g. First Place in Hackathon, Best Project Award, Top Contributor"
+                    />
                   </div>
 
                   {/* Projects Section */}
@@ -772,9 +858,9 @@ export default function ProfilePage() {
                     >
                       Skills & Expertise
                     </h2>
-                    {formData.skills.length > 0 ? (
+                    {user?.skills && user?.skills?.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {formData.skills.map((skill) => (
+                        {user?.skills?.split(",").map((skill: string) => (
                           <span
                             key={skill}
                             className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -786,6 +872,29 @@ export default function ProfilePage() {
                     ) : (
                       <p className="text-gray-500 italic">
                         Add your skills to showcase your expertise
+                      </p>
+                    )}
+
+                    <h2
+                      className="text-xl font-semibold mb-4 mt-8"
+                      style={{ color: secondaryAccentColor }}
+                    >
+                      Interests
+                    </h2>
+                    {user?.interests && user?.interests?.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {user?.interests?.split(",").map((interest: string) => (
+                          <span
+                            key={interest}
+                            className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
+                          >
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">
+                        Add your interests to show what you're passionate about
                       </p>
                     )}
                   </div>
@@ -950,12 +1059,47 @@ export default function ProfilePage() {
                       className="text-xl font-semibold mb-4"
                       style={{ color: secondaryAccentColor }}
                     >
-                      Achievements & Certifications
+                      Achievements
                     </h2>
-                    <p className="text-gray-500 italic">
-                      Add your achievements and certifications to highlight your
-                      accomplishments
-                    </p>
+                    {user?.achievements &&
+                    user.achievements?.split(",").length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {user?.achievements
+                          ?.split(",")
+                          .map((achievement: string, index: number) => (
+                            <div
+                              key={index}
+                              className="p-4 rounded-lg transition-colors"
+                              style={{
+                                backgroundColor: `${secondaryAccentColor}20`,
+                              }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <svg
+                                  className="w-6 h-6"
+                                  fill="none"
+                                  stroke="white"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                                  />
+                                </svg>
+                                <span className="text-white">
+                                  {achievement}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">
+                        Add your achievements to highlight your accomplishments
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

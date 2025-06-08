@@ -69,9 +69,15 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
 
-  skills: [String], // e.g. ['React', 'Node.js', 'Figma']
+  skills: {
+    type: String,
+    default: "",
+  },
 
-  interests: [String], // e.g. ['AI/ML', 'Web Dev', 'Cybersecurity']
+  interests: {
+    type: String,
+    default: "",
+  },
 
   social: {
     github: { type: String, default: "" },
@@ -137,7 +143,12 @@ const userSchema = new mongoose.Schema({
     description: {type: String, default: ""},
     link: {type: String, default: ""},
     techUsed: {type: [String], default: []},
-  }
+  },
+
+  achievements: {
+    type: String,
+    default: "",
+  },
 });
 
 userSchema.methods.generateAuthToken = function () {

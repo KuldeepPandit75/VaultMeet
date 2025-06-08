@@ -43,8 +43,8 @@ interface User {
   bio?: string;
   location?: string;
   college?: string;
-  skills?: string[];
-  interests?: string[];
+  skills?: string;
+  interests?: string;
   social?: {
     github?: string;
     linkedin?: string;
@@ -77,6 +77,7 @@ interface User {
     link: string;
     techUsed: string[];
   };
+  achievements: string;
 }
 
 interface AuthState {
@@ -98,8 +99,8 @@ interface AuthState {
   verifyUser: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
-  updateAvatar: (avatar: string) => void;
-  updateBanner: (banner: string) => void;
+  updateAvatar: (file: File) => Promise<void>;
+  updateBanner: (file: File) => Promise<void>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -205,6 +206,7 @@ const useAuthStore = create<AuthState>()(
         try {
           set({ loading: true, error: null });
           const response = await api.put('/update', data);
+          console.log(response.data);
           set({ user: response.data.user, loading: false });
         } catch (error: any) {
           console.error('Error updating profile:', error);
@@ -226,16 +228,64 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateAvatar: (avatar) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, avatar } : null
-        }));
+      updateAvatar: async (file: File) => {
+        try {
+          set({ loading: true, error: null });
+          const formData = new FormData();
+          formData.append('avatar', file);
+          
+          const response = await api.put('/avatar', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          if (response.data.avatar) {
+            set((state) => ({
+              user: state.user ? { ...state.user, avatar: response.data.avatar } : null,
+              loading: false
+            }));
+          } else {
+            throw new Error('No avatar URL in response');
+          }
+        } catch (error: any) {
+          console.error('Error updating avatar:', error);
+          set({ 
+            error: error.response?.data?.message || 'Failed to update avatar',
+            loading: false 
+          });
+          throw error;
+        }
       },
 
-      updateBanner: (banner) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, banner } : null
-        }));
+      updateBanner: async (file: File) => {
+        try {
+          set({ loading: true, error: null });
+          const formData = new FormData();
+          formData.append('banner', file);
+          
+          const response = await api.put('/banner', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          
+          if (response.data.banner) {
+            set((state) => ({
+              user: state.user ? { ...state.user, banner: response.data.banner } : null,
+              loading: false
+            }));
+          } else {
+            throw new Error('No banner URL in response');
+          }
+        } catch (error: any) {
+          console.error('Error updating banner:', error);
+          set({ 
+            error: error.response?.data?.message || 'Failed to update banner',
+            loading: false 
+          });
+          throw error;
+        }
       },
 
       setLoading: (loading) => set({ loading }),

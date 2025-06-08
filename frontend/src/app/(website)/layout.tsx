@@ -4,6 +4,7 @@ import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -65,6 +66,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

@@ -192,6 +192,10 @@ Update the authenticated user's profile information.
     "link": "vedicverse.vercel.app",
     "techUsed":["react","phaser.js"]
   },
+  "achievements": [
+    "SIH 2024 Winner",
+    "VesHack 2025 Winner"
+  ]
 }
 ```
 
@@ -264,6 +268,66 @@ Or if username is taken:
 {
   "available": false,
   "message": "Username is already taken"
+}
+```
+
+### 7. Update Banner
+#### PUT /banner
+
+Update the user's profile banner image.
+
+##### Headers
+- `Authorization`: Bearer token
+- `Cookie`: token (if using cookie-based auth)
+
+##### Request Body
+- `banner`: Image file (multipart/form-data)
+  - Supported formats: JPEG, JPG, PNG, GIF
+  - Maximum size: 5MB
+
+##### Status Codes
+- `200 OK`: Banner updated successfully
+- `400 Bad Request`: No file uploaded or invalid file type
+- `401 Unauthorized`: Invalid or missing token
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "message": "Banner updated successfully",
+  "banner": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/banners/example.jpg"
+}
+```
+
+### 8. Update Profile Picture
+#### PUT /avatar
+
+Update the user's profile picture.
+
+##### Headers
+- `Authorization`: Bearer token
+- `Cookie`: token (if using cookie-based auth)
+
+##### Request Body
+- `avatar`: Image file (multipart/form-data)
+  - Supported formats: JPEG, JPG, PNG, GIF
+  - Maximum size: 5MB
+
+##### Status Codes
+- `200 OK`: Profile picture updated successfully
+- `400 Bad Request`: No file uploaded or invalid file type
+- `401 Unauthorized`: Invalid or missing token
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "message": "Profile picture updated successfully",
+  "avatar": "https://res.cloudinary.com/your-cloud/image/upload/v1234567890/avatars/example.jpg"
 }
 ```
 

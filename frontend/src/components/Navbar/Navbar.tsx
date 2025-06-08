@@ -5,6 +5,7 @@ import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import useAuthStore from "@/Zustand_Store/AuthStore";
+import toast from "react-hot-toast";
 
 // Types
 interface NavLink {
@@ -166,7 +167,11 @@ const Navbar = () => {
                   Profile
                 </button>
                 <button
-                  onClick={() => logout()}
+                  onClick={() => {
+                    logout();
+                    toast.success("Logged out successfully");
+                    router.push('/');
+                  }}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Logout
