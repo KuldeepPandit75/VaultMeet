@@ -10,7 +10,7 @@ const app = express();
 connectDB();
 
 app.use(cors({
-    origin: [process.env.FRONTEND_URL as string, 'http://localhost:3000', 'https://hack-meet-nine.vercel.app/'],
+    origin: [process.env.FRONTEND_URL as string, 'http://localhost:3000', 'https://hack-meet-nine.vercel.app'],
     credentials: true,
     // secure: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
