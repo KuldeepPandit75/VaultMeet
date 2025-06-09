@@ -12,7 +12,7 @@ require("dotenv/config");
 const app = (0, express_1.default)();
 (0, db_js_1.default)();
 app.use((0, cors_1.default)({
-    origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'https://hack-meet-puce.vercel.app'],
+    origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'https://hack-meet-nine.vercel.app'],
     credentials: true,
     // secure: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
