@@ -5,6 +5,7 @@ import { useThemeStore } from "../../../Zustand_Store/ThemeStore";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { AxiosError } from "axios";
 
 function ForgetPasswordPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
@@ -44,9 +45,11 @@ function ForgetPasswordPage() {
       } else {
         toast.error("Invalid OTP");
       }
-    } catch (err: any) {
-      console.log("Error in verifyOTP",err);
-      toast.error(err.response.data.result);
+    } catch (err) {
+      console.log("Error in verifyOTP", err);
+      toast.error(
+        err instanceof AxiosError ? err.response?.data?.result : "Failed to verify OTP"
+      );
     } finally {
       setIsLoading(false);
     }
