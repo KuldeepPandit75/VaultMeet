@@ -71,7 +71,7 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const token = user.generateAuthToken();
     res.cookie("token", token, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "none",
         path: "/",
         maxAge: 7 * 24 * 60 * 60 * 1000,
