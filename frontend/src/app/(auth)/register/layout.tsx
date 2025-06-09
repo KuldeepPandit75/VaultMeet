@@ -1,6 +1,5 @@
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 import type { Metadata } from 'next';
-import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: 'Register',
@@ -19,7 +18,6 @@ export default function LoginLayout({
         <main className="flex-grow">
           {children}
         </main>
-        <Toaster position="bottom-right" />
       </body>
     </html>
   );

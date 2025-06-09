@@ -2,8 +2,8 @@ import express from 'express';
 import { body } from 'express-validator';
 import * as userController from '../controllers/user.controller.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
-import multer from 'multer';
-import path from 'path';
+import { upload } from '../config/file.upload.js';
+import { resetPassword, sendOTP, verifyOTP } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
@@ -27,39 +27,16 @@ router.put('/update', authMiddleware, userController.updateUser);
 
 router.get('/check-username/:username', userController.checkUsernameAvailability);
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, path.join(__dirname, '../uploads'));
-    },
-    filename: function (req: any, file: any, cb: any) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: (req: any, file: any, cb: any) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-
-        if (extname && mimetype) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed!'));
-        }
-    }
-});
-
 // New routes for image uploads
 router.put('/banner', authMiddleware, upload.single('banner'), userController.updateBanner);
 router.put('/avatar', authMiddleware, upload.single('avatar'), userController.updateProfilePicture);
 
 // Google login route
 router.post('/google-login', userController.googleLogin);
+
+// OTP routes
+router.post('/send-otp', sendOTP);
+router.post('/verify-otp', verifyOTP);
+router.post('/reset-password', resetPassword);
 
 export default router;

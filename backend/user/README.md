@@ -331,12 +331,89 @@ Success Response (200):
 }
 ```
 
+### 9. Send OTP
+#### POST /send-otp
+
+Send a one-time password to the user's email for verification.
+
+##### Request Body
+```json
+{
+  "email": "john.doe@example.com"
+}
+```
+
+##### Validation Rules
+- **Email**:
+  - Required
+  - Must be a valid email address
+  - Must be registered in the system
+
+##### Status Codes
+- `200 OK`: OTP sent successfully
+- `400 Bad Request`: Invalid email or validation errors
+- `404 Not Found`: Email not registered
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "message": "OTP sent successfully"
+}
+```
+
+### 10. Verify OTP
+#### POST /verify-otp
+
+Verify the OTP sent to the user's email.
+
+##### Request Body
+```json
+{
+  "email": "john.doe@example.com",
+  "otp": "123456"
+}
+```
+
+##### Validation Rules
+- **Email**:
+  - Required
+  - Must be a valid email address
+- **OTP**:
+  - Required
+  - Must be a valid 6-digit code
+
+##### Status Codes
+- `200 OK`: OTP verified successfully
+- `400 Bad Request`: Invalid OTP or validation errors
+- `401 Unauthorized`: OTP expired or invalid
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "result": "VERIFIED",
+  "_id": "user_id_here",
+  "role": "user"
+}
+```
+
+Possible result values:
+- `"VERIFIED"`: First time verification successful
+- `"VALID"`: OTP is valid
+- `"INVALID"`: OTP is incorrect
+- `"EXHAUSTED"`: Maximum attempts reached
+
 ## Authentication Notes
 
-- JWT tokens expire after 24 hours
+- JWT tokens expire after 7 days
 - Tokens can be sent either in:
   - Authorization header: `Bearer <token>`
   - Cookie: `token=<token>`
 - Logged out tokens are blacklisted for 24 hours
 - Passwords are automatically hashed before storage
-- User passwords are never included in responses 
+- User passwords are never included in responses
+- OTP expires after 10 minutes
+- Maximum 3 attempts allowed for OTP verification 

@@ -107,6 +107,9 @@ interface AuthState {
   checkUsernameAvailability: (username: string) => Promise<boolean>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  sendOTP: (email: string) => Promise<void>;
+  verifyOTP: (email: string, otp: string) => Promise<{ result: string; _id: string; role: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -179,6 +182,7 @@ const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Logout failed:', error);
         } finally {
+          document.cookie = `token=; path=/; secure; samesite=none; max-age=0`; // 7 days
           localStorage.removeItem('token');
           set({ token: null, isAuthenticated: false, user: null, error: null });
         }
@@ -313,7 +317,48 @@ const useAuthStore = create<AuthState>()(
       },
 
       setLoading: (loading) => set({ loading }),
-      setError: (error) => set({ error })
+      setError: (error) => set({ error }),
+
+      sendOTP: async (email: string) => {
+        set({ loading: true, error: null });
+        try {
+          await api.post('/send-otp', { email });
+        } catch (error: unknown) {
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to send OTP',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      verifyOTP: async (email: string, otp: string) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/verify-otp', { email, otp });
+          console.log(response.data);
+          return response.data;
+        } catch (error: unknown) {
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to verify OTP',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      resetPassword: async (email: string, otp: string, newPassword: string) => {
+        set({ loading: true, error: null });
+        try {
+          await api.post('/reset-password', { email, otp, newPassword });
+        } catch (error: unknown) {
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to reset password',
+            loading: false 
+          });
+          throw error;
+        }
+      },
     }),
     {
       name: 'hackmeet-auth',

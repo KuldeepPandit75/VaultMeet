@@ -1,7 +1,6 @@
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import type { Metadata } from 'next';
-import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: 'Login',
@@ -23,7 +22,6 @@ export default function LoginLayout({
           {children}  
         </GoogleOAuthProvider>
         </main>
-        <Toaster position="bottom-right" />
       </body>
     </html>
   );

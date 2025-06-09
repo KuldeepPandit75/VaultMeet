@@ -24,6 +24,12 @@ interface IUser extends Document {
     linkedin: string;
     x: string;
   };
+  otp: {
+    value: string;
+    expiration: Date;
+    tries: number;
+    attempts: number;
+  };
   website: string;
   connections: {
     user: mongoose.Types.ObjectId;
@@ -84,6 +90,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["admin", "user"],
     default: "user",
+  },
+  otp: {
+    value: {
+      type: String,
+    },
+    expiration: {
+      type: Date,
+    },
+    tries: {
+      type: Number,
+      min: 0,
+    },
+    attempts: {
+      type: Number,
+      min: 0,
+    },
   },
   socketId: {
     type: String,

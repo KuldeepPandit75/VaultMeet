@@ -45,6 +45,22 @@ const userSchema = new mongoose_1.default.Schema({
         enum: ["admin", "user"],
         default: "user",
     },
+    otp: {
+        value: {
+            type: String,
+        },
+        expiration: {
+            type: Date,
+        },
+        tries: {
+            type: Number,
+            min: 0,
+        },
+        attempts: {
+            type: Number,
+            min: 0,
+        },
+    },
     socketId: {
         type: String,
     },

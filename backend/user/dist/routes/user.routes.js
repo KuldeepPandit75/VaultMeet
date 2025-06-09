@@ -40,8 +40,8 @@ const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const userController = __importStar(require("../controllers/user.controller.js"));
 const auth_middleware_js_1 = __importDefault(require("../middlewares/auth.middleware.js"));
-const multer_1 = __importDefault(require("multer"));
-const path_1 = __importDefault(require("path"));
+const file_upload_js_1 = require("../config/file.upload.js");
+const auth_controller_js_1 = require("../controllers/auth.controller.js");
 const router = express_1.default.Router();
 router.post('/register', [
     (0, express_validator_1.body)('fullname.firstname').notEmpty().withMessage('First name is required').isLength({ min: 3 }).withMessage('First name must be at least 3 characters long'),
@@ -57,35 +57,13 @@ router.get('/profile', auth_middleware_js_1.default, userController.getUserProfi
 router.post('/logout', auth_middleware_js_1.default, userController.logoutUser);
 router.put('/update', auth_middleware_js_1.default, userController.updateUser);
 router.get('/check-username/:username', userController.checkUsernameAvailability);
-// Configure multer for file uploads
-const storage = multer_1.default.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path_1.default.join(__dirname, '../uploads'));
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path_1.default.extname(file.originalname));
-    }
-});
-const upload = (0, multer_1.default)({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path_1.default.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (extname && mimetype) {
-            return cb(null, true);
-        }
-        else {
-            cb(new Error('Only image files are allowed!'));
-        }
-    }
-});
 // New routes for image uploads
-router.put('/banner', auth_middleware_js_1.default, upload.single('banner'), userController.updateBanner);
-router.put('/avatar', auth_middleware_js_1.default, upload.single('avatar'), userController.updateProfilePicture);
+router.put('/banner', auth_middleware_js_1.default, file_upload_js_1.upload.single('banner'), userController.updateBanner);
+router.put('/avatar', auth_middleware_js_1.default, file_upload_js_1.upload.single('avatar'), userController.updateProfilePicture);
 // Google login route
 router.post('/google-login', userController.googleLogin);
+// OTP routes
+router.post('/send-otp', auth_controller_js_1.sendOTP);
+router.post('/verify-otp', auth_controller_js_1.verifyOTP);
+router.post('/reset-password', auth_controller_js_1.resetPassword);
 exports.default = router;

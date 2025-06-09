@@ -8,11 +8,14 @@ import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 
 export default function ProfilePage() {
-  const { user, updateProfile, updateAvatar, updateBanner } =
+  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -123,6 +126,48 @@ export default function ProfilePage() {
       } else {
         toast.error("Failed to update banner");
       }
+    }
+  };
+
+  const handleSendOTP = async () => {
+    try {
+      await sendOTP(user?.email || "");
+      toast.success("OTP sent to your email");
+      setShowOTPModal(true);
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Failed to send OTP");
+      } else {
+        toast.error("Failed to send OTP");
+      }
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp) {
+      toast.error("Please enter the OTP");
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      const result = await verifyOTP(user?.email || "", otp);
+      if (result.result === "VERIFIED" || result.result === "VALID") {
+        toast.success("Email verified successfully");
+        setShowOTPModal(false);
+        setOtp("");
+      } else {
+        toast.error("Invalid OTP");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Failed to verify OTP");
+      } else {
+        toast.error("Failed to verify OTP");
+      }
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -265,6 +310,14 @@ export default function ProfilePage() {
                 >
                   {user?.fullname.firstname} {user?.fullname.lastname}
                 </h1>
+                {!user?.isVerified && (
+                  <button
+                    onClick={handleSendOTP}
+                    className="px-3 py-1 text-sm rounded-full bg-yellow-500 text-black hover:bg-yellow-600 transition-colors"
+                  >
+                    Verify Email
+                  </button>
+                )}
               </div>
               <div className="flex gap-[30px] items-center">
                 <p className="text-white/80 text-lg">{user?.email}</p>
@@ -1119,6 +1172,55 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      {showOTPModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Verify Your Email</h2>
+            <p className="text-gray-600 mb-4">
+              Enter the OTP sent to your email address
+            </p>
+            <input
+              type="text"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="Enter OTP"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 mb-4"
+              style={{
+                "--tw-ring-color": secondaryAccentColor,
+              } as React.CSSProperties}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowOTPModal(false);
+                  setOtp("");
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: "transparent",
+                  color: secondaryAccentColor,
+                  border: `1px solid ${secondaryAccentColor}`,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVerifyOTP}
+                disabled={isVerifying}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: secondaryAccentColor,
+                  color: "#000",
+                }}
+              >
+                {isVerifying ? "Verifying..." : "Verify"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
