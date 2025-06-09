@@ -23,7 +23,7 @@ const api = axios.create({
 
 // Add request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
+  const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -189,14 +189,15 @@ const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: () => {
-        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
+        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
         const isAuth = !!token;
         set({ isAuthenticated: isAuth, token });
         return isAuth;
       },
 
       verifyUser: async () => {
-        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
+        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
+        console.log("token", token);
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
