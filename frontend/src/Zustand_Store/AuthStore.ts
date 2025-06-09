@@ -23,7 +23,7 @@ const api = axios.create({
 
 // Add request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -183,20 +183,20 @@ const useAuthStore = create<AuthState>()(
           console.error('Logout failed:', error);
         } finally {
           document.cookie = `token=; path=/; secure; samesite=none; max-age=0`; // 7 days
-          localStorage.removeItem('token');
+          localStorage.removeItem('hackmeet-auth');
           set({ token: null, isAuthenticated: false, user: null, error: null });
         }
       },
 
       checkAuth: () => {
-        const token = localStorage.getItem('token');
+        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
         const isAuth = !!token;
         set({ isAuthenticated: isAuth, token });
         return isAuth;
       },
 
       verifyUser: async () => {
-        const token = localStorage.getItem('token');
+        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').token;
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;

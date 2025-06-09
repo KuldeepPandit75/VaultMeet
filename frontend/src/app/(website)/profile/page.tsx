@@ -156,7 +156,7 @@ export default function ProfilePage() {
         toast.success("Email verified successfully");
         setShowOTPModal(false);
         setOtp("");
-        verifyUser();
+        await verifyUser();
       } else {
         toast.error("Invalid OTP");
       }
