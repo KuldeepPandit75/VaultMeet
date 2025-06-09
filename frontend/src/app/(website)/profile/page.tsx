@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 
 export default function ProfilePage() {
-  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP } =
+  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -156,6 +156,7 @@ export default function ProfilePage() {
         toast.success("Email verified successfully");
         setShowOTPModal(false);
         setOtp("");
+        verifyUser();
       } else {
         toast.error("Invalid OTP");
       }

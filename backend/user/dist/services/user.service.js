@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
-const createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ fullname, email, password, role, username, avatar, googleId }) {
+const createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ fullname, email, password, role, username, avatar, googleId, isVerified }) {
     if (!fullname || !email || !password) {
         throw new Error("All fields are required");
     }
@@ -27,7 +27,8 @@ const createUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ fullname
         role,
         username,
         avatar,
-        googleId
+        googleId,
+        isVerified
     });
     return user;
 });

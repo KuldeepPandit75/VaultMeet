@@ -11,9 +11,10 @@ interface UserData {
     username: string;
     avatar?: string;
     googleId?: string;
+    isVerified?: boolean;
 }
 
-const createUser = async ({ fullname, email, password, role, username, avatar, googleId }: UserData) => {
+const createUser = async ({ fullname, email, password, role, username, avatar, googleId, isVerified }: UserData) => {
     if (!fullname || !email || !password) {
         throw new Error("All fields are required");
     }
@@ -28,7 +29,8 @@ const createUser = async ({ fullname, email, password, role, username, avatar, g
         role,
         username,
         avatar,
-        googleId
+        googleId,
+        isVerified
     });
 
     return user;

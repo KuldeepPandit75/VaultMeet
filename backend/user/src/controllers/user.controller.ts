@@ -6,19 +6,6 @@ import cloudinary from "../config/cloudinary.js";
 import fs from "fs/promises"; // Add fs promises for async file operations
 import bcrypt from 'bcrypt';
 
-interface UserData {
-    fullname: {
-        firstname: string;
-        lastname: string;
-    };
-    email: string;
-    password: string;
-    role: string;
-    username: string;
-    avatar: string;
-    googleId: string;
-}
-
 export const registerUser = async (req: any, res: any) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -324,6 +311,7 @@ export const googleLogin = async (req: any, res: any) => {
         username,
         avatar: picture,
         googleId,
+        isVerified: true,
       });
     } else if (!user.googleId) {
       // Update existing user with Google ID if not already set

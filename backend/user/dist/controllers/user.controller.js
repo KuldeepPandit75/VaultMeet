@@ -275,6 +275,7 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 username,
                 avatar: picture,
                 googleId,
+                isVerified: true,
             });
         }
         else if (!user.googleId) {
