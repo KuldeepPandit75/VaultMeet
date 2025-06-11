@@ -98,24 +98,21 @@ const Navbar = () => {
 
       {/* Mobile Menu Button */}
       <button
-        className="md:hidden text-white p-2"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-        style={{ color: secondaryAccentColor }}
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-          />
-        </svg>
-      </button>
+            className={`md:hidden text-black p-2 rounded-lg transition-colors mr-6`}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle mobile menu"
+          >
+            <div
+              className={`flex flex-col gap-2 relative transition-all duration-300 ${isMenuOpen ? "h-0" : "h-4"}`}
+            >
+              <div
+                className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${isMenuOpen ? "rotate-45 top-[50%] -translate-y-[50%]" : "top-0"}`}
+              ></div>
+              <div
+                className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${isMenuOpen ? " -rotate-45 top-[50%] -translate-y-[50%]" : "bottom-0"}`}
+              ></div>
+            </div>
+          </button>
 
       {/* Desktop Navigation */}
       <div
@@ -182,7 +179,7 @@ const Navbar = () => {
             >
               <div className="py-1">
                 <button
-                  onClick={() => router.push("/profile")}
+                  onClick={() => router.push("/me")}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Profile
@@ -208,30 +205,95 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div
-          className="md:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg py-4"
-          style={{ backgroundColor: primaryAccentColor }}
-        >
-          <div className="flex flex-col items-center space-y-4">
+      <div
+        className={`md:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg transition-all duration-300 ease-in-out transform origin-top py-[20px] ${
+          isMenuOpen 
+            ? "opacity-100 scale-y-100" 
+            : "opacity-0 scale-y-0 pointer-events-none"
+        }`}
+        style={{ backgroundColor: primaryAccentColor }}
+      >
+        <div className={`flex flex-col space-y-6 transition-all duration-300 delay-100 ${
+          isMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        }`}>
+          <div className="flex flex-col space-y-4 px-6">
             {NAV_LINKS.map((link) => (
               <NavLink key={link.href} {...link} />
             ))}
-            <Link
-              href="/login"
-              className="text-[18px] text-black rounded-[20px] px-[18px] py-1"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="text-[18px] text-black rounded-[20px] px-[18px] py-1"
-            >
-              Sign Up
-            </Link>
           </div>
+
+          {isAuthenticated ? (
+            <>
+              <div className="flex items-center gap-4 w-full px-6 py-4 border-t border-b border-gray-200/30">
+                {!user?.avatar ? (
+                  <div
+                    className="flex items-center justify-center h-[50px] w-[50px] rounded-full shadow-md"
+                    style={{ backgroundColor: secondaryAccentColor }}
+                  >
+                    <p className="text-[20px] text-black font-bold">
+                      {user?.fullname.firstname.charAt(0).toUpperCase()}
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="flex items-center justify-center h-[50px] w-[50px] rounded-full shadow-md"
+                    style={{
+                      backgroundImage: `url(${user?.avatar})`,
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                    }}
+                  ></div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-black font-semibold text-lg">
+                    {user?.fullname.firstname} {user?.fullname.lastname}
+                  </span>
+                  <span className="text-black/60 text-sm">View Profile</span>
+                </div>
+              </div>
+              <div className="flex flex-col space-y-2 px-6">
+                <button
+                  onClick={() => router.push("/me")}
+                  className="w-full text-left px-4 py-3 text-black hover:bg-black/5 rounded-xl transition-all duration-200 flex items-center gap-3"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    toast.success("Logged out successfully");
+                    router.push("/");
+                  }}
+                  className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 flex items-center gap-3"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col space-y-3 px-6">
+              <Link
+                href="/login"
+                className="text-[18px] text-black rounded-xl px-6 py-3 text-center hover:bg-black/5 transition-all duration-200"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="text-[18px] text-black rounded-xl px-6 py-3 text-center bg-black/10 hover:bg-black/20 transition-all duration-200"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   );
 };

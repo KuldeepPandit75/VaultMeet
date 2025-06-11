@@ -110,6 +110,7 @@ interface AuthState {
   sendOTP: (email: string) => Promise<void>;
   verifyOTP: (email: string, otp: string) => Promise<{ result: string; _id: string; role: string }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
+  getUserProfileById: (profileId: string) => Promise<User>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -360,6 +361,16 @@ const useAuthStore = create<AuthState>()(
           throw error;
         }
       },
+
+      getUserProfileById: async (profileId: string) => {
+        try{
+          const response = await api.get(`/profile/${profileId}`);
+          return response.data.user;
+        }catch(error: unknown){
+          console.error('Error getting user profile:', error);
+          throw error;
+        }
+      }
     }),
     {
       name: 'hackmeet-auth',

@@ -84,7 +84,6 @@ function RegisterPage() {
       errors.email = "Please enter a valid email address";
       isValid = false;
     }
-
     // Password validation
     if (formData.password.length < 6) {
       errors.password = "Password must be at least 6 characters long";
@@ -338,3 +337,4 @@ function RegisterPage() {
 }
 
 export default RegisterPage;
+

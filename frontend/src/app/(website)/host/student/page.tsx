@@ -10,7 +10,7 @@ export default function StudentHostPage() {
     studentName: '',
     studentEmail: '',
     studentPhone: '',
-    hackathonName: '',
+    EventName: '',
     description: '',
     startDate: '',
     endDate: '',
@@ -82,7 +82,7 @@ export default function StudentHostPage() {
           className="text-4xl font-bold mb-8 text-center"
           style={{ color: secondaryAccentColor }}
         >
-          Host Your College Hackathon
+          Host Your College Event
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -145,7 +145,7 @@ export default function StudentHostPage() {
             </div>
           </div>
 
-          {/* Hackathon Details */}
+          {/* Event Details */}
           <div 
             className="p-6 rounded-xl"
             style={{ backgroundColor: `${secondaryAccentColor}20` }}
@@ -154,15 +154,15 @@ export default function StudentHostPage() {
               className="text-2xl font-semibold mb-4"
               style={{ color: secondaryAccentColor }}
             >
-              Hackathon Details
+              Event Details
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block mb-2 text-white">Hackathon Name</label>
+                <label className="block mb-2 text-white">Event Name</label>
                 <input
                   type="text"
-                  name="hackathonName"
-                  value={formData.hackathonName}
+                  name="EventName"
+                  value={formData.EventName}
                   onChange={handleChange}
                   className="w-full p-2 rounded-lg border border-white bg-transparent text-white"
                   required
@@ -227,7 +227,7 @@ export default function StudentHostPage() {
                 </div>
               </div>
               <div>
-                <label className="block mb-2 text-white">Is this a Virtual Hackathon?</label>
+                <label className="block mb-2 text-white">Is this a Virtual Event?</label>
                 <select
                   name="isVirtual"
                   value={formData.isVirtual}
@@ -300,7 +300,7 @@ export default function StudentHostPage() {
               color: '#222'
             }}
           >
-            Submit Hackathon
+            Submit Event
           </button>
         </form>
       </div>

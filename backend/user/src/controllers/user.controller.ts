@@ -82,7 +82,7 @@ export const loginUser = async (req: any, res: any) => {
   res.status(200).json({ token, user });
 };
 
-export const getUserProfile = async (req: any, res: any) => {
+export const getMe = async (req: any, res: any) => {
   const user = await userModel.findById(req.user._id);
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -337,4 +337,13 @@ export const googleLogin = async (req: any, res: any) => {
       .status(500)
       .json({ message: "Error during Google login", error: error.message });
   }
+};
+
+export const getUserProfileById = async (req: any, res: any) => {
+  const { profileId } = req.params;
+  const user = await userModel.findById(profileId).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json({ user });
 };

@@ -14,13 +14,13 @@ export default function HostPage() {
           className="text-5xl font-bold mb-6"
           style={{ color: secondaryAccentColor }}
         >
-          Host Your Hackathon
+          Host Your Event
         </h1>
         <p 
           className="text-xl max-w-2xl mx-auto"
           style={{ color: primaryAccentColor }}
         >
-          Create an engaging hackathon experience for developers worldwide. Choose your path below to get started.
+          Create an engaging Event experience for developers worldwide. Choose your path below to get started.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default function HostPage() {
           <ul className="space-y-4 mb-8">
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span>Host industry-focused hackathons</span>
+              <span>Host industry-focused Events</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
@@ -81,7 +81,7 @@ export default function HostPage() {
           <ul className="space-y-4 mb-8">
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span>Organize college hackathons</span>
+              <span>Organize college Events</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
@@ -120,7 +120,7 @@ export default function HostPage() {
         <div className="grid md:grid-cols-3 gap-6">
           <div className="text-center p-6">
             <h3 className="font-bold mb-2" style={{ color: primaryAccentColor }}>Virtual Environment</h3>
-            <p>2D virtual world for immersive hackathon experience</p>
+            <p>2D virtual world for immersive Event experience</p>
           </div>
           <div className="text-center p-6">
             <h3 className="font-bold mb-2" style={{ color: primaryAccentColor }}>Global Reach</h3>
@@ -128,7 +128,7 @@ export default function HostPage() {
           </div>
           <div className="text-center p-6">
             <h3 className="font-bold mb-2" style={{ color: primaryAccentColor }}>Easy Management</h3>
-            <p>Streamlined tools for hackathon organization</p>
+            <p>Streamlined tools for Event organization</p>
           </div>
         </div>
       </div>

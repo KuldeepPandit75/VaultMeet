@@ -7,7 +7,7 @@ import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 
-export default function ProfilePage() {
+export default function MePage() {
   const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();

@@ -1,7 +1,6 @@
 import { Inter } from "next/font/google";
 import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
-import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -60,7 +59,6 @@ export default function RootLayout({
         <main className="flex-grow">
           {children}
         </main>
-        <Toaster />
       </body>
     </html>
   );

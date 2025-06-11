@@ -16,6 +16,7 @@ Register a new user in the system.
   },
   "email": "john.doe@example.com",
   "password": "password123",
+  "username": "johndoe",
   "role": "user"  // optional, defaults to "user"
 }
 ```
@@ -38,9 +39,13 @@ Register a new user in the system.
   - Required
   - Minimum length: 8 characters
 
+- **Username**:
+  - Required
+  - Must be unique
+
 ##### Status Codes
 - `201 Created`: User successfully registered
-- `400 Bad Request`: Validation errors
+- `400 Bad Request`: Validation errors or username/email already exists
 - `500 Internal Server Error`: Server-side errors
 
 ##### Example Response
@@ -54,6 +59,7 @@ Success Response (201):
       "lastname": "Doe"
     },
     "email": "john.doe@example.com",
+    "username": "johndoe",
     "role": "user",
     "_id": "user_id_here"
   }
@@ -99,14 +105,15 @@ Success Response (200):
       "lastname": "Doe"
     },
     "email": "john.doe@example.com",
+    "username": "johndoe",
     "role": "user",
     "_id": "user_id_here"
   }
 }
 ```
 
-### 3. Get User Profile
-#### GET /profile
+### 3. Get Current User
+#### GET /me
 
 Get the authenticated user's profile information.
 
@@ -130,13 +137,44 @@ Success Response (200):
       "lastname": "Doe"
     },
     "email": "john.doe@example.com",
+    "username": "johndoe",
     "role": "user",
     "_id": "user_id_here"
   }
 }
 ```
 
-### 4. Logout User
+### 4. Get User Profile by ID
+#### GET /profile/:profileId
+
+Get a user's profile information by their ID.
+
+##### Parameters
+- `profileId`: The ID of the user to fetch
+
+##### Status Codes
+- `200 OK`: Profile retrieved successfully
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "user": {
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "email": "john.doe@example.com",
+    "username": "johndoe",
+    "role": "user",
+    "_id": "user_id_here"
+  }
+}
+```
+
+### 5. Logout User
 #### POST /logout
 
 Logout the current user and invalidate their token.
@@ -158,8 +196,8 @@ Success Response (200):
 }
 ```
 
-### 5. Update User Profile
-#### PUT /profile
+### 6. Update User Profile
+#### PUT /update
 
 Update the authenticated user's profile information.
 
@@ -183,14 +221,13 @@ Update the authenticated user's profile information.
   "social": {
     "github": "https://github.com/johndoe",
     "linkedin": "https://linkedin.com/in/johndoe",
-    "twitter": "https://twitter.com/johndoe",
+    "twitter": "https://twitter.com/johndoe"
   },
-  "website": "https://portfolio.com/",
   "featuredProject": {
     "title": "VedicVerse",
     "description": "A 2D meta platform for vedas",
     "link": "vedicverse.vercel.app",
-    "techUsed":["react","phaser.js"]
+    "techUsed": ["react", "phaser.js"]
   },
   "achievements": [
     "SIH 2024 Winner",
@@ -201,7 +238,6 @@ Update the authenticated user's profile information.
 
 ##### Validation Rules
 - All fields are optional
-- If password is provided, it must be at least 8 characters long
 - Username must be unique if provided
 - Email cannot be updated through this endpoint
 
@@ -231,17 +267,24 @@ Success Response (200):
     "social": {
       "github": "https://github.com/johndoe",
       "linkedin": "https://linkedin.com/in/johndoe",
-      "twitter": "https://twitter.com/johndoe",
-      "instagram": "https://instagram.com/johndoe",
-      "portfolio": "https://johndoe.com",
-      "devpost": "https://devpost.com/johndoe"
+      "twitter": "https://twitter.com/johndoe"
     },
+    "featuredProject": {
+      "title": "VedicVerse",
+      "description": "A 2D meta platform for vedas",
+      "link": "vedicverse.vercel.app",
+      "techUsed": ["react", "phaser.js"]
+    },
+    "achievements": [
+      "SIH 2024 Winner",
+      "VesHack 2025 Winner"
+    ],
     "_id": "user_id_here"
   }
 }
 ```
 
-### 6. Check Username Availability
+### 7. Check Username Availability
 #### GET /check-username/:username
 
 Check if a username is available for use.
@@ -271,7 +314,7 @@ Or if username is taken:
 }
 ```
 
-### 7. Update Banner
+### 8. Update Banner
 #### PUT /banner
 
 Update the user's profile banner image.
@@ -301,7 +344,7 @@ Success Response (200):
 }
 ```
 
-### 8. Update Profile Picture
+### 9. Update Profile Picture
 #### PUT /avatar
 
 Update the user's profile picture.
@@ -331,7 +374,46 @@ Success Response (200):
 }
 ```
 
-### 9. Send OTP
+### 10. Google Login
+#### POST /google-login
+
+Authenticate a user using their Google account.
+
+##### Request Body
+```json
+{
+  "email": "john.doe@gmail.com",
+  "name": "John Doe",
+  "picture": "https://google-profile-picture-url.com",
+  "googleId": "google-user-id"
+}
+```
+
+##### Status Codes
+- `200 OK`: Login successful
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "email": "john.doe@gmail.com",
+    "username": "johndoe123",
+    "role": "user",
+    "avatar": "https://google-profile-picture-url.com",
+    "googleId": "google-user-id",
+    "_id": "user_id_here"
+  }
+}
+```
+
+### 11. Send OTP
 #### POST /send-otp
 
 Send a one-time password to the user's email for verification.
@@ -363,7 +445,7 @@ Success Response (200):
 }
 ```
 
-### 10. Verify OTP
+### 12. Verify OTP
 #### POST /verify-otp
 
 Verify the OTP sent to the user's email.
@@ -400,11 +482,45 @@ Success Response (200):
 }
 ```
 
-Possible result values:
-- `"VERIFIED"`: First time verification successful
-- `"VALID"`: OTP is valid
-- `"INVALID"`: OTP is incorrect
-- `"EXHAUSTED"`: Maximum attempts reached
+### 13. Reset Password
+#### POST /reset-password
+
+Reset user's password using verified OTP.
+
+##### Request Body
+```json
+{
+  "email": "john.doe@example.com",
+  "otp": "123456",
+  "newPassword": "newpassword123"
+}
+```
+
+##### Validation Rules
+- **Email**:
+  - Required
+  - Must be a valid email address
+- **OTP**:
+  - Required
+  - Must be a valid 6-digit code
+- **New Password**:
+  - Required
+  - Minimum length: 8 characters
+
+##### Status Codes
+- `200 OK`: Password reset successful
+- `400 Bad Request`: Invalid input or validation errors
+- `401 Unauthorized`: Invalid OTP
+- `404 Not Found`: User not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "message": "Password reset successful"
+}
+```
 
 ## Authentication Notes
 
@@ -412,8 +528,161 @@ Possible result values:
 - Tokens can be sent either in:
   - Authorization header: `Bearer <token>`
   - Cookie: `token=<token>`
-- Logged out tokens are blacklisted for 24 hours
+- Logged out tokens are blacklisted
 - Passwords are automatically hashed before storage
 - User passwords are never included in responses
 - OTP expires after 10 minutes
-- Maximum 3 attempts allowed for OTP verification 
+- Maximum 3 attempts allowed for OTP verification
+
+## Event Endpoints
+
+### 1. Get Published Events
+#### GET /events/published
+
+Get a paginated list of published events with optional filtering.
+
+##### Query Parameters
+- `page` (optional): Page number for pagination (default: 1)
+- `limit` (optional): Number of events per page (default: 10)
+- `startDate` (optional): Filter events starting from this date (format: YYYY-MM-DD)
+- `endDate` (optional): Filter events until this date (format: YYYY-MM-DD)
+- `mode` (optional): Filter by event mode (online/offline/hybrid)
+- `type` (optional): Filter by event type
+
+##### Status Codes
+- `200 OK`: Events retrieved successfully
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "events": [
+      {
+        "_id": "event_id_here",
+        "company": {
+          "name": "Tech Corp",
+          "website": "https://techcorp.com",
+          "industry": "Technology",
+          "logo": "https://example.com/logo.png"
+        },
+        "name": "Tech Conference 2024",
+        "type": "conference",
+        "mode": "hybrid",
+        "startDate": "2024-03-01T00:00:00.000Z",
+        "endDate": "2024-03-02T00:00:00.000Z",
+        "prizes": {
+          "prizePool": "₹50,000"
+        }
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalEvents": 50,
+      "hasNextPage": true,
+      "hasPreviousPage": false
+    }
+  }
+}
+```
+
+### 2. Get Event by ID
+#### GET /events/:eventId
+
+Get detailed information about a specific event by its ID.
+
+##### Parameters
+- `eventId` (path parameter): The ID of the event to fetch
+
+##### Status Codes
+- `200 OK`: Event retrieved successfully
+- `400 Bad Request`: Event ID is missing
+- `404 Not Found`: Event not found
+- `500 Internal Server Error`: Server-side errors
+
+##### Example Response
+Success Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "event_id_here",
+    "company": {
+      "name": "Tech Corp",
+      "website": "https://techcorp.com",
+      "industry": "technology",
+      "logo": "https://example.com/logo.png"
+    },
+    "contact": {
+      "name": "John Doe",
+      "email": "john@techcorp.com",
+      "phone": "+1234567890",
+      "socialProfiles": "https://linkedin.com/in/johndoe"
+    },
+    "name": "Tech Conference 2024",
+    "banner": "https://example.com/banner.jpg",
+    "type": "conference",
+    "description": "Annual tech conference featuring the latest innovations...",
+    "mode": "hybrid",
+    "startDate": "2024-03-01T00:00:00.000Z",
+    "endDate": "2024-03-02T00:00:00.000Z",
+    "duration": "2 days",
+    "targetAudience": "professionals",
+    "maxParticipants": 500,
+    "venue": {
+      "name": "Convention Center",
+      "address": "123 Tech Street",
+      "city": "Tech City",
+      "state": "Tech State",
+      "country": "Tech Country",
+      "contactPerson": "Jane Smith"
+    },
+    "stages": [
+      {
+        "stageName": "Registration",
+        "stageDescription": "Team registration and verification",
+        "stageStartDate": "2024-03-01T09:00:00.000Z",
+        "stageEndDate": "2024-03-01T10:00:00.000Z",
+        "onHackMeet": true
+      }
+    ],
+    "prizes": {
+      "hasPrizes": true,
+      "prizePool": "₹50,000",
+      "prize1": "₹25,000",
+      "prize2": "₹15,000",
+      "prize3": "₹10,000",
+      "details": "Cash prizes for top 3 teams"
+    },
+    "promotion": {
+      "needsPromotion": true
+    },
+    "sponsors": [
+      {
+        "name": "Tech Sponsor",
+        "logo": "https://example.com/sponsor-logo.png",
+        "website": "https://techsponsor.com"
+      }
+    ],
+    "status": "published",
+    "stats": {
+      "registeredParticipants": 200,
+      "approvedParticipants": 150
+    },
+    "participantCount": 150,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  }
+}
+```
+
+Error Response (404):
+```json
+{
+  "success": false,
+  "message": "Event not found"
+}
+``` 

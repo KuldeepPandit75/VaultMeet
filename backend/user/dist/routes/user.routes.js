@@ -53,7 +53,8 @@ router.post('/login', [
     (0, express_validator_1.body)('email').notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email address'),
     (0, express_validator_1.body)('password').notEmpty().withMessage('Password is required').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
 ], userController.loginUser);
-router.get('/profile', auth_middleware_js_1.default, userController.getUserProfile);
+router.get('/me', auth_middleware_js_1.default, userController.getMe);
+router.get('/profile/:profileId', userController.getUserProfileById);
 router.post('/logout', auth_middleware_js_1.default, userController.logoutUser);
 router.put('/update', auth_middleware_js_1.default, userController.updateUser);
 router.get('/check-username/:username', userController.checkUsernameAvailability);

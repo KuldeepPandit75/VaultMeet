@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                     request.nextUrl.pathname.startsWith('/register');
-  const isProfilePage = request.nextUrl.pathname.startsWith('/profile');
+  const isProfilePage = request.nextUrl.pathname === '/me';
 
   // Redirect to login if accessing protected route without token
   if (isProfilePage && !token) {
@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   // Verify token with backend for profile pages
   if (isProfilePage && token) {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -41,5 +41,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*', '/login', '/register']
+  matcher: ['/me', '/login', '/register']
 }; 

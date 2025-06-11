@@ -1,116 +1,42 @@
 'use client';
 
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
+import useEventStore from "@/Zustand_Store/EventStore";
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 // Types
 type EventStatus = 'upcoming' | 'ongoing' | 'completed';
-type TeamSize = '1-2' | '3-4' | '5+';
-type Category = 'AI/ML' | 'Web3' | 'Sustainability' | 'Mobile' | 'Web';
-
-interface TeamSizeRange {
-  min: number;
-  max: number;
-}
+type EventMode = 'online' | 'offline' | 'hybrid';
 
 interface Event {
-  id: number;
-  title: string;
+  _id: string;
+  company: {
+    name: string;
+    website: string;
+    industry: string;
+    logo: string;
+  };
+  name: string;
+  banner: string;
+  type: string;
   description: string;
-  imageUrl: string;
-  startDate: string;
-  endDate: string;
-  location: string;
-  isVirtual: boolean;
-  prizePool: string;
-  participants: number;
-  maxParticipants: number;
-  organizer: string;
-  category: Category;
-  tags: string[];
-  registrationDeadline: string;
-  teamSize: TeamSizeRange;
-  eligibility: string[];
-  tracks: string[];
-  sponsors: string[];
-  status: EventStatus;
+  mode: EventMode;
+  startDate: Date;
+  endDate: Date;
+  targetAudience: string;
+  venue?: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+  prizes: {
+    prizePool?: string;
+  };
 }
-
-// Constants
-const CATEGORIES: Category[] = ['AI/ML', 'Web3', 'Sustainability', 'Mobile', 'Web'];
-const STATUSES: EventStatus[] = ['upcoming', 'ongoing', 'completed'];
-const TEAM_SIZES: TeamSize[] = ['1-2', '3-4', '5+'];
-
-// Sample data
-const SAMPLE_EVENTS: Event[] = [
-  {
-    id: 1,
-    title: "AI Innovation Challenge 2024",
-    description: "Build the next generation of AI applications. Focus on practical solutions that can make a real impact in healthcare, education, or environmental sustainability.",
-    imageUrl: "https://images.unsplash.com/photo-1677442136019-21780ecad995",
-    startDate: "2024-04-15",
-    endDate: "2024-04-17",
-    location: "Virtual",
-    isVirtual: true,
-    prizePool: "$10,000",
-    participants: 150,
-    maxParticipants: 200,
-    organizer: "TechCorp",
-    category: "AI/ML",
-    tags: ["AI", "Machine Learning", "Healthcare", "Education"],
-    registrationDeadline: "2024-04-10",
-    teamSize: { min: 2, max: 4 },
-    eligibility: ["Students", "Professionals", "Startups"],
-    tracks: ["Healthcare", "Education", "Environment"],
-    sponsors: ["Google", "Microsoft", "AWS"],
-    status: "upcoming"
-  },
-  {
-    id: 2,
-    title: "Web3 Development Hackathon",
-    description: "Create innovative solutions using blockchain technology. Build DApps, smart contracts, or explore new use cases for Web3 technology.",
-    imageUrl: "https://images.unsplash.com/photo-1639762681057-408e52192e55",
-    startDate: "2024-05-01",
-    endDate: "2024-05-03",
-    location: "San Francisco, CA",
-    isVirtual: false,
-    prizePool: "$15,000",
-    participants: 200,
-    maxParticipants: 300,
-    organizer: "Blockchain Foundation",
-    category: "Web3",
-    tags: ["Blockchain", "Smart Contracts", "DeFi", "NFTs"],
-    registrationDeadline: "2024-04-25",
-    teamSize: { min: 3, max: 5 },
-    eligibility: ["Students", "Professionals"],
-    tracks: ["DeFi", "NFTs", "Gaming"],
-    sponsors: ["Ethereum Foundation", "Polygon", "Chainlink"],
-    status: "upcoming"
-  },
-  {
-    id: 3,
-    title: "GreenTech Solutions",
-    description: "Develop sustainable technology solutions to address climate change. Focus on renewable energy, waste management, or carbon reduction.",
-    imageUrl: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9",
-    startDate: "2024-06-10",
-    endDate: "2024-06-12",
-    location: "Virtual",
-    isVirtual: true,
-    prizePool: "$20,000",
-    participants: 180,
-    maxParticipants: 250,
-    organizer: "EcoTech Initiative",
-    category: "Sustainability",
-    tags: ["Climate Change", "Renewable Energy", "Sustainability"],
-    registrationDeadline: "2024-06-01",
-    teamSize: { min: 2, max: 4 },
-    eligibility: ["Students", "Professionals", "Startups"],
-    tracks: ["Renewable Energy", "Waste Management", "Carbon Reduction"],
-    sponsors: ["Tesla", "SolarCity", "Greenpeace"],
-    status: "upcoming"
-  }
-];
 
 // Components
 const StatusBadge = ({ status }: { status: EventStatus }) => {
@@ -152,81 +78,78 @@ const EventCard = ({ event, primaryColor, secondaryColor }: {
   event: Event; 
   primaryColor: string;
   secondaryColor: string;
-}) => (
-  <div 
-    className="rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-    style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-  >
-    <div className="flex flex-col md:flex-row">
-      <div className="relative w-full md:w-1/3 h-48 md:h-auto">
-        <Image
-          src={event.imageUrl}
-          alt={event.title}
-          fill
-          className="object-cover"
-        />
-        <StatusBadge status={event.status} />
-      </div>
+}) => {
+  const router = useRouter();
+  const getEventStatus = (startDate: Date, endDate: Date): EventStatus => {
+    const now = new Date();
+    if (now < startDate) return 'upcoming';
+    if (now > endDate) return 'completed';
+    return 'ongoing';
+  };
 
-      <div className="flex-1 p-6">
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <CategoryBadge category={event.category} color={primaryColor} />
-          {event.isVirtual && (
-            <CategoryBadge category="Virtual" color={secondaryColor} />
-          )}
-          <span className="text-sm text-gray-400">
-            by {event.organizer}
-          </span>
+  const status = getEventStatus(event.startDate, event.endDate);
+
+  console.log(event.startDate,event.endDate)
+
+  return (
+    <div 
+      className="rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+      style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+    >
+      <div className="flex flex-col md:flex-row">
+        <div className="relative w-full md:w-1/3 h-48 md:h-auto">
+          <Image
+            src={event.company.logo || '/default-event-banner.jpg'}
+            alt={event.name}
+            fill
+            className="object-contain p-6"
+          />
+          <StatusBadge status={status} />
         </div>
 
-        <h3 
-          className="text-2xl font-bold mb-2"
-          style={{ color: secondaryColor }}
-        >
-          {event.title}
-        </h3>
-        <p className="text-gray-300 mb-4">{event.description}</p>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <EventInfo label="Date" value={`${new Date(event.startDate).toLocaleDateString()} - ${new Date(event.endDate).toLocaleDateString()}`} />
-          <EventInfo label="Location" value={event.location} />
-          <EventInfo label="Prize Pool" value={event.prizePool} />
-          <EventInfo label="Team Size" value={`${event.teamSize.min}-${event.teamSize.max}`} />
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {event.tags.map((tag, index) => (
-            <span 
-              key={index}
-              className="px-2 py-1 rounded-full text-xs"
-              style={{ 
-                backgroundColor: primaryColor + '20',
-                color: primaryColor
-              }}
-            >
-              {tag}
+        <div className="flex-1 p-6">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <CategoryBadge category={event.type} color={primaryColor} />
+            {event.mode === 'online' && (
+              <CategoryBadge category="Virtual" color={secondaryColor} />
+            )}
+            <span className="text-sm text-gray-400">
+              by {event.company.name}
             </span>
-          ))}
-        </div>
-
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-400">
-            Registration closes: {new Date(event.registrationDeadline).toLocaleDateString()}
           </div>
-          <button
-            className="px-6 py-2 rounded-lg font-semibold transition-colors duration-300"
-            style={{
-              background: `linear-gradient(90deg, ${secondaryColor} 0%, ${primaryColor} 100%)`,
-              color: '#222',
-            }}
+
+          <h3 
+            className="text-2xl font-bold mb-2"
+            style={{ color: secondaryColor }}
           >
-            Register Now
-          </button>
+            {event.name}
+          </h3>
+          <p className="text-gray-300 mb-4">{event.description}</p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <EventInfo label="Date" value={`${event.startDate?.toLocaleDateString()} - ${event.endDate.toLocaleDateString()}`} />
+            <EventInfo label="Location" value={event.mode === 'online' ? 'Virtual' : event.venue?.name || 'TBA'} />
+            <EventInfo label="Prize Pool" value={event.prizes?.prizePool || 'TBA'} />
+            <EventInfo label="Mode" value={event.mode.charAt(0).toUpperCase() + event.mode.slice(1)} />
+          </div>
+
+          <div className="flex justify-end items-center">
+            <button
+              className="px-6 py-2 rounded-lg font-semibold transition-colors duration-300"
+              style={{
+                background: `linear-gradient(90deg, ${secondaryColor} 0%, ${primaryColor} 100%)`,
+                color: '#222',
+              }}
+              onClick={() => router.push(`/events/${event._id}`)}
+            >
+              Register Now
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const EventInfo = ({ label, value }: { label: string; value: string }) => (
   <div>
@@ -265,29 +188,41 @@ const FilterSelect = ({
 // Main Component
 export default function EventsPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { events, pagination, loading, error, getPublishedEvents } = useEventStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedTeamSize, setSelectedTeamSize] = useState('all');
+  const [selectedMode, setSelectedMode] = useState<EventMode | 'all'>('all');
+  const [selectedType, setSelectedType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [currentPage, selectedMode, selectedType]);
+
+  const fetchEvents = async () => {
+    const params = {
+      page: currentPage,
+      limit: 10,
+      ...(selectedMode !== 'all' && { mode: selectedMode }),
+      ...(selectedType !== 'all' && { type: selectedType })
+    };
+
+    await getPublishedEvents(params);
+  };
 
   const filteredEvents = useMemo(() => {
-    return SAMPLE_EVENTS.filter(event => {
-      const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          event.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-      const matchesStatus = selectedStatus === 'all' || event.status === selectedStatus;
-      
-      const matchesTeamSize = selectedTeamSize === 'all' || 
-        (selectedTeamSize === '1-2' && event.teamSize.max <= 2) ||
-        (selectedTeamSize === '3-4' && event.teamSize.min >= 3 && event.teamSize.max <= 4) ||
-        (selectedTeamSize === '5+' && event.teamSize.min >= 5);
-
-      return matchesSearch && matchesCategory && matchesStatus && matchesTeamSize;
+    if (!searchQuery) return events;
+    
+    return events.filter(event => {
+      return event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             event.company.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [searchQuery, selectedCategory, selectedStatus, selectedTeamSize]);
+  }, [events, searchQuery]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   return (
     <div className="min-h-screen px-4 sm:px-6 md:px-8 lg:px-[80px] py-8 md:py-[40px]">
@@ -333,37 +268,74 @@ export default function EventsPage() {
             style={{ color: primaryAccentColor }}
           >
             <FilterSelect
-              label="Category"
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-              options={['all', ...CATEGORIES]}
+              label="Mode"
+              value={selectedMode}
+              onChange={(value) => setSelectedMode(value as EventMode | 'all')}
+              options={['all', 'online', 'offline', 'hybrid']}
             />
             <FilterSelect
-              label="Status"
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              options={['all', ...STATUSES]}
-            />
-            <FilterSelect
-              label="Team Size"
-              value={selectedTeamSize}
-              onChange={setSelectedTeamSize}
-              options={['all', ...TEAM_SIZES]}
+              label="Type"
+              value={selectedType}
+              onChange={setSelectedType}
+              options={['all', 'hackathon', 'workshop', 'webinar', 'tech-talk']}
             />
           </div>
         )}
       </div>
 
-      <div className="max-w-6xl mx-auto space-y-6">
-        {filteredEvents.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            primaryColor={primaryAccentColor}
-            secondaryColor={secondaryAccentColor}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading events...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8 text-red-500">
+          {error}
+        </div>
+      ) : (
+        <>
+          <div className="max-w-6xl mx-auto space-y-6">
+            {filteredEvents.map((event) => (
+              <EventCard
+                key={event._id}
+                event={event}
+                primaryColor={primaryAccentColor}
+                secondaryColor={secondaryAccentColor}
+              />
+            ))}
+          </div>
+
+          {pagination && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.hasPreviousPage}
+                className={`px-4 py-2 rounded-lg ${
+                  pagination.hasPreviousPage 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Previous
+              </button>
+              <span className="text-white">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+                className={`px-4 py-2 rounded-lg ${
+                  pagination.hasNextPage 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 } 
