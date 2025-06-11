@@ -10,11 +10,10 @@ export enum Role {
 
 
 export const BackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-console.log("BackendUrl", BackendUrl, process.env.NEXT_PUBLIC_BACKEND_URL);
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: BackendUrl,
+  baseURL: `${BackendUrl}/user`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

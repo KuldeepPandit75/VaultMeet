@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import axios, { AxiosError } from 'axios';
-// import { BackendUrl } from './AuthStore';
+import { BackendUrl } from './AuthStore';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: 'http://localhost:4002',
+  baseURL: `${BackendUrl}/event`,
   withCredentials: true,
 });
 

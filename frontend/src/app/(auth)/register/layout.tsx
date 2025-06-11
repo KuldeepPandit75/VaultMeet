@@ -1,9 +1,10 @@
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
-import type { Metadata } from 'next';
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Register',
-  description: 'Register to HackMeet',
+  title: "Register",
+  description: "Register to HackMeet",
 };
 
 export default function LoginLayout({
@@ -16,7 +17,11 @@ export default function LoginLayout({
       <body>
         <ThemeInitializer />
         <main className="flex-grow">
-          {children}
+          <GoogleOAuthProvider
+            clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+          >
+            {children}
+          </GoogleOAuthProvider>
         </main>
       </body>
     </html>

@@ -93,7 +93,7 @@ const Navbar = () => {
         style={{ color: secondaryAccentColor }}
         onClick={() => router.push("/")}
       >
-        Hack<span style={{ color: primaryAccentColor }}>Meet</span>
+        Vault<span style={{ color: primaryAccentColor }}>Meet</span>
       </div>
 
       {/* Mobile Menu Button */}
