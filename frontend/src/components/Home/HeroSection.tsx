@@ -50,6 +50,7 @@ export default function HeroSection() {
           <span
             className="text-lg md:text-xl font-semibold cursor-pointer"
             style={{ color: secondaryAccentColor }}
+            onClick={() => router.push('/coding-space')}
           >
             Coding Space
           </span>

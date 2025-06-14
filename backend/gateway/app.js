@@ -4,7 +4,6 @@ import "dotenv/config";
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 const app = express();
-const PORT = process.env.PORT;
 
 app.use(cors({
     origin: [process.env.FRONTEND_URL, 'https://hack-meet-nine.vercel.app'],
@@ -20,6 +19,4 @@ app.use(cookieParser());
 app.use('/user', expressProxy(process.env.USER_SERVICE_URL));
 app.use('/event', expressProxy(process.env.EVENT_SERVICE_URL));
 
-app.listen(PORT,()=>{
-    console.log(`Gateway is running on port ${PORT}`);
-})
+export default app;
