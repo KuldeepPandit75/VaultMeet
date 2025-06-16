@@ -17,10 +17,7 @@ let localVideoTrack: ICameraVideoTrack | null = null;
 let currentChannel: string | null = null;
 
 export default async function initializeClient(
-  socket: Socket,
-  getUserBySocketId: (
-    socketId: string
-  ) => Promise<{ fullname: { firstname: string } }>
+  socket: Socket
 ) {
   if (typeof window === "undefined") return;
 
