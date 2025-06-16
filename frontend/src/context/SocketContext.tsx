@@ -34,7 +34,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user,socket?.id]);
 
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000', {
+    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000', {
       autoConnect: false,
     });
 
