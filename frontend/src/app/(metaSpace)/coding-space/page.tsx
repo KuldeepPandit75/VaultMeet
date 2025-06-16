@@ -54,7 +54,7 @@ const CodingSpace = () => {
       const names: {[key: string]: string} = {};
       for (const user of remoteUsers) {
         try {
-          const userData = await getUserBySocketId(user.uid);
+          const userData = await getUserBySocketId(user.uid.toString());
           names[user.uid] = userData.fullname.firstname;
         } catch (error) {
           console.error('Error fetching user name:', error);

@@ -1,3 +1,4 @@
+import { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import { create } from 'zustand';
 
 export interface Message {
