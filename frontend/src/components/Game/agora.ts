@@ -15,9 +15,6 @@ let client: IAgoraRTCClient | null = null;
 let localAudioTrack: IMicrophoneAudioTrack | null = null;
 let localVideoTrack: ICameraVideoTrack | null = null;
 let currentChannel: string | null = null;
-let getUserBySocketIdFn: (
-  socketId: string
-) => Promise<{ fullname: { firstname: string } }>;
 
 export default async function initializeClient(
   socket: Socket,
@@ -30,7 +27,6 @@ export default async function initializeClient(
   const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
   client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
   setupEventListeners(socket);
-  getUserBySocketIdFn = getUserBySocketId;
   await createLocalMediaTracks();
 }
 
