@@ -27,7 +27,7 @@ const CodingSpace = () => {
   useEffect(() => {
     if (!socket) return;
 
-    initializeClient(socket, getUserBySocketId);
+    initializeClient(socket);
     socket.connect();
 
     // Listen for incoming messages
