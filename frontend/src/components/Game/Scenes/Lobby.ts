@@ -85,6 +85,7 @@ class Lobby extends Scene {
         if (!this.otherPlayers[id]) {
           this.otherPlayers[id] = this.physics.add.sprite((this.map?.width || 0) * (this.map?.tileWidth || 0) / 2, (this.map?.height || 0) * (this.map?.tileHeight || 0) / 2 || 0, 'player', 0);
           this.otherPlayers[id].setFrame(130);
+          this.otherPlayers[id].setScale(0.9)
           this.otherPlayers[id].setDepth(this.otherPlayers[id].y);
         }
       }
@@ -94,11 +95,11 @@ class Lobby extends Scene {
       if (this.socket?.id !== data.id && this.otherPlayers[data.id]) {
         this.otherPlayers[data.id].setPosition(data.x, data.y);
         if (data.dirX < 0) {
-          this.otherPlayers[data.id].setScale(1, 1);
+          this.otherPlayers[data.id].setScale(0.9, 0.9);
           this.otherPlayers[data.id].anims.play(data.isRunning ? "runR&L" : "walkR&L", true);
         }
         else if (data.dirX > 0) {
-          this.otherPlayers[data.id].setScale(-1, 1);
+          this.otherPlayers[data.id].setScale(-0.9, 0.9);
           this.otherPlayers[data.id].anims.play(data.isRunning ? "runR&L" : "walkR&L", true);
         }
         else if (data.dirY < 0) {
@@ -214,11 +215,12 @@ class Lobby extends Scene {
       mapHeight / 2,
       "player"
     );
+    this.player.setScale(0.9);
     this.player.setFrame(117);
 
     this.player.setCollideWorldBounds(true);
     this.cameras.main.startFollow(this.player);
-    this.cameras.main.setZoom(1.4);
+    this.cameras.main.setZoom(1.6);
     this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
     this.physics.world.setBounds(0, 0, mapWidth + 50, mapHeight);
 
@@ -352,10 +354,10 @@ class Lobby extends Scene {
     }
 
     if (dirX < 0) {
-      this.player?.setScale(1, 1);
+      this.player?.setScale(0.9, 0.9);
       this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
     } else if (dirX > 0) {
-      this.player?.setScale(-1, 1);
+      this.player?.setScale(-0.9, 0.9);
       this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
     } else if (dirY < 0) {
       this.player?.anims.play(this.running ? "runU" : "walkU", true);

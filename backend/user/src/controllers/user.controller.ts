@@ -5,6 +5,7 @@ import BlacklistToken from "../models/blacklistToken.model.js";
 import cloudinary from "../config/cloudinary.js";
 import fs from "fs/promises"; // Add fs promises for async file operations
 import bcrypt from 'bcrypt';
+import User from "../models/user.model.js";
 
 export const registerUser = async (req: any, res: any) => {
   const errors = validationResult(req);
@@ -342,6 +343,30 @@ export const googleLogin = async (req: any, res: any) => {
 export const getUserProfileById = async (req: any, res: any) => {
   const { profileId } = req.params;
   const user = await userModel.findById(profileId).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json({ user });
+};
+
+export const updateSocketId = async (req: any, res: any) => {
+  const {socketId,userId} = req.body;
+
+  const user = await User.findById(userId);
+
+  if(!user){
+      return res.status(404).json({message:'User not found'});
+  }
+
+  user.socketId = socketId;
+  await user.save();
+
+  res.status(200).json({message:'Socket ID updated successfully'});
+};
+
+export const getUserBySocketId = async (req: any, res: any) => {
+  const { socketId } = req.params;
+  const user = await userModel.findOne({ socketId });
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }

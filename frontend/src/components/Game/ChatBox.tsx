@@ -1,6 +1,6 @@
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Message } from "@/Zustand_Store/MsgStore";
+import { Message } from "@/Zustand_Store/SocketStore";
 import { Socket } from "socket.io-client";
 
 interface ChatBoxProps {

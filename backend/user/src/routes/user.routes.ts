@@ -29,6 +29,10 @@ router.put('/update', authMiddleware, userController.updateUser);
 
 router.get('/check-username/:username', userController.checkUsernameAvailability);
 
+router.get('/get-user-by-socket-id/:socketId', userController.getUserBySocketId);
+
+router.post('/update-socket-id', userController.updateSocketId);
+
 // New routes for image uploads
 router.put('/banner', authMiddleware, upload.single('banner'), userController.updateBanner);
 router.put('/avatar', authMiddleware, upload.single('avatar'), userController.updateProfilePicture);

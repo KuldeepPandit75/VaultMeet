@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfileById = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
+exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileById = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
 const user_service_js_1 = __importDefault(require("../services/user.service.js"));
 const express_validator_1 = require("express-validator");
@@ -20,6 +20,7 @@ const blacklistToken_model_js_1 = __importDefault(require("../models/blacklistTo
 const cloudinary_js_1 = __importDefault(require("../config/cloudinary.js"));
 const promises_1 = __importDefault(require("fs/promises")); // Add fs promises for async file operations
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const user_model_js_2 = __importDefault(require("../models/user.model.js"));
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -313,3 +314,23 @@ const getUserProfileById = (req, res) => __awaiter(void 0, void 0, void 0, funct
     res.status(200).json({ user });
 });
 exports.getUserProfileById = getUserProfileById;
+const updateSocketId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { socketId, userId } = req.body;
+    const user = yield user_model_js_2.default.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    user.socketId = socketId;
+    yield user.save();
+    res.status(200).json({ message: 'Socket ID updated successfully' });
+});
+exports.updateSocketId = updateSocketId;
+const getUserBySocketId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { socketId } = req.params;
+    const user = yield user_model_js_1.default.findOne({ socketId });
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ user });
+});
+exports.getUserBySocketId = getUserBySocketId;

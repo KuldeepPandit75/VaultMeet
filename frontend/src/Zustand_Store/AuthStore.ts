@@ -110,6 +110,8 @@ interface AuthState {
   verifyOTP: (email: string, otp: string) => Promise<{ result: string; _id: string; role: string }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   getUserProfileById: (profileId: string) => Promise<User>;
+  updateSocketId: (socketId: string, userId: string) => Promise<void>;
+  getUserBySocketId: (socketId: string) => Promise<User>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -367,6 +369,26 @@ const useAuthStore = create<AuthState>()(
           return response.data.user;
         }catch(error: unknown){
           console.error('Error getting user profile:', error);
+          throw error;
+        }
+      },
+
+      updateSocketId: async (socketId: string,userId: string) => {
+        try{
+          const response = await api.post('/update-socket-id', {socketId, userId});
+          return response.data;
+        }catch(error: unknown){
+          console.error('Error updating socket ID:', error);
+          throw error;
+        }
+      },
+
+      getUserBySocketId: async (socketId: string) => {
+        try{
+          const response = await api.get(`/get-user-by-socket-id/${socketId}`);
+          return response.data.user;
+        }catch(error: unknown){
+          console.error('Error getting user by socket ID:', error);
           throw error;
         }
       }

@@ -1,93 +1,79 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage } from "@fortawesome/free-solid-svg-icons";
-import { toggleMicrophone, toggleCamera } from "./webRtc";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 
 interface ControlBarProps {
   mic: boolean;
   video: boolean;
-  setMic: (value: boolean | ((prev: boolean) => boolean)) => void;
-  setVideo: (value: boolean | ((prev: boolean) => boolean)) => void;
+  handleMicToggle: () => void;
+  handleVideoToggle: () => void;
   setBox: (box: (prev: boolean) => boolean) => void;
 }
 
-export const ControlBar = ({ mic, video, setMic, setVideo, setBox }: ControlBarProps) => {
-
-  const {user} =useAuthStore();
-
-  const handleToggleMic = async() => {
-    toggleMicrophone()
-    setMic(prev=>!prev)
-  }
-
-  const handleToggleCamera = async() => {
-    toggleCamera()
-    setVideo(prev=>!prev)
-  }
+export const ControlBar = ({ mic, video, handleMicToggle, handleVideoToggle, setBox }: ControlBarProps) => {
+  const {user} = useAuthStore();
 
   return (
     <div className="absolute w-[100vw] h-[60px] bg-[#111] bottom-0 right-0 flex justify-between items-center !px-10">
         <div className="flex gap-10 items-center">
-          <div>
+          <div className="relative">
             <video
-              className="video-player h-10 bg-black top-10 left-10 rounded-sm"
+              className="video-player h-12 w-20 bg-black rounded-sm"
               style={{display: video ? 'block' : 'none'}}
               id="user-1"
               autoPlay
+              muted
               playsInline
             ></video>
-            {video?
-            null
-            :
-            <div className="h-10 w-20 bg-black flex justify-center items-center rouded-sm"><p className="text-white text-sm p-2 h-6 w-6 flex items-center justify-center bg-gray-400 rounded-full">{user?.fullname?.firstname.charAt(0)}</p></div>
-            }
+            {!video && (
+              <div className="h-10 w-20 bg-black flex justify-center items-center rounded-sm">
+                <p className="text-white text-sm p-2 h-6 w-6 flex items-center justify-center bg-gray-400 rounded-full">
+                  {user?.fullname?.firstname.charAt(0)}
+                </p>
+              </div>
+            )}
           </div>
           {mic ? (
             <button
               className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-              onClick={handleToggleMic}
+              onClick={handleMicToggle}
             >
               <FontAwesomeIcon icon={faMicrophone} className="text-white" />
             </button>
           ) : (
             <button
               className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-                onClick={handleToggleMic}
+              onClick={handleMicToggle}
             >
               <FontAwesomeIcon
                 icon={faMicrophoneSlash}
                 className="text-red-500"
-              />{" "}
+              />
             </button>
           )}
           {video ? (
             <button
               className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-              onClick={handleToggleCamera}
+              onClick={handleVideoToggle}
             >
-              <FontAwesomeIcon icon={faVideo} className="text-white" />{" "}
+              <FontAwesomeIcon icon={faVideo} className="text-white" />
             </button>
           ) : (
             <button
               className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-              onClick={handleToggleCamera}
+              onClick={handleVideoToggle}
             >
-              <FontAwesomeIcon icon={faVideoSlash} className="text-red-500" />{" "}
+              <FontAwesomeIcon icon={faVideoSlash} className="text-red-500" />
             </button>
           )}
           <button
             className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-            onClick={() => {
-              setBox((prev: boolean) => !prev);
-            }}
+            onClick={() => setBox((prev: boolean) => !prev)}
           >
-            <FontAwesomeIcon icon={faMessage} className="text-white" />{" "}
+            <FontAwesomeIcon icon={faMessage} className="text-white" />
           </button>
         </div>
-        <div
-          className="homeBtn h-12 w-12 flex justify-center items-center rounded-[50%] cursor-pointer scale-[0.9] hover:scale-[1] transition-all duration-200 hover:shadow-lg "
-          // onClick={navToHome}
-        >
+        <div className="homeBtn h-12 w-12 flex justify-center items-center rounded-[50%] cursor-pointer scale-[0.9] hover:scale-[1] transition-all duration-200 hover:shadow-lg">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             x="0px"
