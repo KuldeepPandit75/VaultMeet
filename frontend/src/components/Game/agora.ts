@@ -34,8 +34,16 @@ async function createLocalMediaTracks() {
     localVideoTrack = await AgoraRTC.createCameraVideoTrack();
 
     // Initially disable tracks
-    if (localAudioTrack) localAudioTrack.setEnabled(false);
-    if (localVideoTrack) localVideoTrack.setEnabled(false);
+    if (localAudioTrack) {
+      localAudioTrack.setEnabled(true);
+      localAudioTrack.setMuted(true);
+    }
+    if (localVideoTrack) {
+      localVideoTrack.setEnabled(true);
+      localVideoTrack.setMuted(true);
+    }
+
+
   } catch (error) {
     console.error("Error creating media tracks:", error);
   }
@@ -151,10 +159,7 @@ function setupEventListeners(socket: Socket) {
 
         // Update user state in store
         const store = useSocketStore.getState();
-        const updatedUser = { ...user };
-        if (mediaType === "audio") updatedUser.hasAudio = true;
-        if (mediaType === "video") updatedUser.hasVideo = true;
-        store.addRemoteUser(updatedUser);
+        store.addRemoteUser(user);
       } catch (error) {
         console.error("Error in user-published handler:", error);
       }
@@ -167,10 +172,7 @@ function setupEventListeners(socket: Socket) {
     
     // Update user state in store
     const store = useSocketStore.getState();
-    const updatedUser = { ...user };
-    if (mediaType === "audio") updatedUser.hasAudio = false;
-    if (mediaType === "video") updatedUser.hasVideo = false;
-    store.addRemoteUser(updatedUser);
+    store.addRemoteUser(user);
 
     // Remove video element if video is unpublished
     if (mediaType === "video") {
@@ -199,12 +201,7 @@ function setupEventListeners(socket: Socket) {
     const store = useSocketStore.getState();
     const user = store.remoteUsers.find(u => u.uid === uid);
     if (user) {
-      const updatedUser = { ...user };
-      if (msg === "mute-video") updatedUser.hasVideo = false;
-      else if (msg === "unmute-video") updatedUser.hasVideo = true;
-      else if (msg === "mute-audio") updatedUser.hasAudio = false;
-      else if (msg === "unmute-audio") updatedUser.hasAudio = true;
-      store.addRemoteUser(updatedUser);
+      store.addRemoteUser(user);
     }
   });
 
@@ -230,17 +227,17 @@ async function leaveChannel() {
 
 export const toggleCamera = async () => {
   if (localVideoTrack) {
-    const isEnabled = !localVideoTrack.enabled;
-    localVideoTrack.setEnabled(isEnabled);
+    const isMuted = localVideoTrack.muted;
+    await localVideoTrack.setMuted(!isMuted); // Toggle mute state
 
-    const localPlayerContainer = document.getElementById(
-      "user-1"
-    ) as HTMLVideoElement;
+    const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
     if (localPlayerContainer) {
-      if (isEnabled) {
-        localVideoTrack.play(localPlayerContainer);
+      if (!isMuted) {
+        // We're muting now — optionally stop showing video
+        localVideoTrack.stop(); // Uncomment if you want to remove video feed
       } else {
-        // localVideoTrack.stop();
+        // We're unmuting now — play the video
+        localVideoTrack.play(localPlayerContainer);
       }
     }
   }
@@ -248,6 +245,7 @@ export const toggleCamera = async () => {
 
 export const toggleMicrophone = async () => {
   if (localAudioTrack) {
-    localAudioTrack.setEnabled(!localAudioTrack.enabled);
+    const isMuted = localAudioTrack.muted;
+    await localAudioTrack.setMuted(!isMuted);
   }
 };

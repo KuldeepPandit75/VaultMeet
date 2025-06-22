@@ -94,8 +94,10 @@ const CodingSpace = () => {
   };
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
-    const isVideoEnabled = user.hasVideo;
-    const isAudioEnabled = user.hasAudio;
+    const isVideoEnabled = !(user as any)._video_muted_;
+    const isAudioEnabled = !(user as any)._audio_muted_;
+
+    console.log(isVideoEnabled, isAudioEnabled);
     
     return (
       <div className="absolute bottom-2 right-2 flex gap-1">
