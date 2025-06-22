@@ -12,6 +12,11 @@ import initializeClient from '@/components/Game/agora';
 import useAuthStore from '@/Zustand_Store/AuthStore';
 import { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
+type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
+  _video_muted_?: boolean;
+  _audio_muted_?: boolean;
+};
+
 const CodingSpace = () => {
   const [mic, setMic] = useState(false);
   const [video, setVideo] = useState(false);
@@ -94,8 +99,8 @@ const CodingSpace = () => {
   };
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
-    const isVideoEnabled = !(user as any)._video_muted_;
-    const isAudioEnabled = !(user as any)._audio_muted_;
+    const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
+    const isAudioEnabled = !(user as ExtendedAgoraUser)._audio_muted_;
 
     console.log(isVideoEnabled, isAudioEnabled);
     
