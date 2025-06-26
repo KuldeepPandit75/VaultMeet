@@ -265,7 +265,7 @@ const useAuthStore = create<AuthState>()(
           const formData = new FormData();
           formData.append('avatar', file);
           
-          const response = await api.put('/avatar', formData, {
+          const response = await api.post('/avatar', formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
@@ -295,7 +295,7 @@ const useAuthStore = create<AuthState>()(
           const formData = new FormData();
           formData.append('banner', file);
           
-          const response = await api.put('/banner', formData, {
+          const response = await api.post('/banner', formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },

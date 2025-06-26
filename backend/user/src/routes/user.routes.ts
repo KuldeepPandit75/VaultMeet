@@ -34,8 +34,8 @@ router.get('/get-user-by-socket-id/:socketId', userController.getUserBySocketId)
 router.post('/update-socket-id', userController.updateSocketId);
 
 // New routes for image uploads
-router.put('/banner', authMiddleware, upload.single('banner'), userController.updateBanner);
-router.put('/avatar', authMiddleware, upload.single('avatar'), userController.updateProfilePicture);
+router.post('/banner', authMiddleware, upload.single('banner'), userController.updateBanner);
+router.post('/avatar', authMiddleware, upload.single('avatar'), userController.updateProfilePicture);
 
 // Google login route
 router.post('/google-login', userController.googleLogin);
