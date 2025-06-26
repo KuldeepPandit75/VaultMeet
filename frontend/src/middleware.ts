@@ -22,6 +22,7 @@ export async function middleware(request: NextRequest) {
       });
 
       if (!response.ok) {
+        console.log('Token is invalid');
         // If token is invalid, redirect to login
         return NextResponse.redirect(new URL('/login', request.url));
       }
@@ -34,6 +35,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect to home if accessing auth pages with token
   if (isAuthPage && token) {
+    console.log('hld')
     return NextResponse.redirect(new URL('/', request.url));
   }
 
