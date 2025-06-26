@@ -155,7 +155,7 @@ const userSchema = new mongoose_1.default.Schema({
         title: { type: String, default: "" },
         description: { type: String, default: "" },
         link: { type: String, default: "" },
-        techUsed: { type: [String], default: [] },
+        techUsed: { type: String, default: "" },
     },
     achievements: {
         type: String,

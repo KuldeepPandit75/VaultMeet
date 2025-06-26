@@ -39,7 +39,7 @@ export default function MePage() {
       title: "",
       description: "",
       link: "",
-      techUsed: [] as string[],
+      techUsed: "",
     },
     achievements: "" as string,
   });
@@ -67,7 +67,7 @@ export default function MePage() {
           title: "",
           description: "",
           link: "",
-          techUsed: [],
+          techUsed: "",
         },
         achievements: user.achievements || "",
       });
@@ -764,16 +764,13 @@ export default function MePage() {
                           </label>
                           <input
                             type="text"
-                            value={formData.featuredProject.techUsed.join(", ")}
+                            value={formData.featuredProject.techUsed}
                             onChange={(e) =>
                               setFormData((prev) => ({
                                 ...prev,
                                 featuredProject: {
                                   ...prev.featuredProject,
-                                  techUsed: e.target.value
-                                    .split(",")
-                                    .map((tech) => tech.trim())
-                                    .filter(Boolean),
+                                  techUsed: e.target.value,
                                 },
                               }))
                             }
@@ -797,7 +794,7 @@ export default function MePage() {
                                 title: "",
                                 description: "",
                                 link: "",
-                                techUsed: [],
+                                techUsed: "",
                               },
                             })
                           }
@@ -1089,12 +1086,12 @@ export default function MePage() {
                         {user?.featuredProject.techUsed &&
                           user?.featuredProject?.techUsed?.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {user?.featuredProject.techUsed.map((tech, i) => (
+                              {user?.featuredProject.techUsed.split(",").map((tech, i) => (
                                 <span
                                   key={i}
                                   className="px-2 py-1 text-black text-xs rounded-full bg-gray-200"
                                 >
-                                  {tech}
+                                  {tech.trim()}
                                 </span>
                               ))}
                             </div>

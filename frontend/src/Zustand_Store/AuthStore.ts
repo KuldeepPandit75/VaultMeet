@@ -76,7 +76,7 @@ interface User {
     title: string;
     description: string;
     link: string;
-    techUsed: string[];
+    techUsed: string;
   };
   achievements: string;
 }

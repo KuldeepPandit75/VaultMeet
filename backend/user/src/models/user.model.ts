@@ -53,7 +53,7 @@ interface IUser extends Document {
     title: string;
     description: string;
     link: string;
-    techUsed: string[];
+    techUsed: string;
   };
   achievements: string;
   googleId?: string;
@@ -217,7 +217,7 @@ const userSchema = new mongoose.Schema({
     title: {type: String, default: ""},
     description: {type: String, default: ""},
     link: {type: String, default: ""},
-    techUsed: {type: [String], default: []},
+    techUsed: {type: String, default: ""},
   },
 
   achievements: {
