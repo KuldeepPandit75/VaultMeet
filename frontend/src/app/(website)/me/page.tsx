@@ -266,8 +266,7 @@ export default function MePage() {
                   <Image
                     src={user.avatar}
                     alt="Profile"
-                    width={160}
-                    height={160}
+                    fill
                     className="rounded-full object-cover"
                   />
                 ) : (
