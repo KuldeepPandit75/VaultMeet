@@ -24,8 +24,8 @@ export default function WhyVaultMeet() {
           </div>
 
           <div className="p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300" style={{ backgroundColor: secondaryAccentColor }}>
-            <h3 className="text-xl font-semibold mb-4">Host Your Own Hackathon</h3>
-            <p className="text-gray-700">Set up a custom hackathon with ease — pick a theme, invite mentors, and manage everything from the organizer dashboard.</p>
+            <h3 className="text-xl font-semibold mb-4">Host Your Own Event</h3>
+            <p className="text-gray-700">Set up a custom Event with ease — pick a theme, invite mentors, and manage everything from the organizer dashboard.</p>
           </div>
 
           <div className="p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300" style={{ backgroundColor: secondaryAccentColor }}>

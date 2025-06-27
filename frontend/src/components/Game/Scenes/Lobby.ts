@@ -1,7 +1,7 @@
 import { Scene, Tilemaps } from "phaser";
 import { Socket } from "socket.io-client";
-import { PROXIMITY_RADIUS, GROUP_CHECK_INTERVAL } from "@/data/game";
-import { roomIdFor, sameGroup } from "@/utils/group";
+import { PROXIMITY_RADIUS } from "@/data/game";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 class Lobby extends Scene {
   // private map?: Tilemaps.Tilemap;
@@ -13,9 +13,7 @@ class Lobby extends Scene {
   private running: boolean = false;
   private socket?: Socket;
   private otherPlayers: { [key: string]: Phaser.Physics.Arcade.Sprite } = {};
-  private distBwUnP: number = 0;
   private nearbyPlayers: string[] = [];
-  private currentGroup: string[] = [];
   private nextCheck: number = 0;
   private map?: Tilemaps.Tilemap;
 
@@ -71,8 +69,7 @@ class Lobby extends Scene {
   }
 
   private setupSocketEvents() {
-    this.socket?.on(
-      "currentPlayers",
+    this.socket?.on("currentPlayers",
       (players: { id: string; x: number; y: number }[]) => {
         console.log("Received existing players:", players);
         players.forEach((player) => {
@@ -84,8 +81,24 @@ class Lobby extends Scene {
               "player",
               0
             );
+
+            this.otherPlayers[player.id].setScale(0.9);
             this.otherPlayers[player.id].setFrame(130);
             this.otherPlayers[player.id].setDepth(player.y);
+            this.otherPlayers[player.id].setInteractive();
+
+            this.otherPlayers[player.id].on("pointerover", () => {
+              if (this.nearbyPlayers.includes(player.id)) {
+                this.otherPlayers[player.id].setTint(0xffff99);
+                console.log("Hovering on players:", player.id);
+              }
+            });
+            this.otherPlayers[player.id].on("pointerout", () => {
+              this.otherPlayers[player.id].clearTint();
+            });
+            this.otherPlayers[player.id].on("pointerdown", () => {
+              useAuthStore.getState().setProfileBox(player.id)
+            });
           }
         });
       }
@@ -104,12 +117,25 @@ class Lobby extends Scene {
           this.otherPlayers[id].setFrame(130);
           this.otherPlayers[id].setScale(0.9);
           this.otherPlayers[id].setDepth(this.otherPlayers[id].y);
+          this.otherPlayers[id].setInteractive();
+
+          this.otherPlayers[id].on("pointerover", () => {
+            if (this.nearbyPlayers.includes(id)) {
+              this.otherPlayers[id].setTint(0xffff99);
+              console.log("Hovering on players:", id);
+            }
+          });
+          this.otherPlayers[id].on("pointerout", () => {
+            this.otherPlayers[id].clearTint();
+          });
+          this.otherPlayers[id].on("pointerdown", () => {
+            useAuthStore.getState().setProfileBox(id)
+          });
         }
       }
     });
 
-    this.socket?.on(
-      "playerMoved",
+    this.socket?.on("playerMoved",
       (data: {
         id: string;
         x: number;
@@ -169,6 +195,13 @@ class Lobby extends Scene {
 
     this.socket?.on("leftRoom", (data: { roomId: string }) => {
       console.log(`Left room: ${data.roomId}`);
+    });
+
+    this.socket?.on("duplicateLogin", () => {
+      alert(
+        "You have been logged out because your account logged in from another device."
+      );
+      window.location.href = "/";
     });
   }
 
@@ -411,42 +444,36 @@ class Lobby extends Scene {
     }
 
     if (time >= this.nextCheck) {
-      this.nextCheck = time + GROUP_CHECK_INTERVAL;
+      // Check for nearby players and update this.nearbyPlayers
 
-      const nearby: string[] = [];
-      Object.entries(this.otherPlayers).forEach(([id, sprite]) => {
-        if (
-          Phaser.Math.Distance.Between(
-            this.player!.x,
-            this.player!.y,
-            sprite.x,
-            sprite.y
-          ) < PROXIMITY_RADIUS
-        ) {
-          nearby.push(id);
-        }
-      });
+      if (this.player && this.otherPlayers) {
+        const playerX = this.player.x;
+        const playerY = this.player.y;
 
-      /* Only join/leave if the *set* has truly changed
-               (prevents “flapping” when a friend hovers at the edge). */
-      if (!sameGroup(nearby, this.currentGroup)) {
-        /* LEAVE the old room first */
-        if (this.currentGroup.length && this.socket) {
-          this.socket.emit("leaveRoom", { playerId: this.socket.id });
-        }
-
-        /* JOIN the new room (if any) */
-        if (nearby.length && this.socket) {
-          const roomId = roomIdFor([this.socket.id || "", ...nearby]);
-          this.socket.emit("joinRoom", {
-            roomId,
-            playerIds: [this.socket.id, ...nearby],
-          });
-        }
-
-        /* Memorise for next tick */
-        this.currentGroup = nearby;
+        Object.entries(this.otherPlayers).forEach(([id, otherPlayer]) => {
+          // Calculate distance between this.player and otherPlayer
+          const dist = Phaser.Math.Distance.Between(
+            playerX,
+            playerY,
+            otherPlayer.x,
+            otherPlayer.y
+          );
+          if (dist <= PROXIMITY_RADIUS) {
+            if (!this.nearbyPlayers.includes(id)) {
+              this.nearbyPlayers.push(id);
+            }
+          } else {
+            if (this.nearbyPlayers.includes(id)) {
+              const index = this.nearbyPlayers.indexOf(id);
+              if (index !== -1) {
+                this.nearbyPlayers.splice(index, 1);
+              }
+            }
+          }
+        });
       }
+
+      this.nextCheck = time + 300; // Check every 300ms (adjust as needed)
     }
 
     if (this.socket && this.player) {

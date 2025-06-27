@@ -14,7 +14,7 @@ export const ControlBar = ({ mic, video, handleMicToggle, handleVideoToggle, set
   const {user} = useAuthStore();
 
   return (
-    <div className="absolute w-[100vw] h-[60px] bg-[#111] bottom-0 right-0 flex justify-between items-center !px-10">
+    <div className="absolute z-50 w-[100vw] h-[60px] bg-[#111] bottom-0 right-0 flex justify-between items-center !px-10">
         <div className="flex gap-10 items-center">
           <div className="relative">
             <video

@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { Game } from 'phaser';
 import { useSocket } from "@/context/SocketContext";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 const PhaserGame = () => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { socket } = useSocket();
-
+  const {user} =useAuthStore();
+  
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -45,7 +47,7 @@ const PhaserGame = () => {
 
       // Wait for the next frame to ensure scene is initialized
       requestAnimationFrame(() => {
-        game.scene.start("Lobby", { socket });
+        game.scene.start("Lobby", { socket, userId: user?._id });
       });
 
       const handleResize = () => {

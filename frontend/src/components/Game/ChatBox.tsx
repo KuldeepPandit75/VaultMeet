@@ -13,7 +13,7 @@ interface ChatBoxProps {
 
 export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg }: ChatBoxProps) => {
   return (
-    <div className="h-[60vh] w-[25vw] absolute bottom-20 right-10 bg-[#111] rounded-lg !p-5 flex flex-col">
+    <div className="z-50 h-[60vh] w-[25vw] absolute bottom-20 right-10 bg-[#111] rounded-lg !p-5 flex flex-col">
       <div className="flex-1 overflow-y-auto mb-4">
         {messages
           .sort((a, b) => a.timestamp - b.timestamp)

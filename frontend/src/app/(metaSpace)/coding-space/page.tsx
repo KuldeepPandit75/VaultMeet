@@ -11,6 +11,7 @@ const PhaserGame = dynamic(() => import('@/components/Game/PhaserGame'), { ssr: 
 import initializeClient from '@/components/Game/agora';
 import useAuthStore from '@/Zustand_Store/AuthStore';
 import { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+import UserSummaryCard from '@/components/Game/Modals/UserSummaryCard';
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
   _video_muted_?: boolean;
@@ -24,7 +25,7 @@ const CodingSpace = () => {
   const [typedMsg, setTypedMsg] = useState("");
   const {socket} = useSocket();
   const { messages, addMessage, remoteUsers } = useSocketStore();
-  const { getUserBySocketId } = useAuthStore();
+  const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const [userNames, setUserNames] = useState<{[key: string]: string}>({});
 
   console.log(remoteUsers);
@@ -33,7 +34,7 @@ const CodingSpace = () => {
     if (!socket) return;
 
     initializeClient(socket);
-    socket.connect();
+    socket.connect()
 
     // Listen for incoming messages
     socket.on('receiveMessage', (data: { message: string; senderId: string }) => {
@@ -98,6 +99,10 @@ const CodingSpace = () => {
     setVideo(!video);
   };
 
+  const onClose=()=>{
+    setProfileBox('close')
+  }
+
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
     const isAudioEnabled = !(user as ExtendedAgoraUser)._audio_muted_;
@@ -145,7 +150,15 @@ const CodingSpace = () => {
         setBox={setBox}
       />
 
-      <div className="connectedUsers absolute top-10 left-1/2 -translate-x-1/2 flex gap-6 max-w-[80vw] flex-wrap justify-center">
+      {
+        profileBox!=="close" &&
+        <div>
+          <UserSummaryCard onClose={onClose}/>
+        </div>
+      }
+
+      {/* The Other Users Audio and Video */}
+      <div className="connectedUsers absolute top-10 left-1/2 -translate-x-1/2 flex gap-6 max-w-[80vw] flex-wrap justify-center z-50">
         {remoteUsers.map((user) => (
           <div key={user.uid} className="relative">
             <div id={`user-container-${user.uid}`} className="video-player w-[10vw] h-[12vh] bg-black rounded-sm relative">

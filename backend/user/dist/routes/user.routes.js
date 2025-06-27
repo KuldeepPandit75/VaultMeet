@@ -61,8 +61,8 @@ router.get('/check-username/:username', userController.checkUsernameAvailability
 router.get('/get-user-by-socket-id/:socketId', userController.getUserBySocketId);
 router.post('/update-socket-id', userController.updateSocketId);
 // New routes for image uploads
-router.put('/banner', auth_middleware_js_1.default, file_upload_js_1.upload.single('banner'), userController.updateBanner);
-router.put('/avatar', auth_middleware_js_1.default, file_upload_js_1.upload.single('avatar'), userController.updateProfilePicture);
+router.post('/banner', auth_middleware_js_1.default, file_upload_js_1.upload.single('banner'), userController.updateBanner);
+router.post('/avatar', auth_middleware_js_1.default, file_upload_js_1.upload.single('avatar'), userController.updateProfilePicture);
 // Google login route
 router.post('/google-login', userController.googleLogin);
 // OTP routes

@@ -40,10 +40,10 @@ export default function ProfilePage({
   params: Promise<{ profileId: string }>;
 }) {
   const { profileId } = use(params);
-  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const { getUserProfileById } = useAuthStore();
+  const { getUserProfileById,user } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -54,8 +54,8 @@ export default function ProfilePage({
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const user = await getUserProfileById(profileId);
-      setUser(user);
+      const profile = await getUserProfileById(profileId);
+      setProfile(profile);
     };
     fetchUserProfile();
   }, [profileId]);
@@ -64,11 +64,11 @@ export default function ProfilePage({
     <div className="min-h-screen">
     
       {/* Banner */}
-      {user?.banner ? (
+      {profile?.banner ? (
         <div
           className="h-64 w-full relative overflow-hidden"
           style={{
-            backgroundImage: `url(${user.banner})`,
+            backgroundImage: `url(${profile.banner})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -111,9 +111,9 @@ export default function ProfilePage({
                 style={{ backgroundColor: secondaryAccentColor }}
                 onClick={() => avatarInputRef.current?.click()}
               >
-                {user?.avatar ? (
+                {profile?.avatar ? (
                   <Image
-                    src={user.avatar}
+                    src={profile.avatar}
                     alt="Profile"
                     width={160}
                     height={160}
@@ -121,7 +121,7 @@ export default function ProfilePage({
                   />
                 ) : (
                   <span className="text-5xl font-bold text-black">
-                    {user?.fullname.firstname.charAt(0).toUpperCase()}
+                    {profile?.fullname.firstname.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
@@ -134,13 +134,13 @@ export default function ProfilePage({
                   className="text-4xl font-bold"
                   style={{ color: secondaryAccentColor }}
                 >
-                  {user?.fullname.firstname} {user?.fullname.lastname}
+                  {profile?.fullname.firstname} {profile?.fullname.lastname}
                 </h1>
               </div>
               <div className="flex gap-[30px] items-center">
-                <p className="text-white/80 text-lg">{user?.email}</p>
+                <p className="text-white/80 text-lg">{profile?.email}</p>
 
-                {user?.location && (
+                {profile?.location && (
                   <div className="flex items-center gap-2 text-white/80">
                     <svg
                       className="w-5 h-5"
@@ -161,7 +161,7 @@ export default function ProfilePage({
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    {user.location}
+                    {profile.location}
                   </div>
                 )}
               </div>
@@ -247,9 +247,9 @@ export default function ProfilePage({
                       >
                         Bio
                       </h2>
-                      {user?.bio ? (
+                      {profile?.bio ? (
                         <p className="text-white max-w-2xl text-lg ">
-                          {user.bio}
+                          {profile.bio}
                         </p>
                       ) : (
                         <p className="text-gray-500 italic">
@@ -263,9 +263,9 @@ export default function ProfilePage({
                     >
                       Skills & Expertise
                     </h2>
-                    {user?.skills && user?.skills?.length > 0 ? (
+                    {profile?.skills && profile?.skills?.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {user?.skills?.split(",").map((skill: string) => (
+                        {profile?.skills?.split(",").map((skill: string) => (
                           <span
                             key={skill}
                             className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -286,9 +286,9 @@ export default function ProfilePage({
                     >
                       Interests
                     </h2>
-                    {user?.interests && user?.interests?.length > 0 ? (
+                    {profile?.interests && profile?.interests?.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {user?.interests?.split(",").map((interest: string) => (
+                        {profile?.interests?.split(",").map((interest: string) => (
                           <span
                             key={interest}
                             className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -312,14 +312,14 @@ export default function ProfilePage({
                     >
                       Connect With Me
                     </h2>
-                    {user?.social?.github ||
-                    user?.social?.linkedin ||
-                    user?.social?.x ||
-                    user?.website ? (
+                    {profile?.social?.github ||
+                    profile?.social?.linkedin ||
+                    profile?.social?.x ||
+                    profile?.website ? (
                       <div className="flex flex-wrap gap-4 text-white">
-                        {user?.website && (
+                        {profile?.website && (
                           <a
-                            href={user.website}
+                            href={profile.website}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
@@ -337,9 +337,9 @@ export default function ProfilePage({
                             Website
                           </a>
                         )}
-                        {user?.social?.github && (
+                        {profile?.social?.github && (
                           <a
-                            href={user.social.github}
+                            href={profile.social.github}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
@@ -357,9 +357,9 @@ export default function ProfilePage({
                             GitHub
                           </a>
                         )}
-                        {user?.social?.linkedin && (
+                        {profile?.social?.linkedin && (
                           <a
-                            href={user.social.linkedin}
+                            href={profile.social.linkedin}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
@@ -377,9 +377,9 @@ export default function ProfilePage({
                             LinkedIn
                           </a>
                         )}
-                        {user?.social?.x && (
+                        {profile?.social?.x && (
                           <a
-                            href={user.social.x}
+                            href={profile.social.x}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
@@ -413,7 +413,7 @@ export default function ProfilePage({
                     >
                       Featured Projects
                     </h2>
-                    {user?.featuredProject?.title ? (
+                    {profile?.featuredProject?.title ? (
                       <div
                         className="p-4 rounded-lg transition-colors text-gray-400"
                         style={{
@@ -421,15 +421,15 @@ export default function ProfilePage({
                         }}
                       >
                         <h3 className="font-medium mb-2 text-white text-xl">
-                          {user.featuredProject.title}
+                          {profile.featuredProject.title}
                         </h3>
                         <p className="text-sm mb-3">
-                          {user.featuredProject.description}
+                          {profile.featuredProject.description}
                         </p>
-                        {user.featuredProject.techUsed &&
-                          user.featuredProject.techUsed.length > 0 && (
+                        {profile.featuredProject.techUsed &&
+                          profile.featuredProject.techUsed.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {user.featuredProject.techUsed.split(",").map((tech: string, i: number) => (
+                              {profile.featuredProject.techUsed.split(",").map((tech: string, i: number) => (
                                 <span
                                   key={i}
                                   className="px-2 py-1 text-black text-xs rounded-full bg-gray-200"
@@ -439,9 +439,9 @@ export default function ProfilePage({
                               ))}
                             </div>
                           )}
-                        {user.featuredProject.link && (
+                        {profile.featuredProject.link && (
                           <a
-                            href={user.featuredProject.link}
+                            href={profile.featuredProject.link}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm font-medium hover:underline"
@@ -466,9 +466,9 @@ export default function ProfilePage({
                     >
                       Achievements
                     </h2>
-                    {user?.achievements && user.achievements.split(",").length > 0 ? (
+                    {profile?.achievements && profile.achievements.split(",").length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {user.achievements
+                        {profile.achievements
                           .split(",")
                           .map((achievement: string, index: number) => (
                             <div

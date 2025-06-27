@@ -23,7 +23,7 @@ export default function HeroSection() {
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 md:mb-6"
           style={{ color: secondaryAccentColor }}
         >
-          Host & Join Hackathons in a <br /> 2D Virtual World
+          Host & Join Events in a <br /> 2D Virtual World
         </h1>
         <h2
           className="text-xl sm:text-2xl font-semibold mb-6 md:mb-8"
@@ -45,7 +45,7 @@ export default function HeroSection() {
             }}
             onClick={() => router.push('/events')}
           >
-            Explore Hackathons
+            Explore Events
           </button>
           <span
             className="text-lg md:text-xl font-semibold cursor-pointer"

@@ -10,7 +10,7 @@ interface ThemeStore {
 }
 
 export const useThemeStore = create<ThemeStore>((set) => ({
-    isDarkMode: false, // Always start with a constant value!
+    isDarkMode: true, // Always start with a constant value!
     primaryAccentColor: "#AF8D86",
     secondaryAccentColor: "#55917F",
     setDarkMode: (mode) => set({ isDarkMode: mode }),

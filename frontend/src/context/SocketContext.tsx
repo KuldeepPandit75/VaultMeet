@@ -1,5 +1,6 @@
 "use client";
 import useAuthStore from '@/Zustand_Store/AuthStore';
+import { usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -18,18 +19,14 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const {user, updateSocketId, getUserBySocketId} = useAuthStore();
+  const {user, updateSocketId} = useAuthStore();
+
+  const path = usePathname();
 
   useEffect(() => {
-    if(user && socket?.id){
+    if (user && socket?.id && socket.connected) {
       updateSocketId(socket.id, user._id);
-      console.log('user found');
-      setTimeout(() => {
-        getUserBySocketId(socket.id || '').then((user) => {
-          console.log(user);
-        });
-      }, 2000);
-
+      socket.emit("registerPlayer", { userId: user?._id });
     }
   }, [user,socket?.id]);
 
@@ -53,6 +50,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socketInstance.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    console.log(path.includes('coding-space'),socket);
+    if(socket && !path.includes('coding-space')){
+      socket.disconnect();
+    }
+  }, [socket, path]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

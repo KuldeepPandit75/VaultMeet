@@ -19,7 +19,7 @@ export default function CallToAction() {
             style={{ backgroundColor: primaryAccentColor }}
           >
             <h3 className="text-2xl font-semibold mb-4 text-white">Join as a Participant</h3>
-            <p className="text-white/90">Discover hackathons and start building.</p>
+            <p className="text-white/90">Discover events and start building.</p>
           </Link>
 
           <Link 
@@ -28,7 +28,7 @@ export default function CallToAction() {
             style={{ backgroundColor: secondaryAccentColor }}
           >
             <h3 className="text-2xl font-semibold mb-4 text-white">Become a Host</h3>
-            <p className="text-white/90">Launch your hackathon today – free to start.</p>
+            <p className="text-white/90">Launch your event today – free to start.</p>
           </Link>
         </div>
       </div>

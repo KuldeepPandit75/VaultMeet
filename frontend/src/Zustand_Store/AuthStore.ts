@@ -29,7 +29,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-interface User {
+export interface User {
   _id: string;
   socketId: string;
   username: string;
@@ -112,6 +112,8 @@ interface AuthState {
   getUserProfileById: (profileId: string) => Promise<User>;
   updateSocketId: (socketId: string, userId: string) => Promise<void>;
   getUserBySocketId: (socketId: string) => Promise<User>;
+  profileBox: string;
+  setProfileBox: (modalName:string) => void;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -391,7 +393,10 @@ const useAuthStore = create<AuthState>()(
           console.error('Error getting user by socket ID:', error);
           throw error;
         }
-      }
+      },
+
+      profileBox: "close",
+      setProfileBox: (modalName)=>set({profileBox:modalName})
     }),
     {
       name: 'hackmeet-auth',

@@ -1,5 +1,5 @@
 export function roomIdFor(ids: string[]): string {
-    return ids.sort().join('-');          //   a-b-c  ===  c-b-a  === same room
+    return ids.sort().join('-');      //   a-b-c  ===  c-b-a  === same room
   }
   
   export function sameGroup(a: string[], b: string[]): boolean {

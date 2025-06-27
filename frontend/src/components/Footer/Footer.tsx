@@ -15,7 +15,7 @@ export default function Footer() {
                     <div className="space-y-4">
                         <h3 className="text-2xl font-bold" style={{ color: secondaryAccentColor }}>Vault<span style={{ color: primaryAccentColor }}>Meet</span></h3>
                         <p className="text-gray-600">
-                            Host & Join Hackathons in a 2D Virtual World. Connect, collaborate, and create amazing projects.
+                            Host & Join Events in a 2D Virtual World. Connect, collaborate, and create amazing projects.
                         </p>
                         <div className="flex space-x-4">
                             <a href="https://twitter.com/vaultmeet" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity text-white">
@@ -47,7 +47,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link href="/host" className="text-gray-600 hover:text-gray-900 transition-colors">
-                                    Host a Hackathon
+                                    Host a Event
                                 </Link>
                             </li>
                             <li>
