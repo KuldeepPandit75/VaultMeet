@@ -1,85 +1,166 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage } from "@fortawesome/free-solid-svg-icons";
+import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage, faDesktop } from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
+import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 
 interface ControlBarProps {
   mic: boolean;
   video: boolean;
+  screenShare: boolean;
   handleMicToggle: () => void;
   handleVideoToggle: () => void;
+  handleScreenShareToggle: () => void;
   setBox: (box: (prev: boolean) => boolean) => void;
 }
 
-export const ControlBar = ({ mic, video, handleMicToggle, handleVideoToggle, setBox }: ControlBarProps) => {
+export const ControlBar = ({ 
+  mic, 
+  video, 
+  screenShare,
+  handleMicToggle, 
+  handleVideoToggle, 
+  handleScreenShareToggle,
+  setBox 
+}: ControlBarProps) => {
   const {user} = useAuthStore();
+  const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
 
   return (
-    <div className="absolute z-50 w-[100vw] h-[60px] bg-[#111] bottom-0 right-0 flex justify-between items-center !px-10">
-        <div className="flex gap-10 items-center">
+    <div 
+      className="absolute z-50 w-[100vw] h-[70px] bottom-0 right-0 flex justify-between items-center !px-10 backdrop-blur-md border-t"
+      style={{ 
+        backgroundColor: isDarkMode ? 'rgba(17, 17, 17, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        borderColor: isDarkMode ? '#333333' : '#e5e5e5',
+        boxShadow: isDarkMode 
+          ? '0 -10px 30px -10px rgba(0, 0, 0, 0.5)' 
+          : '0 -10px 30px -10px rgba(0, 0, 0, 0.1)'
+      }}
+    >
+        <div className="flex gap-6 items-center">
+          {/* Local Video Preview */}
           <div className="relative">
             <video
-              className="video-player h-12 w-20 bg-black rounded-sm"
-              style={{display: video ? 'block' : 'none'}}
+              className="video-player h-14 w-24 rounded-xl object-cover shadow-lg"
+              style={{
+                display: video ? 'block' : 'none',
+                border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
+              }}
               id="user-1"
               autoPlay
               muted
               playsInline
             ></video>
             {!video && (
-              <div className="h-10 w-20 bg-black flex justify-center items-center rounded-sm">
-                <p className="text-white text-sm p-2 h-6 w-6 flex items-center justify-center bg-gray-400 rounded-full">
+              <div 
+                className="h-14 w-24 rounded-xl flex justify-center items-center shadow-lg"
+                style={{ 
+                  backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+                  border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
+                }}
+              >
+                <div 
+                  className="h-8 w-8 flex items-center justify-center rounded-full text-white font-semibold text-sm"
+                  style={{ backgroundColor: primaryAccentColor }}
+                >
                   {user?.fullname?.firstname.charAt(0)}
-                </p>
+                </div>
               </div>
             )}
           </div>
-          {mic ? (
+
+          {/* Control Buttons */}
+          <div className="flex gap-4">
+            {/* Microphone Button */}
             <button
-              className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
               onClick={handleMicToggle}
+              style={{
+                backgroundColor: mic 
+                  ? (isDarkMode ? '#2a2a2a' : '#f5f5f5')
+                  : '#ef4444',
+                color: mic 
+                  ? (isDarkMode ? '#ffffff' : '#1a1a1a')
+                  : '#ffffff',
+                border: `2px solid ${mic ? (isDarkMode ? '#333333' : '#e5e5e5') : '#ef4444'}`
+              }}
             >
-              <FontAwesomeIcon icon={faMicrophone} className="text-white" />
-            </button>
-          ) : (
-            <button
-              className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-              onClick={handleMicToggle}
-            >
-              <FontAwesomeIcon
-                icon={faMicrophoneSlash}
-                className="text-red-500"
+              <FontAwesomeIcon 
+                icon={mic ? faMicrophone : faMicrophoneSlash} 
+                className="text-lg"
               />
             </button>
-          )}
-          {video ? (
+
+            {/* Video Button */}
             <button
-              className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
               onClick={handleVideoToggle}
+              style={{
+                backgroundColor: video 
+                  ? (isDarkMode ? '#2a2a2a' : '#f5f5f5')
+                  : '#ef4444',
+                color: video 
+                  ? (isDarkMode ? '#ffffff' : '#1a1a1a')
+                  : '#ffffff',
+                border: `2px solid ${video ? (isDarkMode ? '#333333' : '#e5e5e5') : '#ef4444'}`
+              }}
             >
-              <FontAwesomeIcon icon={faVideo} className="text-white" />
+              <FontAwesomeIcon 
+                icon={video ? faVideo : faVideoSlash} 
+                className="text-lg"
+              />
             </button>
-          ) : (
+
+            {/* Screen Share Button */}
             <button
-              className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-              onClick={handleVideoToggle}
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+              onClick={handleScreenShareToggle}
+              title={screenShare ? "Stop Screen Share" : "Start Screen Share"}
+              style={{
+                backgroundColor: screenShare 
+                  ? secondaryAccentColor
+                  : (isDarkMode ? '#2a2a2a' : '#f5f5f5'),
+                color: screenShare 
+                  ? '#ffffff'
+                  : (isDarkMode ? '#ffffff' : '#1a1a1a'),
+                border: `2px solid ${screenShare ? secondaryAccentColor : (isDarkMode ? '#333333' : '#e5e5e5')}`,
+                boxShadow: screenShare ? `0 4px 12px ${secondaryAccentColor}40` : 'none'
+              }}
             >
-              <FontAwesomeIcon icon={faVideoSlash} className="text-red-500" />
+              <FontAwesomeIcon 
+                icon={faDesktop} 
+                className="text-lg"
+              />
             </button>
-          )}
-          <button
-            className="h-8 w-8 hover:bg-[#bfbfbf55] rounded-[50%]"
-            onClick={() => setBox((prev: boolean) => !prev)}
-          >
-            <FontAwesomeIcon icon={faMessage} className="text-white" />
-          </button>
+
+            {/* Chat Button */}
+            <button
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+              onClick={() => setBox((prev: boolean) => !prev)}
+              style={{
+                backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+                color: isDarkMode ? '#ffffff' : '#1a1a1a',
+                border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
+              }}
+            >
+              <FontAwesomeIcon icon={faMessage} className="text-lg" />
+            </button>
+          </div>
         </div>
-        <div className="homeBtn h-12 w-12 flex justify-center items-center rounded-[50%] cursor-pointer scale-[0.9] hover:scale-[1] transition-all duration-200 hover:shadow-lg">
+
+        {/* Home Button */}
+        <div 
+          className="h-14 w-14 flex justify-center items-center rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+          style={{
+            backgroundColor: primaryAccentColor,
+            boxShadow: `0 4px 12px ${primaryAccentColor}40`
+          }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             x="0px"
             y="0px"
-            width="30"
-            height="30"
+            width="28"
+            height="28"
             viewBox="0 0 64 64"
             fill="#fff"
           >

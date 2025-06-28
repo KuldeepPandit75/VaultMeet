@@ -4,6 +4,7 @@ import type {
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
   IAgoraRTCRemoteUser,
+  ILocalVideoTrack,
 } from "agora-rtc-sdk-ng";
 import { useSocketStore } from "../../Zustand_Store/SocketStore";
 
@@ -14,14 +15,18 @@ const token = null; // Use token authentication in production
 let client: IAgoraRTCClient | null = null;
 let localAudioTrack: IMicrophoneAudioTrack | null = null;
 let localVideoTrack: ICameraVideoTrack | null = null;
+let localScreenTrack: ILocalVideoTrack | null = null; // Screen track type
 let currentChannel: string | null = null;
+let isScreenSharing = false;
+
 
 export default async function initializeClient(
   socket: Socket
 ) {
   if (typeof window === "undefined") return;
-
+  
   const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+  // AgoraRTC.setLogLevel(4);
   client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
   setupEventListeners(socket);
   await createLocalMediaTracks();
@@ -87,7 +92,7 @@ function setupEventListeners(socket: Socket) {
           await leaveChannel();
         }
         // Join new channel
-        await joinChannel(data.roomId, data.socketId);
+        await joinChannel(data.roomId, socket.id || "");
       }
     }
   );
@@ -247,5 +252,104 @@ export const toggleMicrophone = async () => {
   if (localAudioTrack) {
     const isMuted = localAudioTrack.muted;
     await localAudioTrack.setMuted(!isMuted);
+  }
+};
+
+// Function to create screen sharing track
+async function createScreenTrack() {
+  try {
+    const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+    const screenTrackResult = await AgoraRTC.createScreenVideoTrack({
+      encoderConfig: "1080p_1",
+    });
+    
+    // Handle the result which can be either a single track or an array
+    if (Array.isArray(screenTrackResult)) {
+      localScreenTrack = screenTrackResult[0]; // Take the video track from the array
+    } else {
+      localScreenTrack = screenTrackResult;
+    }
+    
+    console.log("Screen track created successfully");
+    return localScreenTrack;
+  } catch (error) {
+    console.error("Error creating screen track:", error);
+    return null;
+  }
+}
+
+// Function to start screen sharing
+export const startScreenShare = async () => {
+  if (!client || !currentChannel) {
+    console.error("Client not connected or no channel");
+    return false;
+  }
+
+  try {
+    console.log("Starting screen share...");
+    
+    // Create screen track
+    const screenTrack = await createScreenTrack();
+    if (!screenTrack) {
+      console.error("Failed to create screen track");
+      return false;
+    }
+
+    // Unpublish current video track
+    if (localVideoTrack) {
+      await client.unpublish(localVideoTrack);
+      console.log("Unpublished video track");
+    }
+
+    // Publish screen track
+    await client.publish(screenTrack);
+    console.log("Published screen track");
+    
+    isScreenSharing = true;
+    return true;
+  } catch (error) {
+    console.error("Error starting screen share:", error);
+    return false;
+  }
+};
+
+// Function to stop screen sharing
+export const stopScreenShare = async () => {
+  if (!client || !currentChannel) {
+    console.error("Client not connected or no channel");
+    return false;
+  }
+
+  try {
+    console.log("Stopping screen share...");
+    
+    // Unpublish screen track
+    if (localScreenTrack) {
+      await client.unpublish(localScreenTrack);
+      localScreenTrack.close();
+      localScreenTrack = null;
+      console.log("Unpublished and closed screen track");
+    }
+
+    // Republish video track
+    if (localVideoTrack) {
+      await client.publish(localVideoTrack);
+      console.log("Republished video track");
+    }
+    
+    isScreenSharing = false;
+    return true;
+  } catch (error) {
+    console.error("Error stopping screen share:", error);
+    return false;
+  }
+};
+
+// Function to toggle screen sharing
+export const toggleScreenShare = async () => {
+  if (isScreenSharing) {
+    return await stopScreenShare();
+  } else {
+    return await startScreenShare();
   }
 };

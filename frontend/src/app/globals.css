@@ -45,6 +45,15 @@ body{
     .animate-blink {
       animation: blink 1s step-end infinite;
     }
+    
+    /* Theme-aware placeholder styles */
+    .placeholder-dark::placeholder {
+      color: #888888;
+    }
+    
+    .placeholder-light::placeholder {
+      color: #999999;
+    }
   }
   
   @keyframes blink {
