@@ -35,7 +35,7 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-4 space-y-3 pr-2">
+      <div className="flex-1 overflow-y-auto mb-4 space-y-3 pr-2" style={{ maxWidth: '100%' }}>
         {messages
           .sort((a, b) => a.timestamp - b.timestamp)
           .map((msg, index) => (
@@ -46,7 +46,7 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
               }`}
             >
               <div
-                className={`max-w-[80%] !p-3 rounded-2xl shadow-sm ${
+                className={`max-w-[80%] min-w-[60px] !p-3 rounded-2xl shadow-sm ${
                   msg.senderId === socket?.id 
                     ? "rounded-br-md" 
                     : "rounded-bl-md"
@@ -57,13 +57,19 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
                     : isDarkMode ? '#2a2a2a' : '#f5f5f5',
                   color: msg.senderId === socket?.id 
                     ? '#ffffff' 
-                    : isDarkMode ? '#ffffff' : '#1a1a1a'
+                    : isDarkMode ? '#ffffff' : '#1a1a1a',
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  whiteSpace: 'pre-line',
+                  boxShadow: isDarkMode
+                    ? '0 2px 8px rgba(0,0,0,0.5)'
+                    : '0 2px 8px rgba(0,0,0,0.08)'
                 }}
               >
-                <div className="text-sm font-medium mb-1 opacity-70">
+                <div className="text-sm font-medium mb-1 opacity-70 truncate" style={{ maxWidth: '100%' }}>
                   {msg.senderId === socket?.id ? 'You' : `User ${msg.senderId.slice(-4)}`}
                 </div>
-                <div className="text-sm leading-relaxed">
+                <div className="text-sm leading-relaxed break-words" style={{ maxWidth: '100%' }}>
                   {msg.message}
                 </div>
               </div>
@@ -81,11 +87,13 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
       <div className="w-full flex items-center gap-3">
         <input
           type="text"
+          id='chatInput'
           className={`flex-1 h-10 rounded-xl !px-4 text-sm transition-all duration-200 focus:outline-none focus:ring-2 ${isDarkMode ? 'placeholder-dark' : 'placeholder-light'}`}
           placeholder="Type your message..."
           value={typedMsg}
           onChange={(e) => setTypedMsg(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
+            e.stopPropagation();
             if (e.key === "Enter") {
               handleSentMsg();
             }
@@ -94,7 +102,9 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
             backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
             color: isDarkMode ? '#ffffff' : '#1a1a1a',
             border: `1px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`,
-            boxShadow: isDarkMode ? 'inset 0 1px 3px rgba(0, 0, 0, 0.3)' : 'inset 0 1px 3px rgba(0, 0, 0, 0.1)'
+            boxShadow: isDarkMode ? 'inset 0 1px 3px rgba(0, 0, 0, 0.3)' : 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
+            maxWidth: '100%',
+            minWidth: 0
           }}
         />
         <button

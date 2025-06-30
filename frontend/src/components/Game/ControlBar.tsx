@@ -1,7 +1,17 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage, faDesktop, faUsers, faGamepad } from "@fortawesome/free-solid-svg-icons";
+import {
+  faMicrophone,
+  faMicrophoneSlash,
+  faVideo,
+  faVideoSlash,
+  faMessage,
+  faDesktop,
+  faUsers,
+  faGamepad,
+} from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
+import Image from "next/image";
 
 interface ControlBarProps {
   mic: boolean;
@@ -11,170 +21,205 @@ interface ControlBarProps {
   handleVideoToggle: () => void;
   handleScreenShareToggle: () => void;
   setBox: (box: (prev: boolean) => boolean) => void;
-  viewMode: 'game' | 'meeting';
+  viewMode: "game" | "meeting";
   handleViewToggle: () => void;
   isMeetingViewAvailable: boolean;
 }
 
-export const ControlBar = ({ 
-  mic, 
-  video, 
+export const ControlBar = ({
+  mic,
+  video,
   screenShare,
-  handleMicToggle, 
-  handleVideoToggle, 
+  handleMicToggle,
+  handleVideoToggle,
   handleScreenShareToggle,
   setBox,
   viewMode,
   handleViewToggle,
-  isMeetingViewAvailable 
+  isMeetingViewAvailable,
 }: ControlBarProps) => {
-  const {user} = useAuthStore();
-  const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
+  const { user } = useAuthStore();
+  const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
+    useThemeStore();
 
   return (
-    <div 
+    <div
       className="absolute z-50 w-[100vw] h-[70px] bottom-0 right-0 flex justify-between items-center !px-10 backdrop-blur-md border-t"
-      style={{ 
-        backgroundColor: isDarkMode ? 'rgba(17, 17, 17, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        borderColor: isDarkMode ? '#333333' : '#e5e5e5',
-        boxShadow: isDarkMode 
-          ? '0 -10px 30px -10px rgba(0, 0, 0, 0.5)' 
-          : '0 -10px 30px -10px rgba(0, 0, 0, 0.1)'
+      style={{
+        backgroundColor: isDarkMode
+          ? "rgba(17, 17, 17, 0.95)"
+          : "rgba(255, 255, 255, 0.95)",
+        borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+        boxShadow: isDarkMode
+          ? "0 -10px 30px -10px rgba(0, 0, 0, 0.5)"
+          : "0 -10px 30px -10px rgba(0, 0, 0, 0.1)",
       }}
     >
-        <div className="flex gap-6 items-center">
-          {/* Local Video Preview */}
-          <div className="relative">
-            <video
-              className="video-player h-14 w-24 rounded-xl object-cover shadow-lg"
+      <div className="flex gap-6 items-center">
+        {/* Local Video Preview */}
+        <div className="relative">
+          <video
+            className="video-player h-14 w-24 rounded-xl object-cover shadow-lg"
+            style={{
+              display: video ? "block" : "none",
+              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+            }}
+            id="user-1"
+            autoPlay
+            muted
+            playsInline
+          ></video>
+          {!video && (
+            <div
+              className="h-14 w-24 rounded-xl flex justify-center items-center shadow-lg"
               style={{
-                display: video ? 'block' : 'none',
-                border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
+                backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
               }}
-              id="user-1"
-              autoPlay
-              muted
-              playsInline
-            ></video>
-            {!video && (
-              <div 
-                className="h-14 w-24 rounded-xl flex justify-center items-center shadow-lg"
-                style={{ 
-                  backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
-                  border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
-                }}
-              >
-                <div 
+            >
+              {user?.avatar ? (
+                <Image
+                  src={user.avatar}
+                  alt="User Avatar"
+                  height={20}
+                  width={20}
+                  className="h-8 w-8 rounded-full object-cover"
+                  style={{ backgroundColor: primaryAccentColor }}
+                />
+              ) : (
+                <div
                   className="h-8 w-8 flex items-center justify-center rounded-full text-white font-semibold text-sm"
                   style={{ backgroundColor: primaryAccentColor }}
                 >
                   {user?.fullname?.firstname.charAt(0)}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Control Buttons */}
-          <div className="flex gap-4">
-            {/* Microphone Button */}
-            <button
-              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-              onClick={handleMicToggle}
-              style={{
-                backgroundColor: mic 
-                  ? (isDarkMode ? '#2a2a2a' : '#f5f5f5')
-                  : '#ef4444',
-                color: mic 
-                  ? (isDarkMode ? '#ffffff' : '#1a1a1a')
-                  : '#ffffff',
-                border: `2px solid ${mic ? (isDarkMode ? '#333333' : '#e5e5e5') : '#ef4444'}`
-              }}
-            >
-              <FontAwesomeIcon 
-                icon={mic ? faMicrophone : faMicrophoneSlash} 
-                className="text-lg"
-              />
-            </button>
-
-            {/* Video Button */}
-            <button
-              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-              onClick={handleVideoToggle}
-              style={{
-                backgroundColor: video 
-                  ? (isDarkMode ? '#2a2a2a' : '#f5f5f5')
-                  : '#ef4444',
-                color: video 
-                  ? (isDarkMode ? '#ffffff' : '#1a1a1a')
-                  : '#ffffff',
-                border: `2px solid ${video ? (isDarkMode ? '#333333' : '#e5e5e5') : '#ef4444'}`
-              }}
-            >
-              <FontAwesomeIcon 
-                icon={video ? faVideo : faVideoSlash} 
-                className="text-lg"
-              />
-            </button>
-
-            {/* Screen Share Button */}
-            <button
-              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-              onClick={handleScreenShareToggle}
-              title={screenShare ? "Stop Screen Share" : "Start Screen Share"}
-              style={{
-                backgroundColor: screenShare 
-                  ? secondaryAccentColor
-                  : (isDarkMode ? '#2a2a2a' : '#f5f5f5'),
-                color: screenShare 
-                  ? '#ffffff'
-                  : (isDarkMode ? '#ffffff' : '#1a1a1a'),
-                border: `2px solid ${screenShare ? secondaryAccentColor : (isDarkMode ? '#333333' : '#e5e5e5')}`,
-                boxShadow: screenShare ? `0 4px 12px ${secondaryAccentColor}40` : 'none'
-              }}
-            >
-              <FontAwesomeIcon 
-                icon={faDesktop} 
-                className="text-lg"
-              />
-            </button>
-
-            {/* View Toggle Button */}
-            {isMeetingViewAvailable && (
-              <button
-                className="h-12 w-28 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-                onClick={handleViewToggle}
-                style={{
-                  backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
-                  color: isDarkMode ? '#ffffff' : '#1a1a1a',
-                  border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
-                }}
-              >
-                <FontAwesomeIcon icon={viewMode === 'game' ? faUsers : faGamepad} className="text-lg" />
-                <span className="font-medium">{viewMode === 'game' ? 'Meeting' : 'Game'} View</span>
-              </button>
-            )}
-
-            {/* Chat Button */}
-            <button
-              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-              onClick={() => setBox((prev: boolean) => !prev)}
-              style={{
-                backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
-                color: isDarkMode ? '#ffffff' : '#1a1a1a',
-                border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
-              }}
-            >
-              <FontAwesomeIcon icon={faMessage} className="text-lg" />
-            </button>
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Control Buttons */}
+        <div className="flex gap-4">
+          {/* Microphone Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={handleMicToggle}
+            style={{
+              backgroundColor: mic
+                ? isDarkMode
+                  ? "#2a2a2a"
+                  : "#f5f5f5"
+                : "#ef4444",
+              color: mic ? (isDarkMode ? "#ffffff" : "#1a1a1a") : "#ffffff",
+              border: `2px solid ${
+                mic ? (isDarkMode ? "#333333" : "#e5e5e5") : "#ef4444"
+              }`,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={mic ? faMicrophone : faMicrophoneSlash}
+              className="text-lg"
+            />
+          </button>
+
+          {/* Video Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={handleVideoToggle}
+            style={{
+              backgroundColor: video
+                ? isDarkMode
+                  ? "#2a2a2a"
+                  : "#f5f5f5"
+                : "#ef4444",
+              color: video ? (isDarkMode ? "#ffffff" : "#1a1a1a") : "#ffffff",
+              border: `2px solid ${
+                video ? (isDarkMode ? "#333333" : "#e5e5e5") : "#ef4444"
+              }`,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={video ? faVideo : faVideoSlash}
+              className="text-lg"
+            />
+          </button>
+
+          {/* Screen Share Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={handleScreenShareToggle}
+            title={screenShare ? "Stop Screen Share" : "Start Screen Share"}
+            style={{
+              backgroundColor: screenShare
+                ? secondaryAccentColor
+                : isDarkMode
+                ? "#2a2a2a"
+                : "#f5f5f5",
+              color: screenShare
+                ? "#ffffff"
+                : isDarkMode
+                ? "#ffffff"
+                : "#1a1a1a",
+              border: `2px solid ${
+                screenShare
+                  ? secondaryAccentColor
+                  : isDarkMode
+                  ? "#333333"
+                  : "#e5e5e5"
+              }`,
+              boxShadow: screenShare
+                ? `0 4px 12px ${secondaryAccentColor}40`
+                : "none",
+            }}
+          >
+            <FontAwesomeIcon icon={faDesktop} className="text-lg" />
+          </button>
+
+          {/* Chat Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={() => setBox((prev: boolean) => !prev)}
+            style={{
+              backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+            }}
+          >
+            <FontAwesomeIcon icon={faMessage} className="text-lg" />
+          </button>
+        </div>
+      </div>
+
+      <div
+      className="flex gap-4"
+      >
+        {/* View Toggle Button */}
+        {isMeetingViewAvailable && (
+          <button
+            className="h-12 rounded-xl px-4 flex items-center justify-center gap-6 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={handleViewToggle}
+            style={{
+              backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+            }}
+          >
+            <FontAwesomeIcon
+              icon={viewMode === "game" ? faUsers : faGamepad}
+              className="text-lg"
+            />
+            <span className="font-medium">
+              {viewMode === "game" ? "Meeting" : "Game"} View
+            </span>
+          </button>
+        )}
+
         {/* Home Button */}
-        <div 
-          className="h-14 w-14 flex justify-center items-center rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+        <div
+          className="h-12 w-12 flex justify-center items-center rounded-xl cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
           style={{
             backgroundColor: primaryAccentColor,
-            boxShadow: `0 4px 12px ${primaryAccentColor}40`
+            boxShadow: `0 4px 12px ${primaryAccentColor}40`,
           }}
         >
           <svg
@@ -190,5 +235,6 @@ export const ControlBar = ({
           </svg>
         </div>
       </div>
+    </div>
   );
 };
