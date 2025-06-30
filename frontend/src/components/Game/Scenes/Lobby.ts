@@ -160,6 +160,7 @@ class Lobby extends Scene {
 
           // Fetch and display player name below avatar
           try {
+            await new Promise(resolve => setTimeout(resolve, 500));
             const user = await useAuthStore.getState().getUserBySocketId(id);
             const name = user
               ? `${user.fullname.firstname} ${user.fullname.lastname}`
