@@ -20,6 +20,7 @@ import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
   _video_muted_?: boolean;
@@ -34,18 +35,24 @@ const CodingSpace = () => {
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers } = useSocketStore();
-  const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { getUserBySocketId, profileBox, setProfileBox,user } = useAuthStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
   const [viewMode, setViewMode] = useState<"game" | "meeting">("game");
+  const router= useRouter();
+
+  // Check logged in or not
+  useEffect(()=>{
+    if(!user){
+      router.push("/login")
+    }
+  })
 
   const toggleViewMode = () => {
     setViewMode((prevMode) => (prevMode === "game" ? "meeting" : "game"));
   };
-
-  console.log(remoteUsers);
 
   // Debug remote users changes
   useEffect(() => {
