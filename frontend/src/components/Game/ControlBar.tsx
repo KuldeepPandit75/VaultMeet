@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage, faDesktop } from "@fortawesome/free-solid-svg-icons";
+import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faMessage, faDesktop, faUsers, faGamepad } from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 
@@ -11,6 +11,9 @@ interface ControlBarProps {
   handleVideoToggle: () => void;
   handleScreenShareToggle: () => void;
   setBox: (box: (prev: boolean) => boolean) => void;
+  viewMode: 'game' | 'meeting';
+  handleViewToggle: () => void;
+  isMeetingViewAvailable: boolean;
 }
 
 export const ControlBar = ({ 
@@ -20,7 +23,10 @@ export const ControlBar = ({
   handleMicToggle, 
   handleVideoToggle, 
   handleScreenShareToggle,
-  setBox 
+  setBox,
+  viewMode,
+  handleViewToggle,
+  isMeetingViewAvailable 
 }: ControlBarProps) => {
   const {user} = useAuthStore();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
@@ -131,6 +137,22 @@ export const ControlBar = ({
                 className="text-lg"
               />
             </button>
+
+            {/* View Toggle Button */}
+            {isMeetingViewAvailable && (
+              <button
+                className="h-12 w-28 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                onClick={handleViewToggle}
+                style={{
+                  backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+                  color: isDarkMode ? '#ffffff' : '#1a1a1a',
+                  border: `2px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`
+                }}
+              >
+                <FontAwesomeIcon icon={viewMode === 'game' ? faUsers : faGamepad} className="text-lg" />
+                <span className="font-medium">{viewMode === 'game' ? 'Meeting' : 'Game'} View</span>
+              </button>
+            )}
 
             {/* Chat Button */}
             <button

@@ -16,6 +16,8 @@ class Lobby extends Scene {
   private nearbyPlayers: string[] = [];
   private nextCheck: number = 0;
   private map?: Tilemaps.Tilemap;
+  private playerNameText?: Phaser.GameObjects.Text;
+  private otherPlayerNameTexts: { [key: string]: Phaser.GameObjects.Text } = {};
 
   constructor() {
     super({ key: "Lobby" });
@@ -70,9 +72,9 @@ class Lobby extends Scene {
 
   private setupSocketEvents() {
     this.socket?.on("currentPlayers",
-      (players: { id: string; x: number; y: number }[]) => {
+      async (players: { id: string; x: number; y: number }[]) => {
         console.log("Received existing players:", players);
-        players.forEach((player) => {
+        for (const player of players) {
           if (player.id !== this.socket?.id) {
             console.log("Creating sprite for existing player:", player.id);
             this.otherPlayers[player.id] = this.physics.add.sprite(
@@ -87,6 +89,42 @@ class Lobby extends Scene {
             this.otherPlayers[player.id].setDepth(player.y);
             this.otherPlayers[player.id].setInteractive();
 
+            // Fetch and display player name below avatar
+            try {
+              const user = await useAuthStore.getState().getUserBySocketId(player.id);
+              const name = user ? `${user.fullname.firstname} ${user.fullname.lastname}` : player.id;
+              this.otherPlayerNameTexts[player.id] = this.add.text(
+                player.x,
+                player.y + 40,
+                name,
+                {
+                  fontSize: "10px",
+                  fontFamily: "pixel-font",
+                  color: "#222",
+                  backgroundColor: "#fff8",
+                  padding: { left: 4, right: 4, top: 1, bottom: 1 },
+                  align: "center",
+                }
+              ).setOrigin(0.5, 0);
+              this.otherPlayerNameTexts[player.id].setDepth(9999);
+            } catch {
+              // fallback if fetch fails
+              this.otherPlayerNameTexts[player.id] = this.add.text(
+                player.x,
+                player.y + 40,
+                player.id,
+                {
+                  fontSize: "10px",
+                  fontFamily: "pixel-font",
+                  color: "#222",
+                  backgroundColor: "#fff8",
+                  padding: { left: 4, right: 4, top: 1, bottom: 1 },
+                  align: "center",
+                }
+              ).setOrigin(0.5, 0);
+              this.otherPlayerNameTexts[player.id].setDepth(9999);
+            }
+
             this.otherPlayers[player.id].on("pointerover", () => {
               if (this.nearbyPlayers.includes(player.id)) {
                 this.otherPlayers[player.id].setTint(0xffff99);
@@ -100,11 +138,11 @@ class Lobby extends Scene {
               useAuthStore.getState().setProfileBox(player.id)
             });
           }
-        });
+        }
       }
     );
 
-    this.socket?.on("playerJoined", (id: string) => {
+    this.socket?.on("playerJoined", async (id: string) => {
       if (id !== this.socket?.id) {
         console.log("new player joined:", id);
         if (!this.otherPlayers[id]) {
@@ -118,6 +156,41 @@ class Lobby extends Scene {
           this.otherPlayers[id].setScale(0.9);
           this.otherPlayers[id].setDepth(this.otherPlayers[id].y);
           this.otherPlayers[id].setInteractive();
+
+          // Fetch and display player name below avatar
+          try {
+            const user = await useAuthStore.getState().getUserBySocketId(id);
+            const name = user ? `${user.fullname.firstname} ${user.fullname.lastname}` : id;
+            this.otherPlayerNameTexts[id] = this.add.text(
+              this.otherPlayers[id].x,
+              this.otherPlayers[id].y + 40,
+              name,
+              {
+                fontSize: "10px",
+                fontFamily: "pixel-font",
+                color: "#222",
+                backgroundColor: "#fff8",
+                padding: { left: 4, right: 4, top: 1, bottom: 1 },
+                align: "center",
+              }
+            ).setOrigin(0.5, 0);
+            this.otherPlayerNameTexts[id].setDepth(9999);
+          } catch {
+            this.otherPlayerNameTexts[id] = this.add.text(
+              this.otherPlayers[id].x,
+              this.otherPlayers[id].y + 40,
+              id,
+              {
+                fontSize: "10px",
+                fontFamily: "pixel-font",
+                color: "#222",
+                backgroundColor: "#fff8",
+                padding: { left: 4, right: 4, top: 1, bottom: 1 },
+                align: "center",
+              }
+            ).setOrigin(0.5, 0);
+            this.otherPlayerNameTexts[id].setDepth(9999);
+          }
 
           this.otherPlayers[id].on("pointerover", () => {
             if (this.nearbyPlayers.includes(id)) {
@@ -146,6 +219,10 @@ class Lobby extends Scene {
       }) => {
         if (this.socket?.id !== data.id && this.otherPlayers[data.id]) {
           this.otherPlayers[data.id].setPosition(data.x, data.y);
+          // Move the name text with the sprite
+          if (this.otherPlayerNameTexts[data.id]) {
+            this.otherPlayerNameTexts[data.id].setPosition(data.x, data.y + 40);
+          }
           if (data.dirX < 0) {
             this.otherPlayers[data.id].setScale(0.9, 0.9);
             this.otherPlayers[data.id].anims.play(
@@ -179,6 +256,10 @@ class Lobby extends Scene {
     this.socket?.on("playerDisconnected", (playerId: string) => {
       if (this.otherPlayers[playerId]) {
         this.otherPlayers[playerId].destroy();
+        if (this.otherPlayerNameTexts[playerId]) {
+          this.otherPlayerNameTexts[playerId].destroy();
+          delete this.otherPlayerNameTexts[playerId];
+        }
         delete this.otherPlayers[playerId];
       }
     });
@@ -292,6 +373,24 @@ class Lobby extends Scene {
     );
     this.player.setScale(0.9);
     this.player.setFrame(117);
+
+    // Add player name text below the avatar
+    const user = useAuthStore.getState().user;
+    const playerName = user ? `${user.fullname.firstname} ${user.fullname.lastname}` : "You";
+    this.playerNameText = this.add.text(
+      this.player.x,
+      this.player.y + 40,
+      playerName,
+      {
+        fontSize: "10px",
+        fontFamily: "pixel-font",
+        color: "#222",
+        backgroundColor: "#fff8",
+        padding: { left: 4, right: 4, top: 1, bottom: 1 },
+        align: "center",
+      }
+    ).setOrigin(0.5, 0);
+    this.playerNameText.setDepth(9999);
 
     this.player.setCollideWorldBounds(true);
     this.cameras.main.startFollow(this.player);
@@ -486,6 +585,11 @@ class Lobby extends Scene {
         dirY,
         isRunning: this.running,
       });
+    }
+
+    // Move the player name text with the player
+    if (this.player && this.playerNameText) {
+      this.playerNameText.setPosition(this.player.x, this.player.y + 40);
     }
   }
 }

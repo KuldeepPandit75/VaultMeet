@@ -30,6 +30,11 @@ const CodingSpace = () => {
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userNames, setUserNames] = useState<{[key: string]: string}>({});
+  const [viewMode, setViewMode] = useState<'game' | 'meeting'>('game');
+
+  const toggleViewMode = () => {
+    setViewMode(prevMode => (prevMode === 'game' ? 'meeting' : 'game'));
+  };
 
   console.log(remoteUsers);
 
@@ -184,7 +189,7 @@ const CodingSpace = () => {
       style={{ backgroundColor: isDarkMode ? '#0f0f0f' : '#f8f9fa' }}
     >
       {/* Main game container */}
-      <div className="flex-1 relative">
+      <div className={`flex-1 relative ${viewMode === 'meeting' ? 'hidden' : ''}`}>
         <PhaserGame />
       </div>
 
@@ -202,6 +207,9 @@ const CodingSpace = () => {
         handleVideoToggle={handleVideoToggle} 
         handleScreenShareToggle={handleScreenShareToggle}
         setBox={setBox}
+        viewMode={viewMode}
+        handleViewToggle={toggleViewMode}
+        isMeetingViewAvailable={remoteUsers.length > 0}
       />
 
       {/* Profile Box */}
@@ -212,14 +220,21 @@ const CodingSpace = () => {
       )}
 
       {/* Remote Users Video Containers */}
-      <div 
-        className="connectedUsers absolute top-6 left-1/2 -translate-x-1/2 flex gap-4 max-w-[85vw] flex-wrap justify-center z-40 p-4 rounded-2xl backdrop-blur-sm"
-      >
-        {remoteUsers.length === 0 ? null : (
-          remoteUsers.map((user) => (
+      {remoteUsers.length > 0 && (
+        <div 
+          className={`connectedUsers absolute z-40 transition-all duration-500 ${
+            viewMode === 'game' 
+            ? 'top-6 left-1/2 -translate-x-1/2 flex gap-4 max-w-[85vw] flex-wrap justify-center' 
+            : 'top-0 left-0 w-full h-full p-4 pb-[80px] grid gap-4 place-items-center'
+          }`}
+          style={{
+            gridTemplateColumns: viewMode === 'meeting' ? `repeat(auto-fit, minmax(300px, 1fr))` : undefined
+          }}
+        >
+          {remoteUsers.map((user) => (
             <div 
               key={user.uid} 
-              className="relative group"
+              className={`relative group ${viewMode === 'meeting' ? 'w-full max-w-[700px] aspect-[16/9]' : ''}`}
               style={{
                 transform: 'translateZ(0)',
                 transition: 'all 0.3s ease'
@@ -227,10 +242,12 @@ const CodingSpace = () => {
             >
               <div 
                 id={`user-container-${user.uid}`} 
-                className="video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 group-hover:scale-105"
+                className={
+                  `video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 w-full ${viewMode === 'meeting' ? 'h-auto aspect-[16/9]' : 'h-full'}`
+                }
                 style={{
-                  width: '12vw',
-                  height: '14vh',
+                  width: viewMode === 'game' ? '12vw' : '100%',
+                  height: viewMode === 'game' ? '14vh' : '100%',
                   minWidth: '140px',
                   minHeight: '100px',
                   backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
@@ -276,9 +293,9 @@ const CodingSpace = () => {
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

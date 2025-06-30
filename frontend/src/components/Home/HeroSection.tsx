@@ -47,13 +47,13 @@ export default function HeroSection() {
           >
             Explore Events
           </button>
-          <span
+          <button
             className="text-lg md:text-xl font-semibold cursor-pointer"
             style={{ color: secondaryAccentColor }}
             onClick={() => router.push('/coding-space')}
           >
             Coding Space
-          </span>
+          </button>
         </div>
       </div>
       <div className="flex-1 flex justify-center mt-10 md:mt-0">
