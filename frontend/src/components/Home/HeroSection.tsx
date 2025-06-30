@@ -53,16 +53,16 @@ export default function HeroSection() {
               background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
               color: '#222',
             }}
-            onClick={() => router.push('/events')}
+            onClick={handleCodSpaceClick}
           >
-            Explore Events
+            Coding Space
           </button>
           <button
             className="text-lg md:text-xl font-semibold cursor-pointer"
             style={{ color: secondaryAccentColor }}
-            onClick={handleCodSpaceClick}
+            onClick={() => router.push('/events')}
           >
-            Coding Space
+            Explore Events
           </button>
         </div>
       </div>
