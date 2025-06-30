@@ -4,9 +4,11 @@ import { useThemeStore } from '../../Zustand_Store/ThemeStore';
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import TypingText from '../Misc/TypingText';
 import { useRouter } from 'next/navigation';
+import useAuthStore from '@/Zustand_Store/AuthStore';
 
 export default function HeroSection() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const {user} =useAuthStore();
   const router = useRouter();
 
   const words = [
@@ -15,6 +17,14 @@ export default function HeroSection() {
     "Compete.",
     "All in One Place."
   ];
+
+  const handleCodSpaceClick=()=>{
+    if(user){
+      router.push('/coding-space')
+    }else{
+      router.push('login')
+    }
+  }
 
   return (
     <section className="flex flex-col-reverse md:flex-row items-center justify-between min-h-[60vh] px-8 lg:px-[80px] md:py-[80px] overflow-hidden" >
@@ -50,7 +60,7 @@ export default function HeroSection() {
           <button
             className="text-lg md:text-xl font-semibold cursor-pointer"
             style={{ color: secondaryAccentColor }}
-            onClick={() => router.push('/coding-space')}
+            onClick={handleCodSpaceClick}
           >
             Coding Space
           </button>
