@@ -139,10 +139,15 @@ const handleSocketEvents = (io) => {
 
     // --- START CONVERSATION LOGIC ---
     socket.on("startConversation", async ({ targetSocketId }) => {
+
+      let operationExecuted=false;
+
       if (!targetSocketId || !connectedPlayers.has(targetSocketId)) {
         socket.emit("conversationError", { message: "Target player not found." });
         return;
       }
+
+
 
       // Helper to leave current room if in one
       const leaveCurrentRoom = (sock) => {
@@ -159,9 +164,26 @@ const handleSocketEvents = (io) => {
         }
       };
 
-      // Check if target is in a room
+      // Check if user is in a room
+      const userRoom=playerRooms.get(socket.id);
       const targetRoom = playerRooms.get(targetSocketId);
-      if (targetRoom) {
+
+      if(userRoom && !targetRoom && !operationExecuted){
+        const targetSocket=io.sockets.sockets.get(targetSocketId)
+        targetSocket.join(userRoom);
+        playerRooms.set(targetSocketId,userRoom);
+        roomPlayers.get(userRoom).add(targetSocketId);
+
+        io.to(userRoom).emit("joinedRoom", {
+          roomId: userRoom,
+          players: Array.from(roomPlayers.get(userRoom)),
+          socketId: socket.id,
+        });
+        operationExecuted=true;
+      }
+
+      // Check if target is in a room
+      if (((userRoom && targetRoom) || (!userRoom && targetRoom)) && !operationExecuted) {
         // Target is already in a room, join that room
         leaveCurrentRoom(socket);
         socket.join(targetRoom);
@@ -174,7 +196,10 @@ const handleSocketEvents = (io) => {
           players: Array.from(roomPlayers.get(targetRoom)),
           socketId: socket.id,
         });
-      } else {
+        operationExecuted=true;
+      } 
+      
+      if(!userRoom && !targetRoom && !operationExecuted){
         // Target is not in a room, create a new room
         const newRoomId = `room_${socket.id}_${targetSocketId}_${Date.now()}`;
         // Both leave any current rooms
@@ -198,9 +223,42 @@ const handleSocketEvents = (io) => {
 
         console.log('roomPlayers', roomPlayers)
         console.log('playerRooms',playerRooms)
+
+        operationExecuted=true;
       }
     });
     // --- END CONVERSATION LOGIC ---
+
+    socket.on("gotAway", ({ otherId, nearbyPlayers }) => {
+      const roomId = playerRooms.get(socket.id);
+
+      if (roomPlayers.get(roomId)) {
+        console.log("gotawaylog", Array.from(roomPlayers?.get(roomId)));
+
+        let found = false;
+        Array.from(roomPlayers.get(roomId)).forEach(id => {
+          for (let npid of nearbyPlayers) {
+            if (id === npid) {
+              found = true;
+              return;
+            }
+          }
+        });
+        if (!found) {
+          socket.leave(roomId)
+          if (roomPlayers.has(roomId)) {
+            io.to(roomId).emit("leftRoom", {
+              roomId,
+              playerId: socket.id,
+              remainingPlayers: Array.from(roomPlayers.get(roomId)),
+            });
+          }
+          io.to(socket.id).emit('leaveChannel')
+          console.log('emitted leave channel',socket.id)
+        }
+
+      }
+    });
   });
 };
 

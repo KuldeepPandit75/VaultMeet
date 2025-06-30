@@ -15,6 +15,7 @@ interface SocketStore {
   remoteUsers: IAgoraRTCRemoteUser[];
   addRemoteUser: (user: IAgoraRTCRemoteUser) => void;
   removeRemoteUser: (user: IAgoraRTCRemoteUser) => void;
+  clearRemoteUsers: () => void;
 }
 
 export const useSocketStore = create<SocketStore>((set) => ({
@@ -34,5 +35,9 @@ export const useSocketStore = create<SocketStore>((set) => ({
   removeRemoteUser: (user) =>
     set((state) => ({
       remoteUsers: state.remoteUsers.filter((u) => u.uid !== user.uid),
+    })),
+  clearRemoteUsers: () =>
+    set(() => ({
+      remoteUsers: [],
     })),
 })); 

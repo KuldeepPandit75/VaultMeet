@@ -26,7 +26,7 @@ export default async function initializeClient(
   if (typeof window === "undefined") return;
   
   const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
-  // AgoraRTC.setLogLevel(4);
+  AgoraRTC.setLogLevel(4);
   client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
   setupEventListeners(socket);
   await createLocalMediaTracks();
@@ -111,8 +111,17 @@ function setupEventListeners(socket: Socket) {
     if (remoteUser) {
       useSocketStore.getState().removeRemoteUser(remoteUser);
     }
-    await leaveChannel();
   });
+
+  socket.on('leaveChannel',async()=>{
+    
+    const remoteUsers = useSocketStore.getState().remoteUsers;
+    if (remoteUsers) {
+      useSocketStore.getState().clearRemoteUsers();
+    }
+    console.log('leaving Channel');
+    await leaveChannel();
+  })
 
   // Handle user joined
   client.on("user-joined", (user: IAgoraRTCRemoteUser) => {

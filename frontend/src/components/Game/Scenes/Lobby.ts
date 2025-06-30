@@ -468,6 +468,7 @@ class Lobby extends Scene {
               if (index !== -1) {
                 this.nearbyPlayers.splice(index, 1);
               }
+              this.socket?.emit("gotAway",{otherId: id, nearbyPlayers: this.nearbyPlayers})
             }
           }
         });
