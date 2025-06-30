@@ -221,6 +221,7 @@ export const ControlBar = ({
             backgroundColor: primaryAccentColor,
             boxShadow: `0 4px 12px ${primaryAccentColor}40`,
           }}
+          onClick={()=>{window.location.href="/"}}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

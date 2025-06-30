@@ -96,9 +96,13 @@ const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
               {user?.fullname.firstname.charAt(0).toUpperCase()}
             </div>
           )}
-          <h2 className="text-base font-semibold mt-1 mb-0.5">
+          <a 
+          className="text-base font-semibold mt-1 mb-0.5 cursor-pointer hover:underline"
+          href={`/profile/${user?._id}`}
+          target="_blank"
+          >
             {user?.fullname.firstname} {user?.fullname.lastname}
-          </h2>
+          </a>
           {user?.location && (
             <p
               className="text-xs"
