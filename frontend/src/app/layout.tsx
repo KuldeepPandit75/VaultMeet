@@ -8,8 +8,11 @@ import MobileWrapper from "@/components/Game/Warnings/MobileWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "My Next.js App",
-  description: "Created with Next.js",
+  title: "VaultMeet",
+  icons: {
+    icon: '/favicon.ico'
+  },
+  description: "Host & Join Events in a 2D Virtual World",
 };
 
 export default function RootLayout({

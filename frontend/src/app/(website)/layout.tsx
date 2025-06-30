@@ -7,10 +7,13 @@ import Footer from "@/components/Footer/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hackmeet.com'),
+  metadataBase: new URL('https://www.vaultmeet.xyz'),
   title: {
-    default: 'HackMeet',
-    template: '%s | HackMeet'
+    default: 'VaultMeet',
+    template: '%s | VaultMeet'
+  },
+  icons:{
+    icon: '/favicon.ico'
   },
   description: 'Host & Join Hackathons in a 2D Virtual World',
   keywords: ['hackathon', 'virtual hackathon', 'HackMeet', 'coding competition', 'developer community'],
@@ -19,9 +22,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://hackmeet.com',
-    siteName: 'HackMeet',
-    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    url: 'https://www.vaultmeet.xyz',
+    siteName: 'VaultMeet',
+    title: 'VaultMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',
   },
   twitter: {

@@ -89,34 +89,47 @@ const Navbar = () => {
     <nav className="px-[20px] md:px-[40px] lg:px-[80px] py-[20px] flex justify-between items-center relative z-[100000]">
       <div
         id="logo"
-        className="text-[36px] font-[900] cursor-pointer"
+        className="text-[36px] font-[900] cursor-pointer flex items-center"
         style={{ color: secondaryAccentColor }}
         onClick={() => router.push("/")}
       >
-        Vault<span style={{ color: primaryAccentColor }}>Meet</span>
+        {/* <Image src="/logo_final.png" height={80} width={80} alt="VaultMeet Logo" className="pr-6"/> */}
+        <p>
+          Vault<span style={{ color: primaryAccentColor }}>Meet</span>
+        </p>
       </div>
 
       {/* Mobile Menu Button */}
       <button
-            className={`md:hidden text-black p-2 rounded-lg transition-colors mr-6`}
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle mobile menu"
-          >
-            <div
-              className={`flex flex-col gap-2 relative transition-all duration-300 ${isMenuOpen ? "h-0" : "h-4"}`}
-            >
-              <div
-                className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${isMenuOpen ? "rotate-45 top-[50%] -translate-y-[50%]" : "top-0"}`}
-              ></div>
-              <div
-                className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${isMenuOpen ? " -rotate-45 top-[50%] -translate-y-[50%]" : "bottom-0"}`}
-              ></div>
-            </div>
-          </button>
+        className={`md:hidden text-black p-2 rounded-lg transition-colors mr-6`}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        aria-label="Toggle mobile menu"
+      >
+        <div
+          className={`flex flex-col gap-2 relative transition-all duration-300 ${
+            isMenuOpen ? "h-0" : "h-4"
+          }`}
+        >
+          <div
+            className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${
+              isMenuOpen ? "rotate-45 top-[50%] -translate-y-[50%]" : "top-0"
+            }`}
+          ></div>
+          <div
+            className={`w-6 rounded-full border-t-[3px] border-[#999] absolute transition-all duration-300  ${
+              isMenuOpen
+                ? " -rotate-45 top-[50%] -translate-y-[50%]"
+                : "bottom-0"
+            }`}
+          ></div>
+        </div>
+      </button>
 
       {/* Desktop Navigation */}
       <div
-        className={`rounded-[25px] w-[450px] py-1 ${isAuthenticated ? "ml-0" : "ml-[50px]"} text-[18px] hidden md:flex justify-around items-center`}
+        className={`rounded-[25px] w-[450px] py-1 ${
+          isAuthenticated ? "ml-0" : "ml-[50px]"
+        } text-[18px] hidden md:flex justify-around items-center`}
         style={{ backgroundColor: primaryAccentColor }}
       >
         {NAV_LINKS.map((link) => (
@@ -207,15 +220,19 @@ const Navbar = () => {
       {/* Mobile Menu */}
       <div
         className={`md:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg transition-all duration-300 ease-in-out transform origin-top py-[20px] ${
-          isMenuOpen 
-            ? "opacity-100 scale-y-100" 
+          isMenuOpen
+            ? "opacity-100 scale-y-100"
             : "opacity-0 scale-y-0 pointer-events-none"
         }`}
         style={{ backgroundColor: primaryAccentColor }}
       >
-        <div className={`flex flex-col space-y-6 transition-all duration-300 delay-100 ${
-          isMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
-        }`}>
+        <div
+          className={`flex flex-col space-y-6 transition-all duration-300 delay-100 ${
+            isMenuOpen
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-4"
+          }`}
+        >
           <div className="flex flex-col space-y-4 px-6">
             {NAV_LINKS.map((link) => (
               <NavLink key={link.href} {...link} />
@@ -256,8 +273,18 @@ const Navbar = () => {
                   onClick={() => router.push("/me")}
                   className="w-full text-left px-4 py-3 text-black hover:bg-black/5 rounded-xl transition-all duration-200 flex items-center gap-3"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                   Profile
                 </button>
@@ -269,8 +296,18 @@ const Navbar = () => {
                   }}
                   className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 flex items-center gap-3"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
                   </svg>
                   Logout
                 </button>

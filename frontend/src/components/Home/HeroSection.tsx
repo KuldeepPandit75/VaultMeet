@@ -4,15 +4,21 @@ import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import TypingText from "../Misc/TypingText";
 import { useRouter } from "next/navigation";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 export default function HeroSection() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const {user} = useAuthStore();
   const router = useRouter();
 
   const words = ["Build.", "Connect.", "Compete.", "All in One Place."];
 
   const handleCodSpaceClick = () => {
-    router.push("/coding-space");
+    if(user){
+      router.push("/coding-space");
+    }else{
+      router.push('/login')
+    }
   };
 
   return (
