@@ -252,8 +252,7 @@ class Lobby extends Scene {
               true
             );
           } else {
-            this.otherPlayers[data.id].anims.stop();
-            this.otherPlayers[data.id].setFrame(130);
+            this.otherPlayers[data.id].anims.play("idle", true);
           }
         }
       }
