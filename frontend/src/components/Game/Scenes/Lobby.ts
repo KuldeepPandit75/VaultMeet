@@ -490,6 +490,16 @@ class Lobby extends Scene {
       frameRate: 10,
       repeat: -1,
     });
+
+    this.anims.create({
+      key: "idle",
+      frames: this.anims.generateFrameNumbers("player", {
+        start: 312,
+        end: 313,
+      }),
+      frameRate: 4,
+      repeat: -1,
+    });
   }
 
   update(time: number) {
@@ -543,8 +553,7 @@ class Lobby extends Scene {
     } else if (dirY > 0) {
       this.player?.anims.play(this.running ? "runD" : "walkD", true);
     } else {
-      this.player?.anims.stop();
-      this.player?.setFrame(130);
+      this.player?.anims.play("idle", true);
     }
 
     if (time >= this.nextCheck) {
