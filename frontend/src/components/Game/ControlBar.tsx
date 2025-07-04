@@ -36,7 +36,6 @@ export const ControlBar = ({
   setBox,
   viewMode,
   handleViewToggle,
-  isMeetingViewAvailable,
 }: ControlBarProps) => {
   const { user } = useAuthStore();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
@@ -190,29 +189,25 @@ export const ControlBar = ({
         </div>
       </div>
 
-      <div
-      className="flex gap-4"
-      >
+      <div className="flex gap-4">
         {/* View Toggle Button */}
-        {isMeetingViewAvailable && (
-          <button
-            className="h-12 rounded-xl px-4 flex items-center justify-center gap-6 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
-            onClick={handleViewToggle}
-            style={{
-              backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
-              color: isDarkMode ? "#ffffff" : "#1a1a1a",
-              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
-            }}
-          >
-            <FontAwesomeIcon
-              icon={viewMode === "game" ? faUsers : faGamepad}
-              className="text-lg"
-            />
-            <span className="font-medium">
-              {viewMode === "game" ? "Meeting" : "Game"} View
-            </span>
-          </button>
-        )}
+        <button
+          className="h-12 rounded-xl px-4 flex items-center justify-center gap-6 transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+          onClick={handleViewToggle}
+          style={{
+            backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+            color: isDarkMode ? "#ffffff" : "#1a1a1a",
+            border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+          }}
+        >
+          <FontAwesomeIcon
+            icon={viewMode === "game" ? faUsers : faGamepad}
+            className="text-lg"
+          />
+          <span className="font-medium">
+            {viewMode === "game" ? "Meeting" : "Game"} View
+          </span>
+        </button>
 
         {/* Home Button */}
         <div
@@ -221,7 +216,9 @@ export const ControlBar = ({
             backgroundColor: primaryAccentColor,
             boxShadow: `0 4px 12px ${primaryAccentColor}40`,
           }}
-          onClick={()=>{window.location.href="/"}}
+          onClick={() => {
+            window.location.href = "/";
+          }}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
