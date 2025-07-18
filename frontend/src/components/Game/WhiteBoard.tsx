@@ -326,7 +326,7 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
                 const remoteUser = remoteUsers.find(u => u.uid.toString() === socketId);
                 const isRemote = !!remoteUser;
                 const isWhiteboard = whiteboardRoomUsers.includes(socketId);
-                const canFollow = isRemote && isWhiteboard;
+                const canFollow = isWhiteboard;
                 const name = userDatas?.[socketId]?.fullname?.firstname || `User ${String(socketId).slice(-4)}`;
                 return { socketId, remoteUser, isRemote, isWhiteboard, canFollow, name };
               })
