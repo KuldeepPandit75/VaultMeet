@@ -16,6 +16,9 @@ interface SocketStore {
   addRemoteUser: (user: IAgoraRTCRemoteUser) => void;
   removeRemoteUser: (user: IAgoraRTCRemoteUser) => void;
   clearRemoteUsers: () => void;
+  // Whiteboard state
+  isWhiteboardOpen: boolean;
+  setIsWhiteboardOpen: (open: boolean) => void;
 }
 
 export const useSocketStore = create<SocketStore>((set) => ({
@@ -40,4 +43,7 @@ export const useSocketStore = create<SocketStore>((set) => ({
     set(() => ({
       remoteUsers: [],
     })),
+  // Whiteboard state
+  isWhiteboardOpen: false,
+  setIsWhiteboardOpen: (open) => set({ isWhiteboardOpen: open }),
 })); 

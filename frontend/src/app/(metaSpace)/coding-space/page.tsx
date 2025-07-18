@@ -14,6 +14,9 @@ import {
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
 });
+const WhiteBoard = dynamic(() => import("@/components/Game/WhiteBoard").then(mod => ({ default: mod.WhiteBoard })), {
+  ssr: false,
+});
 import initializeClient from "@/components/Game/agora";
 import useAuthStore, { User } from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
@@ -34,13 +37,14 @@ const CodingSpace = () => {
   const [box, setBox] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
-  const { messages, addMessage, remoteUsers } = useSocketStore();
+  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
-  const [viewMode, setViewMode] = useState<"game" | "meeting">("game");
+  const [viewMode, setViewMode] = useState<"game" | "meeting" | "whiteboard">("game");
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   // const router= useRouter();
 
   // Check logged in or not
@@ -51,7 +55,13 @@ const CodingSpace = () => {
   // })
 
   const toggleViewMode = () => {
-    setViewMode((prevMode) => (prevMode === "game" ? "meeting" : "game"));
+    if (viewMode === "game") {
+      setViewMode("meeting");
+    } else if (viewMode === "meeting") {
+      setViewMode("game");
+    } else if (viewMode === "whiteboard") {
+      setViewMode("game");
+    }
   };
 
   // Debug remote users changes
@@ -79,6 +89,35 @@ const CodingSpace = () => {
       );
     };
   }, []);
+
+  // Listen for whiteboard open events from the game
+  useEffect(() => {
+    const handleOpenWhiteboard = (event: CustomEvent) => {
+      console.log("Opening whiteboard from game:", event.detail);
+      if (currentRoomId) {
+        setIsWhiteboardOpen(true);
+        setViewMode("whiteboard");
+      } else {
+        // If no room, create a default room for whiteboard
+        const defaultRoomId = 'whiteboard';
+        setCurrentRoomId(defaultRoomId);
+        setIsWhiteboardOpen(true);
+        setViewMode("whiteboard");
+      }
+    };
+
+    window.addEventListener(
+      "openWhiteboard",
+      handleOpenWhiteboard as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "openWhiteboard",
+        handleOpenWhiteboard as EventListener
+      );
+    };
+  }, [currentRoomId, setIsWhiteboardOpen]);
 
   useEffect(() => {
     if (!socket) return;
@@ -114,11 +153,21 @@ const CodingSpace = () => {
       }
     );
 
+    // Listen for whiteboard interaction events
+    socket.on("whiteboardInteraction", (data: { action: string; playerId: string }) => {
+      if (data.action === "open" && currentRoomId) {
+        setIsWhiteboardOpen(true);
+        setViewMode("whiteboard");
+      }
+    });
+
     return () => {
       socket.off("connect", handleConnect);
       socket.off("receiveMessage");
+      socket.off("joinedRoom");
+      socket.off("whiteboardInteraction");
     };
-  }, [socket, addMessage]);
+  }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
 
   // Fetch user names for remote users
   useEffect(() => {
@@ -176,6 +225,11 @@ const CodingSpace = () => {
     setProfileBox("close");
   };
 
+  const closeWhiteboard = () => {
+    setIsWhiteboardOpen(false);
+    setViewMode("game");
+  };
+
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
     const isAudioEnabled = !(user as ExtendedAgoraUser)._audio_muted_;
@@ -229,10 +283,45 @@ const CodingSpace = () => {
     >
       {/* Main game container */}
       <div
-        className={`flex-1 relative ${viewMode === "meeting" ? "hidden" : ""}`}
+        className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}
       >
         <PhaserGame />
       </div>
+
+      {/* Whiteboard View */}
+      {viewMode === "whiteboard" && currentRoomId && (
+        <div className="flex-1 relative flex flex-col">
+          {/* Whiteboard Header */}
+          <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm z-10">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Collaborative Whiteboard - Room: {currentRoomId}
+            </h2>
+            <button
+              onClick={closeWhiteboard}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Whiteboard Content - Takes most of the space */}
+          <div className="flex-1 relative">
+            <WhiteBoard roomId={currentRoomId} />
+          </div>
+        </div>
+      )}
 
       {/* Chat Box */}
       {box ? (
@@ -267,7 +356,7 @@ const CodingSpace = () => {
       )}
 
       {/* Remote Users Video Containers */}
-      {remoteUsers.length > 0 && (
+      {remoteUsers.length > 0 && viewMode !== "whiteboard" && (
         <div
           className={`connectedUsers absolute z-40 transition-all duration-500 ${
             viewMode === "game"
@@ -277,7 +366,7 @@ const CodingSpace = () => {
           style={{
             gridTemplateColumns:
               viewMode === "meeting"
-                ? `repeat(auto-fit, minmax(300px, 1fr))`
+                ? "repeat(auto-fit, minmax(300px, 1fr))"
                 : undefined,
           }}
         >

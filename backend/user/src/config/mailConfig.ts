@@ -20,7 +20,7 @@ export const sendMail = async (eMail, otp) => {
     const mailOptions = {
       from: process.env.MAILER_EMAIL,
       to: eMail,
-      subject: `Your HackMeet Verification Code`,
+      subject: `Your VaultMeet Verification Code`,
       text: `Your verification code is: ${otp}. This code will expire in ${OTP_EXPIRES_MIN} minutes.`,
       html: `
       <!DOCTYPE html>
@@ -28,13 +28,13 @@ export const sendMail = async (eMail, otp) => {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>HackMeet Verification</title>
+          <title>VaultMeet Verification</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
             <!-- Header -->
             <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
-              <h1 style="color: #2D3748; margin: 0; font-size: 24px;">HackMeet</h1>
+              <h1 style="color: #2D3748; margin: 0; font-size: 24px;">VaultMeet</h1>
               <p style="color: #718096; margin: 10px 0 0 0; font-size: 16px;">Connect. Collaborate. Create.</p>
             </div>
 
@@ -56,7 +56,7 @@ export const sendMail = async (eMail, otp) => {
 
             <!-- Footer -->
             <div style="text-align: center; padding: 20px; border-top: 2px solid #f0f0f0; color: #718096; font-size: 14px;">
-              <p style="margin: 0 0 10px 0;">© 2024 HackMeet. All rights reserved.</p>
+              <p style="margin: 0 0 10px 0;">© 2025 VaultMeet. All rights reserved.</p>
               <p style="margin: 0; font-size: 12px;">
                 This is an automated message, please do not reply to this email.
               </p>

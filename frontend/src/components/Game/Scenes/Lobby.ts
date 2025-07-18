@@ -18,6 +18,14 @@ class Lobby extends Scene {
   private map?: Tilemaps.Tilemap;
   private playerNameText?: Phaser.GameObjects.Text;
   private otherPlayerNameTexts: { [key: string]: Phaser.GameObjects.Text } = {};
+  private whiteboardArea: { x: number; y: number; width: number; height: number } = {
+    x: 295,
+    y: 149,
+    width: 64, // 2 tiles * 32px
+    height: 64  // 2 tiles * 32px
+  };
+  private isNearWhiteboard: boolean = false;
+  private whiteboardPrompt?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: "Lobby" });
@@ -45,9 +53,12 @@ class Lobby extends Scene {
         "/game/tilesets/Modern_Office_Shadowless_32x32.png",
     };
 
-    // Load each tileset
+    // Load each tileset as spritesheet for individual tile access
     Object.entries(tilesetPaths).forEach(([key, path]) => {
-      this.load.image(key, path);
+      this.load.spritesheet(key, path, {
+        frameWidth: 32,
+        frameHeight: 32,
+      });
     });
 
     // Add loading error handler
@@ -371,6 +382,9 @@ class Lobby extends Scene {
       }
     });
 
+    // Whiteboard area is defined by the whiteboardArea property
+    // No sprite loading needed - just detect proximity to the area
+
     this.player = this.physics.add.sprite(
       mapWidth / 2,
       mapHeight / 2,
@@ -404,6 +418,14 @@ class Lobby extends Scene {
 
     // Initialize cursor keys
     this.cursors = this.input.keyboard?.createCursorKeys();
+
+    // Add space key for whiteboard interaction
+    const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    spaceKey?.on('down', () => {
+      if (this.isNearWhiteboard) {
+        this.openWhiteboard();
+      }
+    });
 
     // Create player animations
     this.createAnimations();
@@ -501,6 +523,24 @@ class Lobby extends Scene {
     });
   }
 
+  private openWhiteboard() {
+    console.log("Opening whiteboard...");
+    // Emit socket event to notify server about whiteboard interaction
+    this.socket?.emit("whiteboardInteraction", {
+      action: "open",
+      playerId: this.socket.id
+    });
+    
+    // Dispatch a custom event to notify the React component
+    const whiteboardEvent = new CustomEvent('openWhiteboard', {
+      detail: {
+        playerId: this.socket?.id,
+        action: 'open'
+      }
+    });
+    window.dispatchEvent(whiteboardEvent);
+  }
+
   update(time: number) {
     const speed = this.running ? 150 : 100;
 
@@ -590,6 +630,45 @@ class Lobby extends Scene {
       }
 
       this.nextCheck = time + 300; // Check every 300ms (adjust as needed)
+    }
+
+    // Check whiteboard proximity
+    if (this.player) {
+      const playerX = this.player.x;
+      const playerY = this.player.y;
+      
+      // Check if player is near the whiteboard area
+      const WHITEBOARD_PROXIMITY_RADIUS = 50; // Adjust as needed
+      const whiteboardCenterX = this.whiteboardArea.x + this.whiteboardArea.width / 2;
+      const whiteboardCenterY = this.whiteboardArea.y + this.whiteboardArea.height / 2;
+      
+      const dist = Phaser.Math.Distance.Between(
+        playerX,
+        playerY,
+        whiteboardCenterX,
+        whiteboardCenterY
+      );
+      
+      this.isNearWhiteboard = dist <= WHITEBOARD_PROXIMITY_RADIUS;
+
+      // Show/hide interaction prompt
+      if (this.isNearWhiteboard) {
+        if (!this.whiteboardPrompt) {
+          this.whiteboardPrompt = this.add.text(playerX, playerY - 60, "Press SPACE to use Whiteboard", {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#ffffff",
+            backgroundColor: "#000000",
+            padding: { left: 8, right: 8, top: 4, bottom: 4 },
+            align: "center",
+          }).setOrigin(0.5, 0);
+          this.whiteboardPrompt.setDepth(10000);
+        }
+        this.whiteboardPrompt.setPosition(playerX, playerY - 60);
+        this.whiteboardPrompt.setVisible(true);
+      } else if (this.whiteboardPrompt) {
+        this.whiteboardPrompt.setVisible(false);
+      }
     }
 
     if (this.socket && this.player) {

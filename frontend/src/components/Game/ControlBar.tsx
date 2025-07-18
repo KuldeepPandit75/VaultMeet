@@ -21,7 +21,7 @@ interface ControlBarProps {
   handleVideoToggle: () => void;
   handleScreenShareToggle: () => void;
   setBox: (box: (prev: boolean) => boolean) => void;
-  viewMode: "game" | "meeting";
+  viewMode: "game" | "meeting" | "whiteboard";
   handleViewToggle: () => void;
   isMeetingViewAvailable: boolean;
 }
@@ -205,7 +205,7 @@ export const ControlBar = ({
             className="text-lg"
           />
           <span className="font-medium">
-            {viewMode === "game" ? "Meeting" : "Game"} View
+            {viewMode === "game" ? "Meeting" : viewMode === "meeting" ? "Game" : "Game"} View
           </span>
         </button>
 

@@ -86,7 +86,7 @@ const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
               alt="avatar"
               width={60}
               height={60}
-              className="rounded-full object-cover"
+              className="rounded-full object-cover h-16 w-16"
             />
           ) : (
             <div

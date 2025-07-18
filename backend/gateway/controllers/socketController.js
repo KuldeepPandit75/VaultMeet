@@ -2,6 +2,8 @@ const connectedPlayers = new Map();
 const playerRooms = new Map(); // Track which rooms each player is in
 const roomPlayers = new Map(); // Track which players are in each room
 const userMap = new Map(); // userId -> socketId
+const whiteboardRooms = new Map(); // Track whiteboard rooms and their data
+const whiteboardRoomPlayers = new Map(); // Track which players are in each whiteboard room
 
 const handleSocketEvents = (io) => {
   io.on("connection", (socket) => {
@@ -108,8 +110,123 @@ const handleSocketEvents = (io) => {
       }
     });
 
+    // Whiteboard room management
+    socket.on("joinWhiteboardRoom", ({ roomId }) => {
+      console.log(`User ${socket.id} joining whiteboard room ${roomId}`);
+      
+      socket.join(`whiteboard-${roomId}`);
+      
+      if (!whiteboardRoomPlayers.has(roomId)) {
+        whiteboardRoomPlayers.set(roomId, new Set());
+      }
+      whiteboardRoomPlayers.get(roomId).add(socket.id);
+
+      // Initialize whiteboard data if it doesn't exist
+      if (!whiteboardRooms.has(roomId)) {
+        whiteboardRooms.set(roomId, {
+          elements: [],
+          appState: {},
+          files: {},
+          collaborators: {}
+        });
+      }
+
+      // Notify the user they joined the whiteboard room
+      socket.emit("whiteboardRoomJoined", {
+        roomId,
+        players: Array.from(whiteboardRoomPlayers.get(roomId)),
+        whiteboardData: whiteboardRooms.get(roomId)
+      });
+
+      // Notify other users in the room
+      socket.to(`whiteboard-${roomId}`).emit("whiteboardUserJoined", {
+        roomId,
+        userId: socket.id,
+        players: Array.from(whiteboardRoomPlayers.get(roomId))
+      });
+
+      console.log(`User ${socket.id} joined whiteboard room ${roomId}. Total players: ${whiteboardRoomPlayers.get(roomId).size}`);
+      console.log("Current whiteboard rooms:", Array.from(whiteboardRoomPlayers.keys()));
+    });
+
+    socket.on("leaveWhiteboardRoom", ({ roomId }) => {
+      socket.leave(`whiteboard-${roomId}`);
+      
+      if (whiteboardRoomPlayers.has(roomId)) {
+        whiteboardRoomPlayers.get(roomId).delete(socket.id);
+        
+        if (whiteboardRoomPlayers.get(roomId).size === 0) {
+          whiteboardRoomPlayers.delete(roomId);
+          whiteboardRooms.delete(roomId);
+        }
+      }
+
+      // Notify other users in the room
+      socket.to(`whiteboard-${roomId}`).emit("whiteboardUserLeft", {
+        roomId,
+        userId: socket.id,
+        remainingPlayers: Array.from(whiteboardRoomPlayers.get(roomId) || [])
+      });
+
+      console.log(`User ${socket.id} left whiteboard room ${roomId}`);
+    });
+
+    socket.on("whiteboardUpdate", (data) => {
+      const { roomId, elements, appState, files, userId } = data;
+      
+      console.log(`Whiteboard update from ${userId} in room ${roomId}`);
+      
+      // Update the whiteboard data for this room
+      if (whiteboardRooms.has(roomId)) {
+        whiteboardRooms.set(roomId, {
+          ...whiteboardRooms.get(roomId),
+          elements: elements || [],
+          appState: appState || {},
+          files: files || {}
+        });
+      }
+
+      // Broadcast the update to other users in the room (excluding the sender)
+      socket.to(`whiteboard-${roomId}`).emit("whiteboardUpdate", {
+        roomId,
+        elements,
+        appState,
+        files,
+        userId
+      });
+      
+      console.log(`Broadcasted whiteboard update to room ${roomId}`);
+    });
+
+    socket.on("excalidrawEvent", (data) => {
+      const { roomId, event, eventData, userId } = data;
+      
+      console.log(`Excalidraw event from ${userId} in room ${roomId}: ${event}`);
+      
+      // Broadcast the Excalidraw event to other users in the room (excluding the sender)
+      socket.to(`whiteboard-${roomId}`).emit("excalidrawEvent", {
+        roomId,
+        event,
+        eventData,
+        userId
+      });
+      
+      console.log(`Broadcasted excalidraw event to room ${roomId}`);
+    });
+
+    socket.on("whiteboardInteraction", ({ action, playerId }) => {
+      console.log(`Whiteboard interaction: ${action} by ${playerId}`);
+      // Handle whiteboard interaction events
+      if (action === "open") {
+        // You can add logic here to handle whiteboard opening
+        console.log(`Player ${playerId} opened whiteboard`);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log(`A user disconnected: ${socket.id}`);
+      
+      // Handle regular room cleanup
       const roomId = playerRooms.get(socket.id);
       if (roomId) {
         socket.leave(roomId);
@@ -117,7 +234,7 @@ const handleSocketEvents = (io) => {
         if (roomPlayers.has(roomId)) {
           roomPlayers.get(roomId).delete(socket.id);
 
-          if (roomPlayers.get(roomId).size === 0) {
+          if (roomPlayers.get(roomId).size <= 1) {
             roomPlayers.delete(roomId);
           } else {
             io.to(roomId).emit("leftRoom", {
@@ -130,6 +247,26 @@ const handleSocketEvents = (io) => {
 
         playerRooms.delete(socket.id);
       }
+
+      // Handle whiteboard room cleanup
+      for (const [roomId, players] of whiteboardRoomPlayers.entries()) {
+        if (players.has(socket.id)) {
+          players.delete(socket.id);
+          
+          if (players.size === 0) {
+            whiteboardRoomPlayers.delete(roomId);
+            whiteboardRooms.delete(roomId);
+          } else {
+            socket.to(`whiteboard-${roomId}`).emit("whiteboardUserLeft", {
+              roomId,
+              userId: socket.id,
+              remainingPlayers: Array.from(players)
+            });
+          }
+          break;
+        }
+      }
+
       connectedPlayers.delete(socket.id);
       if (socket.userId && userMap.get(socket.userId) === socket.id) {
         userMap.delete(socket.userId);
@@ -172,7 +309,8 @@ const handleSocketEvents = (io) => {
         const targetSocket=io.sockets.sockets.get(targetSocketId)
         targetSocket.join(userRoom);
         playerRooms.set(targetSocketId,userRoom);
-        roomPlayers.get(userRoom).add(targetSocketId);
+        console.log('userRoom',userRoom);
+        roomPlayers.get(userRoom)?.add(targetSocketId);
 
         io.to(userRoom).emit("joinedRoom", {
           roomId: userRoom,
