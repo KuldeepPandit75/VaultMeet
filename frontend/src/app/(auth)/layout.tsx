@@ -2,28 +2,28 @@ import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 
 export const metadata = {
-  metadataBase: new URL('https://hackmeet.com'),
+  metadataBase: new URL('https://vaultmeet.xyz'),
   title: {
-    default: 'HackMeet',
-    template: '%s | HackMeet'
+    default: 'VaulMeet',
+    template: '%s | VaulMeet'
   },
   description: 'Host & Join Hackathons in a 2D Virtual World',
-  keywords: ['hackathon', 'virtual hackathon', 'HackMeet', 'coding competition', 'developer community'],
-  authors: [{ name: 'HackMeet Team' }],
-  creator: 'HackMeet',
+  keywords: ['hackathon', 'virtual hackathon', 'VaulMeet', 'coding competition', 'developer community'],
+  authors: [{ name: 'VaulMeet Team' }],
+  creator: 'VaulMeet',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://hackmeet.com',
-    siteName: 'HackMeet',
-    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    url: 'https://vaultmeet.xyz',
+    siteName: 'VaulMeet',
+    title: 'VaulMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    title: 'VaulMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',
-    creator: '@hackmeet',
+    creator: '@vaultmeet',
   },
   robots: {
     index: true,

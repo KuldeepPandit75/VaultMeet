@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Login',
-  description: 'Login to your HackMeet account',
+  description: 'Login to your VaultMeet account',
 };
 
 export default function LoginLayout({

@@ -203,7 +203,7 @@ function RegisterPage() {
           }}
         >
           <h1 className="text-3xl font-bold text-center mb-6 px-24">
-            Welcome to HackMeet
+            Welcome to VaultMeet
           </h1>
 
           {(error || Object.values(formErrors).some(error => error)) && (

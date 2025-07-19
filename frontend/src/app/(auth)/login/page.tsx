@@ -79,7 +79,7 @@ function LoginPage() {
         }}
         >
           <h1 className="text-3xl font-bold text-center mb-6 px-1">
-            Welcome Back to HackMeet!
+            Welcome Back to VaulMeet!
           </h1>
 
           {error && (
