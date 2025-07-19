@@ -194,11 +194,18 @@ const EventSpace = () => {
       }
     );
 
+    // Listen for event-specific events
+    socket.on("eventSpaceJoined", (data: { eventId: string; roomId: string; existingPlayers: { id: string; x: number; y: number }[] }) => {
+        console.log("Joined event space:", data.eventId, "Room:", data.roomId, "Existing players:", data.existingPlayers);
+        setCurrentRoomId(data.roomId);
+      });
+
     return () => {
       socket.off("connect", handleConnect);
       socket.off("receiveMessage");
       socket.off("joinedRoom");
       socket.off("whiteboardInteraction");
+      socket.off("eventSpaceJoined");
     };
   }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
 
