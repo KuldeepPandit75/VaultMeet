@@ -56,8 +56,10 @@ export async function middleware(request: NextRequest) {
       // If verification fails, continue to auth page
     }
   }
-
-  return NextResponse.next();
+  const res = NextResponse.next();
+  // Disable cache
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 export const config = {
