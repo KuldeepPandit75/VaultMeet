@@ -12,39 +12,28 @@ export async function middleware(request: NextRequest) {
   // Check if it's a protected route
   const isProtectedRoute = isProfilePage || isEventSpacePage || isCodingSpacePage;
 
-  // Get backend URL from environment
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-
   // Redirect to login if accessing protected route without token
   if (isProtectedRoute && !token) {
-    console.log('No token found, redirecting to login');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Verify token with backend for all protected routes
   if (isProtectedRoute && token) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`${backendUrl}/user/me`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
+          'Authorization': `Bearer ${token}`
+        }
       });
 
-      clearTimeout(timeoutId);
-
       if (!response.ok) {
-        console.log('Token verification failed, redirecting to login');
+        console.log('Token is invalid');
         // If token is invalid, redirect to login
         return NextResponse.redirect(new URL('/login', request.url));
       }
     } catch (error) {
       // If verification fails, redirect to login
-      console.log('Token verification error:', error);
+      console.log(error);
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
@@ -52,18 +41,11 @@ export async function middleware(request: NextRequest) {
   // Redirect to home if accessing auth pages with valid token
   if (isAuthPage && token) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`${backendUrl}/user/me`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         console.log('User already authenticated, redirecting to home');
