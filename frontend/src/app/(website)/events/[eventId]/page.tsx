@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { FaCalendarAlt, FaUsers, FaTrophy, FaClock, FaBuilding, FaGlobe, FaLinkedin } from "react-icons/fa";
 import type { IconType } from "react-icons";
+import { useRouter } from "next/navigation";
 
 interface Stage {
   stageName: string;
@@ -146,6 +147,7 @@ export default function EventDetailsPage() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const { getEventById, currentEvent, loading, error } = useEventStore();
   const params = useParams();
+  const router=useRouter();
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
@@ -203,15 +205,25 @@ export default function EventDetailsPage() {
                   {event.targetAudience}
                 </span>
               </div>
-              <button
-                className="px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105"
-                style={{
-                  background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
-                  color: '#222',
-                }}
-              >
-                Register Now
-              </button>
+              <div className="flex gap-4">
+                <button
+                  className="px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
+                    color: '#222',
+                  }}
+                >
+                  Register Now
+                </button>
+                {(event.mode === 'online' || event.mode === 'hybrid') && (
+                  <button
+                    onClick={() => router.push(`/event-space/${event._id}`)}
+                    className="px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 border-2 border-white text-white hover:bg-white hover:text-black"
+                  >
+                    Join Virtual Space
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

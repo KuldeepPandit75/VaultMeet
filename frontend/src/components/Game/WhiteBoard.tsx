@@ -38,7 +38,7 @@ interface ExcalidrawFiles {
 export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
   const { socket } = useSocket();
   const { setIsWhiteboardOpen, remoteUsers } = useSocketStore();
-  const { isDarkMode } = useThemeStore();
+  const { isDarkMode, primaryAccentColor } = useThemeStore();
   const { getUserBySocketId } = useAuthStore();
   const [excalidrawAPI, setExcalidrawAPI] = useState<unknown>(null);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,21 +146,31 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
         }
         return;
       }
+
+      const elementsArray = elements as ExcalidrawElement[];
+      const elementsString = JSON.stringify(elementsArray);
+      
+      // Only send updates if elements have actually changed
+      if (elementsString === lastElementsUpdateRef.current) {
+        return; // No changes to elements, don't send update
+      }
+
       // Clear any pending timeout
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
       updateTimeoutRef.current = setTimeout(() => {
         // Always use your own scrollX/scrollY when sending
-        lastElementsUpdateRef.current = JSON.stringify(elements);
+        lastElementsUpdateRef.current = elementsString;
         lastScrollUpdateRef.current = JSON.stringify({ scrollX: appState.scrollX, scrollY: appState.scrollY });
         socket.emit("whiteboardUpdate", {
           roomId,
-          elements: (elements as ExcalidrawElement[]).map(el => ({ ...el })),
+          elements: elementsArray.map(el => ({ ...el })),
           appState: { scrollX: appState.scrollX, scrollY: appState.scrollY },
           files: { ...(files as ExcalidrawFiles) },
           userId: socket.id,
         });
+        console.log("Elements sent:", elements);
       }, 150);
     }
   }, [socket, roomId]);
@@ -338,13 +348,23 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
                     : 'bg-gray-100 border-gray-200'
                 }`}>
                   <div className="relative w-9 h-9 flex items-center justify-center">
+                    {userDatas?.[socketId]?.avatar ? (
                     <Image
                       src={userDatas?.[socketId]?.avatar || "/public/favicon.ico"}
                       alt="User Avatar"
                       width={36}
                       height={36}
-                      className="rounded-full object-cover h-10 w-10 bg-blue-500 border-2 border-blue-500"
+                      className="rounded-full object-cover h-[36px] w-[36px] bg-blue-500 border-2 border-blue-500"
                     />
+                    ) : (
+                      <div className="h-[36px] w-[36px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg bg-blue-500 border-2 border-blue-500"
+                      style={{
+                        backgroundColor: primaryAccentColor,
+                        boxShadow: `0 4px 12px ${primaryAccentColor}40`,
+                      }}>
+                        {userDatas?.[socketId]?.fullname?.firstname?.charAt(0) || "U"}
+                      </div>
+                    )}
                     {/* Mic/Video state icons */}
                     {isRemote && (
                       <div className="absolute -bottom-1 -right-1 flex gap-0.5">

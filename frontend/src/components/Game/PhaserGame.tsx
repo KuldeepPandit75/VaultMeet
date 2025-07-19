@@ -5,12 +5,16 @@ import type { Game } from 'phaser';
 import { useSocket } from "@/context/SocketContext";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 
-const PhaserGame = () => {
+interface PhaserGameProps {
+  eventId?: string; // Optional eventId for event-specific spaces
+}
+
+const PhaserGame = ({ eventId }: PhaserGameProps) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { socket } = useSocket();
-  const {user} =useAuthStore();
+  const {user} = useAuthStore();
   
   useEffect(() => {
     setIsClient(true);
@@ -47,7 +51,11 @@ const PhaserGame = () => {
 
       // Wait for the next frame to ensure scene is initialized
       requestAnimationFrame(() => {
-        game.scene.start("Lobby", { socket, userId: user?._id });
+        game.scene.start("Lobby", { 
+          socket, 
+          userId: user?._id,
+          eventId: eventId // Pass eventId to the scene
+        });
       });
 
       const handleResize = () => {
@@ -71,7 +79,7 @@ const PhaserGame = () => {
     };
 
     initGame();
-  }, [isClient, socket]);
+  }, [isClient, socket, eventId]);
 
   return (
     <div

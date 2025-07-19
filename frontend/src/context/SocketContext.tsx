@@ -52,8 +52,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    console.log(path.includes('coding-space'),socket);
-    if(socket && !path.includes('coding-space')){
+    console.log(path.includes('coding-space') || path.includes('event-space'), socket);
+    if(socket && !path.includes('coding-space') && !path.includes('event-space')){
       socket.disconnect();
     }
   }, [socket, path]);

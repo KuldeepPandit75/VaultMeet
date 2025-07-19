@@ -26,6 +26,7 @@ class Lobby extends Scene {
   };
   private isNearWhiteboard: boolean = false;
   private whiteboardPrompt?: Phaser.GameObjects.Text;
+  private eventId?: string; // NEW: Event-specific identifier
 
   constructor() {
     super({ key: "Lobby" });
@@ -69,161 +70,118 @@ class Lobby extends Scene {
     // Emit ready when all assets are loaded
     this.load.on("complete", () => {
       if (this.socket) {
-        console.log("All assets loaded, emitting ready");
-        this.socket.emit("ready");
+        console.log("All assets loaded");
+        // Don't emit ready immediately - wait for event space joining if needed
+        if (!this.eventId) {
+          console.log("Not in event space, emitting ready immediately");
+          this.socket.emit("ready");
+        } else {
+          console.log("In event space, ready will be emitted after joining event space");
+        }
       }
     });
   }
 
-  init(data: { socket: Socket }) {
+  init(data: { socket: Socket; userId?: string; eventId?: string }) {
     this.socket = data.socket;
+    this.eventId = data.eventId; // NEW: Store eventId
     // Set up all socket event listeners first
     this.setupSocketEvents();
   }
 
   private setupSocketEvents() {
-    this.socket?.on(
-      "currentPlayers",
-      async (players: { id: string; x: number; y: number }[]) => {
-        console.log("Received existing players:", players);
-        for (const player of players) {
-          if (player.id !== this.socket?.id) {
-            console.log("Creating sprite for existing player:", player.id);
-            this.otherPlayers[player.id] = this.physics.add.sprite(
-              player.x,
-              player.y,
-              "player",
-              0
-            );
+    // NEW: Handle event-specific space joining
+    if (this.eventId && this.socket) {
+      console.log(`Joining event space for event: ${this.eventId}`);
+      this.socket.emit("joinEventSpace", {
+        eventId: this.eventId,
+        userId: useAuthStore.getState().user?._id
+      });
+    } else {
+      console.log(`Not in event space, eventId: ${this.eventId}`);
+    }
 
-            this.otherPlayers[player.id].setScale(0.9);
-            this.otherPlayers[player.id].setFrame(130);
-            this.otherPlayers[player.id].setDepth(player.y);
-            this.otherPlayers[player.id].setInteractive();
-
-            // Fetch and display player name below avatar
-            try {
-              const user = await useAuthStore
-                .getState()
-                .getUserBySocketId(player.id);
-              const name = user
-                ? `${user.fullname.firstname} ${user.fullname.lastname}`
-                : player.id;
-              this.otherPlayerNameTexts[player.id] = this.add
-                .text(player.x, player.y + 40, name, {
-                  fontSize: "10px",
-                  fontFamily: "pixel-font",
-                  color: "#222",
-                  backgroundColor: "#fff8",
-                  padding: { left: 4, right: 4, top: 1, bottom: 1 },
-                  align: "center",
-                })
-                .setOrigin(0.5, 0);
-              this.otherPlayerNameTexts[player.id].setDepth(9999);
-            } catch {
-              // fallback if fetch fails
-              this.otherPlayerNameTexts[player.id] = this.add
-                .text(player.x, player.y + 40, player.id, {
-                  fontSize: "10px",
-                  fontFamily: "pixel-font",
-                  color: "#222",
-                  backgroundColor: "#fff8",
-                  padding: { left: 4, right: 4, top: 1, bottom: 1 },
-                  align: "center",
-                })
-                .setOrigin(0.5, 0);
-              this.otherPlayerNameTexts[player.id].setDepth(9999);
-            }
-
-            this.otherPlayers[player.id].on("pointerover", () => {
-              if (this.nearbyPlayers.includes(player.id)) {
-                this.otherPlayers[player.id].setTint(0xffff99);
-                console.log("Hovering on players:", player.id);
-              }
-            });
-            this.otherPlayers[player.id].on("pointerout", () => {
-              this.otherPlayers[player.id].clearTint();
-            });
-            this.otherPlayers[player.id].on("pointerdown", () => {
-              if (this.nearbyPlayers.includes(player.id)) {
-                useAuthStore.getState().setProfileBox(player.id);
-              }
-            });
-          }
+    // NEW: Handle event space joined event
+    this.socket?.on("eventSpaceJoined", async (data: {
+      eventId: string;
+      roomId: string;
+      existingPlayers: { id: string; x: number; y: number }[];
+    }) => {
+      console.log(`Joined event space for event ${data.eventId}`);
+      console.log("Existing players in event:", data.existingPlayers);
+      
+      // Create sprites for existing players in this event
+      for (const player of data.existingPlayers) {
+        if (player.id !== this.socket?.id) {
+          console.log(`Creating sprite for event player: ${player.id}`);
+          this.createPlayerSprite(player.id, player.x, player.y);
         }
       }
-    );
+      
+      // Now emit ready to get any additional players that might have joined while we were loading
+      console.log("Event space joined, now emitting ready");
+      this.socket?.emit("ready");
+    });
 
-    this.socket?.on("playerJoined", async (id: string) => {
-      if (id !== this.socket?.id) {
-        console.log("new player joined:", id);
-        if (!this.otherPlayers[id]) {
-          this.otherPlayers[id] = this.physics.add.sprite(
-            ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
-            ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2 || 0,
-            "player",
-            0
-          );
-          this.otherPlayers[id].setFrame(130);
-          this.otherPlayers[id].setScale(0.9);
-          this.otherPlayers[id].setDepth(this.otherPlayers[id].y);
-          this.otherPlayers[id].setInteractive();
-
-          // Fetch and display player name below avatar
-          try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const user = await useAuthStore.getState().getUserBySocketId(id);
-            const name = user
-              ? `${user.fullname.firstname} ${user.fullname.lastname}`
-              : id;
-            this.otherPlayerNameTexts[id] = this.add
-              .text(
-                this.otherPlayers[id].x,
-                this.otherPlayers[id].y + 40,
-                name,
-                {
-                  fontSize: "10px",
-                  fontFamily: "pixel-font",
-                  color: "#222",
-                  backgroundColor: "#fff8",
-                  padding: { left: 4, right: 4, top: 1, bottom: 1 },
-                  align: "center",
-                }
-              )
-              .setOrigin(0.5, 0);
-            this.otherPlayerNameTexts[id].setDepth(9999);
-          } catch {
-            this.otherPlayerNameTexts[id] = this.add
-              .text(this.otherPlayers[id].x, this.otherPlayers[id].y + 40, id, {
-                fontSize: "10px",
-                fontFamily: "pixel-font",
-                color: "#222",
-                backgroundColor: "#fff8",
-                padding: { left: 4, right: 4, top: 1, bottom: 1 },
-                align: "center",
-              })
-              .setOrigin(0.5, 0);
-            this.otherPlayerNameTexts[id].setDepth(9999);
-          }
-
-          this.otherPlayers[id].on("pointerover", () => {
-            if (this.nearbyPlayers.includes(id)) {
-              this.otherPlayers[id].setTint(0xffff99);
-              console.log("Hovering on players:", id);
-            }
-          });
-          this.otherPlayers[id].on("pointerout", () => {
-            this.otherPlayers[id].clearTint();
-          });
-          this.otherPlayers[id].on("pointerdown", () => {
-            if (this.nearbyPlayers.includes(id)) {
-              useAuthStore.getState().setProfileBox(id);
-            }
-          });
-        }
+    // NEW: Handle new player joining event
+    this.socket?.on("playerJoinedEvent", async (data: {
+      eventId: string;
+      playerId: string;
+      userId: string;
+    }) => {
+      if (data.playerId !== this.socket?.id) {
+        console.log(`New player joined event ${data.eventId}:`, data.playerId);
+        console.log(`Creating sprite for new event player: ${data.playerId}`);
+        this.createPlayerSprite(
+          data.playerId,
+          ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+          ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+        );
       }
     });
 
+    // NEW: Handle player leaving event
+    this.socket?.on("playerLeftEvent", (data: {
+      eventId: string;
+      playerId: string;
+    }) => {
+      if (this.otherPlayers[data.playerId]) {
+        this.otherPlayers[data.playerId].destroy();
+        if (this.otherPlayerNameTexts[data.playerId]) {
+          this.otherPlayerNameTexts[data.playerId].destroy();
+          delete this.otherPlayerNameTexts[data.playerId];
+        }
+        delete this.otherPlayers[data.playerId];
+      }
+    });
+
+    // MODIFIED: Only handle general space events if not in an event
+    if (!this.eventId) {
+      this.socket?.on(
+        "currentPlayers",
+        async (players: { id: string; x: number; y: number }[]) => {
+          console.log("Received existing players in general space:", players);
+          for (const player of players) {
+            if (player.id !== this.socket?.id) {
+              this.createPlayerSprite(player.id, player.x, player.y);
+            }
+          }
+        }
+      );
+
+      this.socket?.on("playerJoined", async (id: string) => {
+        if (id !== this.socket?.id) {
+          console.log("new player joined general space:", id);
+          this.createPlayerSprite(
+            id,
+            ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          );
+        }
+      });
+    }
+
+    // MODIFIED: Handle player movement for both general and event spaces
     this.socket?.on(
       "playerMoved",
       (data: {
@@ -234,6 +192,7 @@ class Lobby extends Scene {
         dirY: number;
         isRunning: boolean;
       }) => {
+        // Only handle movement if we have a sprite for this player (meaning they're in our space)
         if (this.socket?.id !== data.id && this.otherPlayers[data.id]) {
           this.otherPlayers[data.id].setPosition(data.x, data.y);
           // Move the name text with the sprite
@@ -269,6 +228,7 @@ class Lobby extends Scene {
       }
     );
 
+    // MODIFIED: Handle player disconnection for both general and event spaces
     this.socket?.on("playerDisconnected", (playerId: string) => {
       if (this.otherPlayers[playerId]) {
         this.otherPlayers[playerId].destroy();
@@ -447,6 +407,65 @@ class Lobby extends Scene {
         player.setDepth(player.y);
       });
     });
+  }
+
+  // NEW: Helper method to create player sprites
+  private async createPlayerSprite(playerId: string, x: number, y: number) {
+    console.log(`Creating sprite for player ${playerId} at (${x}, ${y}). EventId: ${this.eventId}`);
+    if (!this.otherPlayers[playerId]) {
+      this.otherPlayers[playerId] = this.physics.add.sprite(x, y, "player", 0);
+      this.otherPlayers[playerId].setScale(0.9);
+      this.otherPlayers[playerId].setFrame(130);
+      this.otherPlayers[playerId].setDepth(y);
+      this.otherPlayers[playerId].setInteractive();
+
+      // Fetch and display player name below avatar
+      try {
+        const user = await useAuthStore.getState().getUserBySocketId(playerId);
+        const name = user
+          ? `${user.fullname.firstname} ${user.fullname.lastname}`
+          : playerId;
+        this.otherPlayerNameTexts[playerId] = this.add
+          .text(x, y + 40, name, {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#222",
+            backgroundColor: "#fff8",
+            padding: { left: 4, right: 4, top: 1, bottom: 1 },
+            align: "center",
+          })
+          .setOrigin(0.5, 0);
+        this.otherPlayerNameTexts[playerId].setDepth(9999);
+      } catch {
+        // fallback if fetch fails
+        this.otherPlayerNameTexts[playerId] = this.add
+          .text(x, y + 40, playerId, {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#222",
+            backgroundColor: "#fff8",
+            padding: { left: 4, right: 4, top: 1, bottom: 1 },
+            align: "center",
+          })
+          .setOrigin(0.5, 0);
+        this.otherPlayerNameTexts[playerId].setDepth(9999);
+      }
+
+      this.otherPlayers[playerId].on("pointerover", () => {
+        if (this.nearbyPlayers.includes(playerId)) {
+          this.otherPlayers[playerId].setTint(0xffff99);
+          console.log("Hovering on players:", playerId);
+        }
+      });
+      this.otherPlayers[playerId].on("pointerout", () => {
+        this.otherPlayers[playerId].clearTint();
+      });
+      this.otherPlayers[playerId].on("pointerdown", () => {
+        if (this.nearbyPlayers.includes(playerId)) {
+          useAuthStore.getState().setProfileBox(playerId);
+        }
+      });
+    }
   }
 
   private createAnimations() {

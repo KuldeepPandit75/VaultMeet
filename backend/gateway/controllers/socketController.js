@@ -5,13 +5,18 @@ const userMap = new Map(); // userId -> socketId
 const whiteboardRooms = new Map(); // Track whiteboard rooms and their data
 const whiteboardRoomPlayers = new Map(); // Track which players are in each whiteboard room
 
+// NEW: Event-specific room management
+const eventRooms = new Map(); // eventId -> roomId
+const eventPlayers = new Map(); // eventId -> Set of player socketIds
+const playerEvents = new Map(); // socketId -> eventId
+
 const handleSocketEvents = (io) => {
   io.on("connection", (socket) => {
     console.log(`A user connected: ${socket.id}`);
 
     connectedPlayers.set(socket.id, { x: 300, y: 300 });
 
-    socket.broadcast.emit("playerJoined", socket.id);
+    // Don't broadcast playerJoined immediately - it will be handled by event-specific events
 
     socket.on("registerPlayer", ({ userId }) => {
       // If userId is already mapped, force disconnect old socket
@@ -28,16 +33,130 @@ const handleSocketEvents = (io) => {
       }
     });
 
-    socket.on("ready", () => {
-      const existingPlayers = Array.from(connectedPlayers.entries()).map(
-        ([id, pos]) => ({
+    // NEW: Join event-specific virtual space
+    socket.on("joinEventSpace", ({ eventId, userId }) => {
+      console.log(`User ${socket.id} joining event space for event ${eventId}`);
+      
+      // Leave any existing event space
+      const currentEventId = playerEvents.get(socket.id);
+      if (currentEventId && currentEventId !== eventId) {
+        leaveEventSpace(socket, currentEventId);
+      }
+      
+      // Create or get event room
+      let eventRoomId = eventRooms.get(eventId);
+      if (!eventRoomId) {
+        eventRoomId = `event-${eventId}-${Date.now()}`;
+        eventRooms.set(eventId, eventRoomId);
+        eventPlayers.set(eventId, new Set());
+      }
+      
+      // Join the event room
+      socket.join(eventRoomId);
+      playerEvents.set(socket.id, eventId);
+      eventPlayers.get(eventId).add(socket.id);
+      
+      console.log(`Player ${socket.id} now in event ${eventId}. Total players in event: ${eventPlayers.get(eventId).size}`);
+      console.log(`All players in events:`, Array.from(playerEvents.entries()));
+      
+      // Get existing players in this event
+      const existingEventPlayers = Array.from(eventPlayers.get(eventId))
+        .filter(id => id !== socket.id && connectedPlayers.has(id))
+        .map(id => ({
           id,
-          x: pos.x,
-          y: pos.y,
-        })
-      );
+          x: connectedPlayers.get(id).x,
+          y: connectedPlayers.get(id).y,
+        }));
+      
+      // Send current players to the joining user
+      socket.emit("eventSpaceJoined", {
+        eventId,
+        roomId: eventRoomId,
+        existingPlayers: existingEventPlayers
+      });
+      
+      // Notify other players in the event
+      socket.to(eventRoomId).emit("playerJoinedEvent", {
+        eventId,
+        playerId: socket.id,
+        userId: userId
+      });
+      
+      console.log(`User ${socket.id} joined event ${eventId}. Total players: ${eventPlayers.get(eventId).size}`);
+    });
 
-      socket.emit("currentPlayers", existingPlayers);
+    // NEW: Leave event-specific virtual space
+    socket.on("leaveEventSpace", ({ eventId }) => {
+      leaveEventSpace(socket, eventId);
+    });
+
+    // Helper function to leave event space
+    const leaveEventSpace = (socket, eventId) => {
+      const eventRoomId = eventRooms.get(eventId);
+      if (eventRoomId) {
+        socket.leave(eventRoomId);
+        playerEvents.delete(socket.id);
+        
+        if (eventPlayers.has(eventId)) {
+          eventPlayers.get(eventId).delete(socket.id);
+          
+          // If no players left in event, clean up
+          if (eventPlayers.get(eventId).size === 0) {
+            eventPlayers.delete(eventId);
+            eventRooms.delete(eventId);
+          } else {
+            // Notify remaining players
+            socket.to(eventRoomId).emit("playerLeftEvent", {
+              eventId,
+              playerId: socket.id
+            });
+          }
+        }
+        
+        console.log(`User ${socket.id} left event ${eventId}`);
+      }
+    };
+
+    socket.on("ready", () => {
+      // Check if player is in an event space
+      const eventId = playerEvents.get(socket.id);
+      console.log(`Player ${socket.id} ready. Event ID: ${eventId}`);
+      
+      if (eventId) {
+        // Send only players in the same event
+        const eventRoomId = eventRooms.get(eventId);
+        if (eventRoomId) {
+          const existingEventPlayers = Array.from(eventPlayers.get(eventId))
+            .filter(id => id !== socket.id && connectedPlayers.has(id))
+            .map(id => ({
+              id,
+              x: connectedPlayers.get(id).x,
+              y: connectedPlayers.get(id).y,
+            }));
+          console.log(`Sending ${existingEventPlayers.length} event players to ${socket.id} in event ${eventId}`);
+          socket.emit("currentPlayers", existingEventPlayers);
+        }
+      } else {
+        // Send only players who are NOT in any event space for general space (coding-space)
+        const existingPlayers = Array.from(connectedPlayers.entries())
+          .filter(([id, pos]) => !playerEvents.has(id)) // Only players not in any event
+          .map(([id, pos]) => ({
+            id,
+            x: pos.x,
+            y: pos.y,
+          }));
+        console.log(`Sending ${existingPlayers.length} general players to ${socket.id} in general space`);
+        socket.emit("currentPlayers", existingPlayers);
+        
+        // Notify other general space players about this new player
+        // Only send to players who are NOT in any event space
+        const generalSpacePlayers = Array.from(connectedPlayers.keys())
+          .filter(id => !playerEvents.has(id) && id !== socket.id);
+        
+        generalSpacePlayers.forEach(playerId => {
+          io.to(playerId).emit("playerJoined", socket.id);
+        });
+      }
     });
 
     socket.on("sendMessageToPeer", (msg, targetId) => {
@@ -50,7 +169,18 @@ const handleSocketEvents = (io) => {
 
     socket.on("playerMove", (data) => {
       connectedPlayers.set(socket.id, { x: data.x, y: data.y });
-      socket.broadcast.emit("playerMoved", data);
+      
+      // Broadcast to event-specific room if player is in an event
+      const eventId = playerEvents.get(socket.id);
+      if (eventId) {
+        const eventRoomId = eventRooms.get(eventId);
+        if (eventRoomId) {
+          socket.to(eventRoomId).emit("playerMoved", data);
+        }
+      } else {
+        // Broadcast to general space if not in event
+        socket.broadcast.emit("playerMoved", data);
+      }
     });
 
     socket.on("joinRoom", ({ roomId }) => {
@@ -267,11 +397,28 @@ const handleSocketEvents = (io) => {
         }
       }
 
+      // Handle event room cleanup
+      const eventId = playerEvents.get(socket.id);
+      if (eventId) {
+        leaveEventSpace(socket, eventId);
+      }
+
       connectedPlayers.delete(socket.id);
       if (socket.userId && userMap.get(socket.userId) === socket.id) {
         userMap.delete(socket.userId);
       }
-      io.emit("playerDisconnected", socket.id);
+      
+      // Emit playerDisconnected to event-specific room if player was in an event
+      const disconnectedEventId = playerEvents.get(socket.id);
+      if (disconnectedEventId) {
+        const eventRoomId = eventRooms.get(disconnectedEventId);
+        if (eventRoomId) {
+          socket.to(eventRoomId).emit("playerDisconnected", socket.id);
+        }
+      } else {
+        // Emit to general space if not in event
+        io.emit("playerDisconnected", socket.id);
+      }
     });
 
     // --- START CONVERSATION LOGIC ---
