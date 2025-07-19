@@ -132,7 +132,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/login', { email, password });
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}; HttpOnly`; // 7 days, HttpOnly
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Login failed:', error);
@@ -150,7 +150,7 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/google-login', googleData);
           console.log("google login response", response.data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}; HttpOnly`; // 7 days, HttpOnly
           
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
@@ -168,7 +168,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/register', data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}; HttpOnly`; // 7 days, HttpOnly
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Registration failed:', error);
@@ -186,7 +186,7 @@ const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Logout failed:', error);
         } finally {
-          document.cookie = `token=; path=/; secure; samesite=none; max-age=0`; // 7 days
+          document.cookie = `token=; path=/; secure; samesite=none; max-age=0; HttpOnly`; // 7 days, HttpOnly
           localStorage.removeItem('hackmeet-auth');
           set({ token: null, isAuthenticated: false, user: null, error: null });
         }
