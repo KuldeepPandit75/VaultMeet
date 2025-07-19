@@ -1,7 +1,5 @@
-import { Inter } from "next/font/google";
 import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   metadataBase: new URL('https://hackmeet.com'),
@@ -40,26 +38,15 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
+export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body 
-        className={inter.className}
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
-        <ThemeInitializer />
-        <main className="flex-grow">
-          {children}
-        </main>
-      </body>
-    </html>
+    <>
+      <ThemeInitializer />
+      {children}
+    </>
   );
 }

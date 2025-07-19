@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { SocketProvider } from "@/context/SocketContext";
 import MobileWrapper from "@/components/Game/Warnings/MobileWrapper";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,14 +24,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SocketProvider>
-          <MobileWrapper>
-            <main>
-              {children}
-              <Toaster position="bottom-right" />
-            </main>
-          </MobileWrapper>
-        </SocketProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+          <SocketProvider>
+            <MobileWrapper>
+              <main>
+                {children}
+                <Toaster position="bottom-right" />
+              </main>
+            </MobileWrapper>
+          </SocketProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
