@@ -23,7 +23,7 @@ import useAuthStore, { User } from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
-import Image from "next/image";
+// import Image from "next/image";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
@@ -40,7 +40,7 @@ const CodingSpace = () => {
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
-  const { primaryAccentColor, isDarkMode } = useThemeStore();
+  const { isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
@@ -212,12 +212,12 @@ const CodingSpace = () => {
 
   const handleMicToggle = async () => {
     const newMicState = await toggleMicrophone();
-    setMic(newMicState);
+    setMic(newMicState as unknown as boolean);
   };
 
   const handleVideoToggle = async () => {
     const newVideoState = await toggleCamera();
-    setVideo(newVideoState);
+    setVideo(newVideoState as unknown as boolean);
   };
 
   const handleScreenShareToggle = async () => {
