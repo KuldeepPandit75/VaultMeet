@@ -24,7 +24,7 @@ import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
 import Image from "next/image";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
   _video_muted_?: boolean;
@@ -39,21 +39,98 @@ const CodingSpace = () => {
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } = useSocketStore();
-  const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { getUserBySocketId, profileBox, setProfileBox, isAuthenticated, user, verifyUser, loading } = useAuthStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
   const [viewMode, setViewMode] = useState<"game" | "meeting" | "whiteboard">("game");
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
-  // const router= useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+  const router = useRouter();
 
-  // Check logged in or not
-  // useEffect(()=>{
-  //   if(!user){
-  //     router.push("/login")
-  //   }
-  // })
+  // Authentication check
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        // First check if we have a token in localStorage
+        const hasToken = useAuthStore.getState().checkAuth();
+        
+        if (!hasToken) {
+          console.log('No token found, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        // Verify the token with the server
+        await verifyUser();
+        
+        // Check if verification was successful
+        const currentState = useAuthStore.getState();
+        if (!currentState.isAuthenticated || !currentState.user) {
+          console.log('Token verification failed, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        router.push('/login');
+      }
+    };
+
+    checkAuthentication();
+  }, [router, verifyUser]);
+
+  // Fetch user names for remote users
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      const names: { [key: string]: User } = {};
+      for (const user of remoteUsers) {
+        try {
+          const userData = await getUserBySocketId(user.uid.toString());
+          names[user.uid] = userData;
+        } catch (error) {
+          console.error("Error fetching user name:", error);
+        }
+      }
+      setUserDatas(names);
+    };
+
+    fetchUserNames();
+  }, [remoteUsers, getUserBySocketId]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log("Coding space component unmounting, cleaning up...");
+      // Clean up Agora client
+      cleanupAgoraClient();
+      // Clear messages
+      useSocketStore.getState().setMessages([]);
+      // Close whiteboard if open
+      setIsWhiteboardOpen(false);
+    };
+  }, [setIsWhiteboardOpen]);
+
+  // Show loading while checking authentication
+  if (loading || !authChecked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show loading if not authenticated
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white text-xl">Redirecting to login...</div>
+      </div>
+    );
+  }
 
   const toggleViewMode = () => {
     if (viewMode === "game") {
@@ -174,24 +251,6 @@ const CodingSpace = () => {
     };
   }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
 
-  // Fetch user names for remote users
-  useEffect(() => {
-    const fetchUserNames = async () => {
-      const names: { [key: string]: User } = {};
-      for (const user of remoteUsers) {
-        try {
-          const userData = await getUserBySocketId(user.uid.toString());
-          names[user.uid] = userData;
-        } catch (error) {
-          console.error("Error fetching user name:", error);
-        }
-      }
-      setUserDatas(names);
-    };
-
-    fetchUserNames();
-  }, [remoteUsers, getUserBySocketId]);
-
   const handleSentMsg = () => {
     if (!typedMsg.trim() || !socket || !socket.id) return;
 
@@ -234,19 +293,6 @@ const CodingSpace = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
   };
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      console.log("Coding space component unmounting, cleaning up...");
-      // Clean up Agora client
-      cleanupAgoraClient();
-      // Clear messages
-      useSocketStore.getState().setMessages([]);
-      // Close whiteboard if open
-      setIsWhiteboardOpen(false);
-    };
-  }, [setIsWhiteboardOpen]);
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;

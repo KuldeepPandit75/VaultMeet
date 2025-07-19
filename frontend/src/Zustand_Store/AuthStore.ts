@@ -132,7 +132,22 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/login', { email, password });
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          
+          // Set cookie with proper configuration for production
+          const isProduction = process.env.NODE_ENV === 'production';
+          const cookieOptions = [
+            `token=${token}`,
+            'path=/',
+            'max-age=604800', // 7 days
+            'SameSite=Lax'
+          ];
+          
+          if (isProduction) {
+            cookieOptions.push('Secure');
+          }
+          
+          document.cookie = cookieOptions.join('; ');
+          
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Login failed:', error);
@@ -150,7 +165,21 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/google-login', googleData);
           console.log("google login response", response.data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          
+          // Set cookie with proper configuration for production
+          const isProduction = process.env.NODE_ENV === 'production';
+          const cookieOptions = [
+            `token=${token}`,
+            'path=/',
+            'max-age=604800', // 7 days
+            'SameSite=Lax'
+          ];
+          
+          if (isProduction) {
+            cookieOptions.push('Secure');
+          }
+          
+          document.cookie = cookieOptions.join('; ');
           
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
@@ -168,7 +197,22 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/register', data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          
+          // Set cookie with proper configuration for production
+          const isProduction = process.env.NODE_ENV === 'production';
+          const cookieOptions = [
+            `token=${token}`,
+            'path=/',
+            'max-age=604800', // 7 days
+            'SameSite=Lax'
+          ];
+          
+          if (isProduction) {
+            cookieOptions.push('Secure');
+          }
+          
+          document.cookie = cookieOptions.join('; ');
+          
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Registration failed:', error);
@@ -186,7 +230,21 @@ const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Logout failed:', error);
         } finally {
-          document.cookie = `token=; path=/; secure; samesite=none; max-age=0`; // 7 days
+          // Clear cookie with proper configuration
+          const isProduction = process.env.NODE_ENV === 'production';
+          const cookieOptions = [
+            'token=',
+            'path=/',
+            'max-age=0',
+            'SameSite=Lax'
+          ];
+          
+          if (isProduction) {
+            cookieOptions.push('Secure');
+          }
+          
+          document.cookie = cookieOptions.join('; ');
+          
           localStorage.removeItem('hackmeet-auth');
           set({ token: null, isAuthenticated: false, user: null, error: null });
         }

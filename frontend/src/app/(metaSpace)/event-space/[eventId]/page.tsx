@@ -47,7 +47,7 @@ const EventSpace = () => {
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } =
     useSocketStore();
-  const { user, getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { user, getUserBySocketId, profileBox, setProfileBox, isAuthenticated, verifyUser, loading } = useAuthStore();
   const { getEventById, currentEvent, loading: eventLoading } = useEventStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
@@ -57,16 +57,44 @@ const EventSpace = () => {
     "game"
   );
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const params = useParams();
   const router = useRouter();
   const eventId = params.eventId as string;
 
-  // Check logged in or not
-  // useEffect(()=>{
-  //   if(!user){
-  //     router.push("/login")
-  //   }
-  // })
+  // Authentication check - must be first useEffect
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        // First check if we have a token in localStorage
+        const hasToken = useAuthStore.getState().checkAuth();
+        
+        if (!hasToken) {
+          console.log('No token found, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        // Verify the token with the server
+        await verifyUser();
+        
+        // Check if verification was successful
+        const currentState = useAuthStore.getState();
+        if (!currentState.isAuthenticated || !currentState.user) {
+          console.log('Token verification failed, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        router.push('/login');
+      }
+    };
+
+    checkAuthentication();
+  }, [router, verifyUser]);
 
   useEffect(() => {
     if (eventId) {
@@ -206,19 +234,12 @@ const EventSpace = () => {
       }
     );
 
-    // Listen for event-specific events
-    socket.on("eventSpaceJoined", (data: { eventId: string; roomId: string; existingPlayers: { id: string; x: number; y: number }[] }) => {
-        console.log("Joined event space:", data.eventId, "Room:", data.roomId, "Existing players:", data.existingPlayers);
-        setCurrentRoomId(data.roomId);
-      });
-
     return () => {
       console.log("Cleaning up event space socket listeners...");
       socket.off("connect", handleConnect);
       socket.off("receiveMessage");
       socket.off("joinedRoom");
       socket.off("whiteboardInteraction");
-      socket.off("eventSpaceJoined");
       
       // Clean up Agora client
       cleanupAgoraClient();
@@ -242,6 +263,37 @@ const EventSpace = () => {
 
     fetchUserNames();
   }, [remoteUsers, getUserBySocketId]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log("Event space component unmounting, cleaning up...");
+      // Clean up Agora client
+      cleanupAgoraClient();
+      // Clear messages
+      useSocketStore.getState().setMessages([]);
+      // Close whiteboard if open
+      setIsWhiteboardOpen(false);
+    };
+  }, [setIsWhiteboardOpen]);
+
+  // Show loading while checking authentication
+  if (loading || !authChecked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show loading if not authenticated
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-white text-xl">Redirecting to login...</div>
+      </div>
+    );
+  }
 
   const handleSentMsg = () => {
     if (!typedMsg.trim() || !socket || !socket.id) return;
@@ -285,19 +337,6 @@ const EventSpace = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
   };
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      console.log("Event space component unmounting, cleaning up...");
-      // Clean up Agora client
-      cleanupAgoraClient();
-      // Clear messages
-      useSocketStore.getState().setMessages([]);
-      // Close whiteboard if open
-      setIsWhiteboardOpen(false);
-    };
-  }, [setIsWhiteboardOpen]);
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
