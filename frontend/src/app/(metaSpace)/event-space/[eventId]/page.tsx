@@ -10,6 +10,7 @@ import {
   toggleCamera,
   toggleMicrophone,
   toggleScreenShare,
+  cleanupAgoraClient,
 } from "@/components/Game/agora";
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
@@ -82,6 +83,17 @@ const EventSpace = () => {
         userId: user._id,
       });
     }
+
+    // Cleanup when component unmounts
+    return () => {
+      if (socket?.connected && eventId && user?._id) {
+        console.log("Leaving event space for event:", eventId);
+        socket.emit("leaveEventSpace", {
+          eventId: eventId,
+          userId: user._id,
+        });
+      }
+    };
   }, [socket?.connected, eventId, user?._id, currentEvent]);
 
   const toggleViewMode = () => {
@@ -201,11 +213,15 @@ const EventSpace = () => {
       });
 
     return () => {
+      console.log("Cleaning up event space socket listeners...");
       socket.off("connect", handleConnect);
       socket.off("receiveMessage");
       socket.off("joinedRoom");
       socket.off("whiteboardInteraction");
       socket.off("eventSpaceJoined");
+      
+      // Clean up Agora client
+      cleanupAgoraClient();
     };
   }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
 
@@ -269,6 +285,19 @@ const EventSpace = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
   };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log("Event space component unmounting, cleaning up...");
+      // Clean up Agora client
+      cleanupAgoraClient();
+      // Clear messages
+      useSocketStore.getState().setMessages([]);
+      // Close whiteboard if open
+      setIsWhiteboardOpen(false);
+    };
+  }, [setIsWhiteboardOpen]);
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;

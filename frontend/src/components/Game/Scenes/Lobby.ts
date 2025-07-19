@@ -706,6 +706,56 @@ class Lobby extends Scene {
       this.playerNameText.setPosition(this.player.x, this.player.y + 40);
     }
   }
+
+  shutdown() {
+    console.log('Shutting down Lobby scene...');
+    
+    // Clean up socket listeners
+    if (this.socket) {
+      this.socket.off("currentPlayers");
+      this.socket.off("playerJoined");
+      this.socket.off("playerJoinedEvent");
+      this.socket.off("playerLeftEvent");
+      this.socket.off("playerMoved");
+      this.socket.off("eventSpaceJoined");
+      this.socket.off("playerDisconnected");
+    }
+
+    // Clean up player sprites and text
+    Object.values(this.otherPlayers).forEach(player => {
+      if (player && player.destroy) {
+        player.destroy();
+      }
+    });
+    this.otherPlayers = {};
+
+    Object.values(this.otherPlayerNameTexts).forEach(text => {
+      if (text && text.destroy) {
+        text.destroy();
+      }
+    });
+    this.otherPlayerNameTexts = {};
+
+    // Clean up main player and text
+    if (this.player && this.player.destroy) {
+      this.player.destroy();
+    }
+    if (this.playerNameText && this.playerNameText.destroy) {
+      this.playerNameText.destroy();
+    }
+
+    // Clean up whiteboard prompt
+    if (this.whiteboardPrompt && this.whiteboardPrompt.destroy) {
+      this.whiteboardPrompt.destroy();
+    }
+
+    // Reset state
+    this.nearbyPlayers = [];
+    this.isNearWhiteboard = false;
+    this.running = false;
+    
+    console.log('Lobby scene shutdown complete');
+  }
 }
 
 export default Lobby;

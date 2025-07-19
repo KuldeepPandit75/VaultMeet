@@ -6,14 +6,19 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                     request.nextUrl.pathname.startsWith('/register');
   const isProfilePage = request.nextUrl.pathname === '/me';
+  const isEventSpacePage = request.nextUrl.pathname.startsWith('/event-space');
+  const isCodingSpacePage = request.nextUrl.pathname.startsWith('/coding-space');
+
+  // Check if it's a protected route
+  const isProtectedRoute = isProfilePage || isEventSpacePage || isCodingSpacePage;
 
   // Redirect to login if accessing protected route without token
-  if (isProfilePage && !token) {
+  if (isProtectedRoute && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Verify token with backend for profile pages
-  if (isProfilePage && token) {
+  // Verify token with backend for all protected routes
+  if (isProtectedRoute && token) {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/me`, {
         headers: {
@@ -33,15 +38,28 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect to home if accessing auth pages with token
+  // Redirect to home if accessing auth pages with valid token
   if (isAuthPage && token) {
-    console.log('hld')
-    return NextResponse.redirect(new URL('/', request.url));
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        console.log('User already authenticated, redirecting to home');
+        return NextResponse.redirect(new URL('/', request.url));
+      }
+    } catch (error) {
+      console.log('Token verification failed for auth page:', error);
+      // If verification fails, continue to auth page
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/me', '/login', '/register']
+  matcher: ['/me', '/login', '/register', '/event-space/:path*', '/coding-space/:path*']
 }; 

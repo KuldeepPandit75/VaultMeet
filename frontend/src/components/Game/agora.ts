@@ -362,3 +362,44 @@ export const toggleScreenShare = async () => {
     return await startScreenShare();
   }
 };
+
+// Function to cleanup Agora client and tracks
+export const cleanupAgoraClient = async () => {
+  console.log("Cleaning up Agora client...");
+  
+  try {
+    // Stop screen sharing if active
+    if (isScreenSharing) {
+      await stopScreenShare();
+    }
+    
+    // Leave current channel
+    if (client && currentChannel) {
+      await client.leave();
+      currentChannel = null;
+    }
+    
+    // Close local tracks
+    if (localAudioTrack) {
+      localAudioTrack.close();
+      localAudioTrack = null;
+    }
+    
+    if (localVideoTrack) {
+      localVideoTrack.close();
+      localVideoTrack = null;
+    }
+    
+    if (localScreenTrack) {
+      localScreenTrack.close();
+      localScreenTrack = null;
+    }
+    
+    // Clear remote users from store
+    useSocketStore.getState().clearRemoteUsers();
+    
+    console.log("Agora client cleanup complete");
+  } catch (error) {
+    console.error("Error during Agora client cleanup:", error);
+  }
+};

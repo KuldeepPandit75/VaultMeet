@@ -10,6 +10,7 @@ import {
   toggleCamera,
   toggleMicrophone,
   toggleScreenShare,
+  cleanupAgoraClient,
 } from "@/components/Game/agora";
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
@@ -162,10 +163,14 @@ const CodingSpace = () => {
     });
 
     return () => {
+      console.log("Cleaning up coding space socket listeners...");
       socket.off("connect", handleConnect);
       socket.off("receiveMessage");
       socket.off("joinedRoom");
       socket.off("whiteboardInteraction");
+      
+      // Clean up Agora client
+      cleanupAgoraClient();
     };
   }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
 
@@ -229,6 +234,19 @@ const CodingSpace = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
   };
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      console.log("Coding space component unmounting, cleaning up...");
+      // Clean up Agora client
+      cleanupAgoraClient();
+      // Clear messages
+      useSocketStore.getState().setMessages([]);
+      // Close whiteboard if open
+      setIsWhiteboardOpen(false);
+    };
+  }, [setIsWhiteboardOpen]);
 
   const renderUserState = (user: IAgoraRTCRemoteUser) => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;

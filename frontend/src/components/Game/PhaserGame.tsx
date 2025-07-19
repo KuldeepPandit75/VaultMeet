@@ -23,6 +23,8 @@ const PhaserGame = ({ eventId }: PhaserGameProps) => {
   useEffect(() => {
     if (!isClient || !gameContainer.current || !socket) return;
 
+    let resizeObserver: ResizeObserver | null = null;
+
     const initGame = async () => {
       const Phaser = (await import('phaser')).default;
       const Lobby = (await import('@/components/Game/Scenes/Lobby')).default;
@@ -67,19 +69,30 @@ const PhaserGame = ({ eventId }: PhaserGameProps) => {
         }
       };
 
-      const resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver = new ResizeObserver(handleResize);
       if (gameContainer.current) {
         resizeObserver.observe(gameContainer.current);
       }
-
-      return () => {
-        game.destroy(true);
-        resizeObserver.disconnect();
-      };
     };
 
     initGame();
-  }, [isClient, socket, eventId]);
+
+    // Cleanup function for the useEffect
+    return () => {
+      // Destroy the game if it exists
+      if (gameRef.current) {
+        console.log('Destroying Phaser game...');
+        gameRef.current.destroy(true);
+        gameRef.current = null;
+      }
+      
+      // Disconnect resize observer if it exists
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+    };
+  }, [isClient, socket, eventId, user?._id]);
 
   return (
     <div
