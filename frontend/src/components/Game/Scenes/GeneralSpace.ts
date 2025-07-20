@@ -23,6 +23,7 @@ class GeneralSpace extends Scene {
   private isNearWhiteboard: boolean = false;
   private whiteboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string;
+  private objectLayerData: { [key: string]: Phaser.Types.Tilemaps.TiledObject[] } = {};
 
   constructor() {
     super({ key: "GeneralSpace" });
@@ -59,7 +60,7 @@ class GeneralSpace extends Scene {
     });
 
     // Load leaderboard image
-    // this.load.image("leaderboard_image", "/game/leaderboard.png");
+    this.load.image("leaderboard_image", "/game/leaderboard.png");
 
     // Add loading error handler
     this.load.on("loaderror", (file: { key: string; src: string }) => {
@@ -309,34 +310,38 @@ class GeneralSpace extends Scene {
         // Set boundary layer opacity to 0 for collision detection without visual rendering
         if (layer.name === "Boundary") {
           layers[layer.name].setAlpha(0);
+          // Set the boundary layer as collidable
+          layers[layer.name].setCollisionByProperty({ collides: true });
         }
       }
     });
 
-    // Load image layers
-    map.layers.forEach((layer) => {
-      if (layer.name === "LeaderBoard" && 'image' in layer && layer.image) {
-        // Create the leaderboard image - commented out since image file doesn't exist
-        // const image = this.add.image(
-        //   (layer as any).offsetx || 0,
-        //   (layer as any).offsety || 0,
-        //   "leaderboard_image"
-        // );
-        // image.setOrigin(0, 0);
-        // if ((layer as any).opacity !== undefined) {
-        //   image.setAlpha((layer as any).opacity);
-        // }
-        console.log("LeaderBoard image layer found but image file not available");
+    // Load all object layers
+    const objectLayers = [
+      "WhiteBoard",
+      "LeaderBoard", 
+      "top1Logo",
+      "top2Logo",
+      "top3Logo",
+      "top1Name",
+      "top2Name",
+      "top3Name"
+    ];
+
+    // Store object layer data for potential use
+    this.objectLayerData = {};
+
+    objectLayers.forEach(layerName => {
+      const objects = map.getObjectLayer(layerName)?.objects;
+      if (objects && objects.length > 0) {
+        this.objectLayerData[layerName] = objects;
+        console.log(`Loaded object layer: ${layerName} with ${objects.length} objects`);
       }
     });
 
-    // Load object layers for whiteboard and leaderboard
-    const whiteboardObjects = map.getObjectLayer("WhiteBoard")?.objects;
-    // const leaderboardObjects = map.getObjectLayer("LeaderBoard")?.objects;
-
     // Update whiteboard area from object layer if available
-    if (whiteboardObjects && whiteboardObjects.length > 0) {
-      const whiteboardObj = whiteboardObjects[0];
+    if (this.objectLayerData["WhiteBoard"] && this.objectLayerData["WhiteBoard"].length > 0) {
+      const whiteboardObj = this.objectLayerData["WhiteBoard"][0];
       this.whiteboardArea = {
         x: whiteboardObj.x || 482.67,
         y: whiteboardObj.y || 141.33,
@@ -344,6 +349,50 @@ class GeneralSpace extends Scene {
         height: whiteboardObj.height || 46.67
       };
     }
+
+    // Log all loaded object layers for debugging
+    console.log("All object layers loaded:", Object.keys(this.objectLayerData));
+
+    // Create visual debug rectangles for object layers (optional - for development)
+    if (process.env.NODE_ENV === 'development') {
+      Object.entries(this.objectLayerData).forEach(([layerName, objects]) => {
+        objects.forEach((obj, index) => {
+          // Create a debug rectangle to visualize object areas
+          const debugRect = this.add.rectangle(
+            (obj.x || 0) + (obj.width || 0) / 2,
+            (obj.y || 0) + (obj.height || 0) / 2,
+            obj.width || 32,
+            obj.height || 32,
+            0xff0000,
+            0.3
+          );
+          debugRect.setDepth(600);
+          
+          // Add text label
+          const label = this.add.text(
+            (obj.x || 0) + (obj.width || 0) / 2,
+            (obj.y || 0) + (obj.height || 0) / 2,
+            `${layerName}${index}`,
+            {
+              fontSize: '8px',
+              color: '#ffffff',
+              backgroundColor: '#000000',
+              padding: { left: 2, right: 2, top: 1, bottom: 1 }
+            }
+          ).setOrigin(0.5);
+          label.setDepth(600);
+        });
+      });
+    }
+
+    // Add leaderboard image from image layer
+    // Based on the JSON data, the LeaderBoard image layer has offsetx: 392, offsety: 418
+    const leaderboardImage = this.add.image(502, 488, "leaderboard_image");
+    
+    // Set the depth to ensure it appears above tiles but below UI elements
+    leaderboardImage.setDepth(530);  
+    
+    console.log("Leaderboard image added at:", { x: 392, y: 418 });
 
     this.player = this.physics.add.sprite(
       mapWidth / 2,
@@ -393,9 +442,6 @@ class GeneralSpace extends Scene {
     // Add colliders for boundary and borders
     if (layers["Boundary"]) {
       this.physics.add.collider(this.player, layers["Boundary"]);
-    }
-    if (layers["Borders"]) {
-      this.physics.add.collider(this.player, layers["Borders"]);
     }
 
     // Set up depth sorting
@@ -557,6 +603,33 @@ class GeneralSpace extends Scene {
     window.dispatchEvent(event);
   }
 
+  // Helper method to check if player is near any object layer
+  private isPlayerNearObjectLayer(layerName: string, proximityRadius: number = 80): boolean {
+    if (!this.player || !this.objectLayerData[layerName]) {
+      return false;
+    }
+
+    const playerX = this.player.x;
+    const playerY = this.player.y;
+
+    return this.objectLayerData[layerName].some(obj => {
+      const objCenterX = (obj.x || 0) + (obj.width || 0) / 2;
+      const objCenterY = (obj.y || 0) + (obj.height || 0) / 2;
+      const distance = Phaser.Math.Distance.Between(playerX, playerY, objCenterX, objCenterY);
+      return distance <= proximityRadius;
+    });
+  }
+
+  // Helper method to get object layer data
+  public getObjectLayerData(layerName: string): Phaser.Types.Tilemaps.TiledObject[] | undefined {
+    return this.objectLayerData[layerName];
+  }
+
+  // Helper method to get all available object layer names
+  public getAvailableObjectLayers(): string[] {
+    return Object.keys(this.objectLayerData);
+  }
+
   update(time: number) {
     const speed = this.running ? 150 : 100;
 
@@ -597,17 +670,28 @@ class GeneralSpace extends Scene {
       this.player.setDepth(this.player.y);
     }
 
-    if (dirX < 0) {
-      this.player?.setScale(0.9, 0.9);
-      this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
-    } else if (dirX > 0) {
-      this.player?.setScale(-0.9, 0.9);
-      this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
-    } else if (dirY < 0) {
-      this.player?.anims.play(this.running ? "runU" : "walkU", true);
-    } else if (dirY > 0) {
-      this.player?.anims.play(this.running ? "runD" : "walkD", true);
+    // Check if player is moving and not colliding
+    const isMoving = dirX !== 0 || dirY !== 0;
+    const isColliding = this.player?.body?.blocked.left || 
+                       this.player?.body?.blocked.right || 
+                       this.player?.body?.blocked.up || 
+                       this.player?.body?.blocked.down;
+
+    // Only play movement animations if moving and not colliding
+    if (isMoving && !isColliding) {
+      if (dirX < 0) {
+        this.player?.setScale(0.9, 0.9);
+        this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
+      } else if (dirX > 0) {
+        this.player?.setScale(-0.9, 0.9);
+        this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
+      } else if (dirY < 0) {
+        this.player?.anims.play(this.running ? "runU" : "walkU", true);
+      } else if (dirY > 0) {
+        this.player?.anims.play(this.running ? "runD" : "walkD", true);
+      }
     } else {
+      // Play idle animation when not moving or when colliding
       this.player?.anims.play("idle", true);
     }
 
@@ -654,7 +738,7 @@ class GeneralSpace extends Scene {
       const playerY = this.player.y;
       
       // Check if player is near the whiteboard area
-      const WHITEBOARD_PROXIMITY_RADIUS = 50; // Adjust as needed
+      const WHITEBOARD_PROXIMITY_RADIUS = 80; // Adjust as needed
       const whiteboardCenterX = this.whiteboardArea.x + this.whiteboardArea.width / 2;
       const whiteboardCenterY = this.whiteboardArea.y + this.whiteboardArea.height / 2;
       
