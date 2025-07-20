@@ -121,6 +121,7 @@ const CodingSpace = () => {
   }, [currentRoomId, setIsWhiteboardOpen]);
 
   useEffect(() => {
+    console.log(socket,currentRoomId)
     if (!socket) return;
 
     // Connect socket first
@@ -172,7 +173,7 @@ const CodingSpace = () => {
       // Clean up Agora client
       cleanupAgoraClient();
     };
-  }, [socket, addMessage, currentRoomId, setIsWhiteboardOpen]);
+  }, [socket, addMessage, setIsWhiteboardOpen]); // Removed currentRoomId dependency
 
   // Fetch user names for remote users
   useEffect(() => {
@@ -371,13 +372,15 @@ const CodingSpace = () => {
       )}
 
       {/* Remote Users Video Containers */}
-      {remoteUsers.length > 0 && viewMode !== "whiteboard" && (
+      {remoteUsers.length > 0 && (
         <div
           className={`connectedUsers absolute z-40 transition-all duration-500 ${
             viewMode === "game"
               ? "top-6 left-1/2 -translate-x-1/2 flex gap-4 max-w-[85vw] flex-wrap justify-center"
               : "top-0 left-0 w-full h-full p-4 pb-[80px] grid gap-4 place-items-center"
-          }`}
+          }
+          ${viewMode === "whiteboard" ? "hidden" : ""}
+          `}
           style={{
             gridTemplateColumns:
               viewMode === "meeting"
