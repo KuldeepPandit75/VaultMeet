@@ -7,9 +7,10 @@ import useAuthStore from "@/Zustand_Store/AuthStore";
 
 interface PhaserGameProps {
   eventId?: string; // Optional eventId for event-specific spaces
+  mapType?: string; // NEW: Map type to load (e.g., "general", "hackmeet")
 }
 
-const PhaserGame = ({ eventId }: PhaserGameProps) => {
+const PhaserGame = ({ eventId, mapType = "hackmeet" }: PhaserGameProps) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -28,6 +29,7 @@ const PhaserGame = ({ eventId }: PhaserGameProps) => {
     const initGame = async () => {
       const Phaser = (await import('phaser')).default;
       const Lobby = (await import('@/components/Game/Scenes/Lobby')).default;
+      const GeneralSpace = (await import('@/components/Game/Scenes/GeneralSpace')).default;
 
       if (!gameContainer.current) return;
 
@@ -45,7 +47,7 @@ const PhaserGame = ({ eventId }: PhaserGameProps) => {
             debug: false,
           },
         },
-        scene: [Lobby],
+        scene: mapType === "general" ? [GeneralSpace] : [Lobby],
       };
 
       const game = new Phaser.Game(config);
@@ -53,10 +55,12 @@ const PhaserGame = ({ eventId }: PhaserGameProps) => {
 
       // Wait for the next frame to ensure scene is initialized
       requestAnimationFrame(() => {
-        game.scene.start("Lobby", { 
+        const sceneKey = mapType === "general" ? "GeneralSpace" : "Lobby";
+        game.scene.start(sceneKey, { 
           socket, 
           userId: user?._id,
-          eventId: eventId // Pass eventId to the scene
+          eventId: eventId, // Pass eventId to the scene
+          mapType: mapType // NEW: Pass mapType to the scene
         });
       });
 

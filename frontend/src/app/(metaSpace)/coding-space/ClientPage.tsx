@@ -23,7 +23,7 @@ import useAuthStore, { User } from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
-// import Image from "next/image";
+import Image from "next/image";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
@@ -40,7 +40,7 @@ const CodingSpace = () => {
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
-  const { isDarkMode } = useThemeStore();
+  const { isDarkMode, primaryAccentColor } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
@@ -211,13 +211,13 @@ const CodingSpace = () => {
   };
 
   const handleMicToggle = async () => {
-    const newMicState = await toggleMicrophone();
-    setMic(newMicState as unknown as boolean);
+    await toggleMicrophone();
+    setMic(!mic);
   };
 
   const handleVideoToggle = async () => {
-    const newVideoState = await toggleCamera();
-    setVideo(newVideoState as unknown as boolean);
+    await toggleCamera();
+    setVideo(!video);
   };
 
   const handleScreenShareToggle = async () => {
@@ -300,7 +300,7 @@ const CodingSpace = () => {
     >
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
-        <PhaserGame />
+        <PhaserGame mapType="general" />
       </div>
 
       {/* Whiteboard View */}
@@ -388,29 +388,92 @@ const CodingSpace = () => {
           {remoteUsers.map((user) => (
             <div
               key={user.uid}
-              id={`video-container-${user.uid}`}
-              className={`relative ${
-                viewMode === "game"
-                  ? "w-32 h-32 rounded-lg overflow-hidden shadow-lg"
-                  : "w-full h-full rounded-lg overflow-hidden shadow-lg"
+              className={`relative group ${
+                viewMode === "meeting"
+                  ? "w-full max-w-[700px] aspect-[16/9]"
+                  : ""
               }`}
               style={{
-                backgroundColor: isDarkMode ? "#1f1f1f" : "#f0f0f0",
+                transform: "translateZ(0)",
+                transition: "all 0.3s ease",
               }}
             >
               <div
-                id={`video-${user.uid}`}
-                className="w-full h-full"
+                id={`user-container-${user.uid}`}
+                className={`video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 w-full ${
+                  viewMode === "meeting" ? "h-auto aspect-[16/9]" : "h-full"
+                }`}
                 style={{
-                  backgroundColor: isDarkMode ? "#1f1f1f" : "#f0f0f0",
+                  width: viewMode === "game" ? "12vw" : "100%",
+                  height: viewMode === "game" ? "14vh" : "100%",
+                  minWidth: "140px",
+                  minHeight: "100px",
+                  backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+                  borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+                  boxShadow: isDarkMode
+                    ? "0 8px 25px -8px rgba(0, 0, 0, 0.5)"
+                    : "0 8px 25px -8px rgba(0, 0, 0, 0.15)",
                 }}
-              />
-              {renderUserState(user)}
-              {userDatas && userDatas[user.uid] && (
-                <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                  {userDatas[user.uid].fullname.firstname}
+              >
+                {!user.hasVideo && (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                      backgroundImage: isDarkMode
+                        ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
+                        : "linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)",
+                    }}
+                  >
+                    <div
+                      className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
+                      style={{
+                        backgroundColor: primaryAccentColor,
+                        boxShadow: `0 4px 12px ${primaryAccentColor}40`,
+                      }}
+                    >
+                      {userDatas?.[user.uid]?.avatar ? (
+                        <Image
+                          src={userDatas?.[user.uid]?.avatar || ""}
+                          alt="User Avatar"
+                          height={100}
+                          width={100}
+                          className="h-[70px] w-[70px] rounded-full object-cover"
+                          style={{ backgroundColor: primaryAccentColor }}
+                        />
+                      ) : (
+                        <div
+                          className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
+                          style={{
+                            backgroundColor: primaryAccentColor,
+                            boxShadow: `0 4px 12px ${primaryAccentColor}40`,
+                          }}
+                        >
+                          {userDatas?.[user.uid]?.fullname?.firstname?.charAt(
+                            0
+                          ) || "U"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {renderUserState(user)}
+
+                {/* User Name Badge */}
+                <div
+                  className="absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-medium shadow-lg"
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? "rgba(0, 0, 0, 0.7)"
+                      : "rgba(255, 255, 255, 0.9)",
+                    color: isDarkMode ? "#ffffff" : "#1a1a1a",
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  {userDatas?.[user.uid]?.fullname?.firstname ||
+                    `User ${String(user.uid).slice(-4)}`}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>

@@ -24,6 +24,31 @@ interface WhiteBoardProps {
 interface ExcalidrawElement {
   id: string;
   type: string;
+  x: number;
+  y: number;
+  strokeColor: string;
+  backgroundColor: string;
+  fillStyle: string;
+  strokeWidth: number;
+  strokeStyle: string;
+  roundness: { type: number; value?: number } | null;
+  seed: number;
+  groupIds: string[];
+  frameId: string | null;
+  index: string;
+  link: string | null;
+  locked: boolean;
+  opacity: number;
+  updated: number;
+  version: number;
+  versionNonce: number;
+  isDeleted: boolean;
+  customData?: Record<string, unknown>;
+  roughness: number;
+  width: number;
+  height: number;
+  angle: number;
+  boundElements: Array<{ id: string; type: string }> | null;
   [key: string]: unknown;
 }
 
@@ -51,6 +76,15 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
   const [isUsersPanelCollapsed, setIsUsersPanelCollapsed] = useState<boolean>(false);
   const lastElementsUpdateRef = useRef<string>("");
   const lastScrollUpdateRef = useRef<string>("");
+  const [initialWhiteboardData, setInitialWhiteboardData] = useState<{
+    elements: ExcalidrawElement[];
+    appState: ExcalidrawAppState;
+    files: ExcalidrawFiles;
+  }>({
+    elements: [],
+    appState: {},
+    files: {}
+  });
 
   // Fetch user info for all whiteboard room users (not just remoteUsers)
   useEffect(() => {
@@ -76,9 +110,16 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
   useEffect(() => {
     if (!socket || !roomId) return;
     // Handler for initial join
-    const handleRoomJoined = (data: { roomId: string; players: string[] }) => {
+    const handleRoomJoined = (data: { roomId: string; players: string[]; whiteboardData: { elements: ExcalidrawElement[]; appState: ExcalidrawAppState; files: ExcalidrawFiles } }) => {
       if (data.roomId === roomId && Array.isArray(data.players)) {
         setWhiteboardRoomUsers(data.players);
+        if (data.whiteboardData) {
+          setInitialWhiteboardData({
+            elements: data.whiteboardData.elements,
+            appState: data.whiteboardData.appState,
+            files: data.whiteboardData.files
+          });
+        }
       }
     };
     // Handler for user joined
@@ -149,10 +190,15 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
 
       const elementsArray = elements as ExcalidrawElement[];
       const elementsString = JSON.stringify(elementsArray);
+      const scrollString = JSON.stringify({ scrollX: appState.scrollX, scrollY: appState.scrollY });
       
-      // Only send updates if elements have actually changed
-      if (elementsString === lastElementsUpdateRef.current) {
-        return; // No changes to elements, don't send update
+      // Check if either elements or scroll position has changed
+      const elementsChanged = elementsString !== lastElementsUpdateRef.current;
+      const scrollChanged = scrollString !== lastScrollUpdateRef.current;
+      
+      // Only send updates if something has actually changed
+      if (!elementsChanged && !scrollChanged) {
+        return; // No changes, don't send update
       }
 
       // Clear any pending timeout
@@ -162,7 +208,7 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
       updateTimeoutRef.current = setTimeout(() => {
         // Always use your own scrollX/scrollY when sending
         lastElementsUpdateRef.current = elementsString;
-        lastScrollUpdateRef.current = JSON.stringify({ scrollX: appState.scrollX, scrollY: appState.scrollY });
+        lastScrollUpdateRef.current = scrollString;
         socket.emit("whiteboardUpdate", {
           roomId,
           elements: elementsArray.map(el => ({ ...el })),
@@ -170,7 +216,7 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
           files: { ...(files as ExcalidrawFiles) },
           userId: socket.id,
         });
-        console.log("Elements sent:", elements);
+        console.log("Update sent:", elementsChanged ? "elements" : "scroll only");
       }, 150);
     }
   }, [socket, roomId]);
@@ -280,10 +326,10 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
           }}
           theme={isDarkMode ? "dark" : "light"}
           initialData={{
-            elements: [],
-            appState: {},
-            files: {}
-          }}
+            elements: initialWhiteboardData.elements as unknown as readonly ExcalidrawElement[],
+            appState: initialWhiteboardData.appState as unknown as ExcalidrawAppState,
+            files: initialWhiteboardData.files as unknown as ExcalidrawFiles
+          } as Record<string, unknown>}
         />
         
         {/* Toggle Button */}
