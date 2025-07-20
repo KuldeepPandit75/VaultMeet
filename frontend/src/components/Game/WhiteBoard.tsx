@@ -61,7 +61,7 @@ interface ExcalidrawFiles {
 }
 
 export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   const { setIsWhiteboardOpen, remoteUsers } = useSocketStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
   const { getUserBySocketId } = useAuthStore();
@@ -76,6 +76,7 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
   const [isUsersPanelCollapsed, setIsUsersPanelCollapsed] = useState<boolean>(false);
   const lastElementsUpdateRef = useRef<string>("");
   const lastScrollUpdateRef = useRef<string>("");
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState<boolean>(false);
   const [initialWhiteboardData, setInitialWhiteboardData] = useState<{
     elements: ExcalidrawElement[];
     appState: ExcalidrawAppState;
@@ -85,6 +86,14 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
     appState: {},
     files: {}
   });
+
+  // Ensure socket is connected
+  useEffect(() => {
+    if (socket && !socket.connected) {
+      console.log("Connecting socket for whiteboard...");
+      socket.connect();
+    }
+  }, [socket]);
 
   // Fetch user info for all whiteboard room users (not just remoteUsers)
   useEffect(() => {
@@ -106,75 +115,99 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
     fetchUserNames();
   }, [whiteboardRoomUsers, remoteUsers, getUserBySocketId, socket]);
 
-  // Track actual whiteboard room users
+  // Track actual whiteboard room users and handle initial data
   useEffect(() => {
-    if (!socket || !roomId) return;
+    if (!socket || !roomId || !isConnected) return;
+    
+    console.log("Setting up whiteboard room listeners for room:", roomId);
+    
     // Handler for initial join
     const handleRoomJoined = (data: { roomId: string; players: string[]; whiteboardData: { elements: ExcalidrawElement[]; appState: ExcalidrawAppState; files: ExcalidrawFiles } }) => {
+      console.log("Whiteboard room joined:", data);
       if (data.roomId === roomId && Array.isArray(data.players)) {
         setWhiteboardRoomUsers(data.players);
         if (data.whiteboardData) {
+          console.log("Setting initial whiteboard data:", data.whiteboardData);
           setInitialWhiteboardData({
-            elements: data.whiteboardData.elements,
-            appState: data.whiteboardData.appState,
-            files: data.whiteboardData.files
+            elements: data.whiteboardData.elements || [],
+            appState: data.whiteboardData.appState || {},
+            files: data.whiteboardData.files || {}
           });
+          setIsInitialDataLoaded(true);
+        } else {
+          // If no existing data, mark as loaded anyway
+          setIsInitialDataLoaded(true);
         }
       }
     };
+    
     // Handler for user joined
     const handleUserJoined = (data: { roomId: string; players: string[] }) => {
       if (data.roomId === roomId && Array.isArray(data.players)) {
         setWhiteboardRoomUsers(data.players);
       }
     };
+    
     // Handler for user left
     const handleUserLeft = (data: { roomId: string; remainingPlayers: string[] }) => {
       if (data.roomId === roomId && Array.isArray(data.remainingPlayers)) {
         setWhiteboardRoomUsers(data.remainingPlayers);
       }
     };
+
+    // Handler for whiteboard errors
+    const handleWhiteboardError = (data: { message: string }) => {
+      console.error("Whiteboard error:", data.message);
+      // Still load the whiteboard with empty state on error
+      setIsInitialDataLoaded(true);
+    };
+    
     socket.on("whiteboardRoomJoined", handleRoomJoined);
     socket.on("whiteboardUserJoined", handleUserJoined);
     socket.on("whiteboardUserLeft", handleUserLeft);
+    socket.on("whiteboardError", handleWhiteboardError);
+    
     return () => {
       socket.off("whiteboardRoomJoined", handleRoomJoined);
       socket.off("whiteboardUserJoined", handleUserJoined);
       socket.off("whiteboardUserLeft", handleUserLeft);
+      socket.off("whiteboardError", handleWhiteboardError);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, isConnected]);
 
+  // Join whiteboard room when socket is connected
   useEffect(() => {
-    if (roomId && socket) {
+    if (roomId && socket && isConnected) {
+      console.log("Joining whiteboard room:", roomId);
       // Join the whiteboard room
       socket.emit("joinWhiteboardRoom", { roomId });
       
-      // Listen for whiteboard room events
-      socket.on("whiteboardRoomJoined", (data) => {
-        console.log("Joined whiteboard room:", data);
-        setIsWhiteboardOpen(true);
-        // Reset flags when joining a new room
-        hasUserMadeChangesRef.current = false;
-        initialLoadCompleteRef.current = false;
-      });
-
-      socket.on("whiteboardUserJoined", (data) => {
-        console.log("User joined whiteboard:", data);
-      });
-
-      socket.on("whiteboardUserLeft", (data) => {
-        console.log("User left whiteboard:", data);
-      });
-
+      // Reset flags when joining a new room
+      hasUserMadeChangesRef.current = false;
+      initialLoadCompleteRef.current = false;
+      setIsInitialDataLoaded(false);
+      
       return () => {
+        console.log("Leaving whiteboard room:", roomId);
         socket.emit("leaveWhiteboardRoom", { roomId });
-        socket.off("whiteboardRoomJoined");
-        socket.off("whiteboardUserJoined");
-        socket.off("whiteboardUserLeft");
         setIsWhiteboardOpen(false);
       };
     }
-  }, [roomId, socket, setIsWhiteboardOpen]);
+  }, [roomId, socket, isConnected, setIsWhiteboardOpen]);
+
+  // Fallback: If socket is not connected after 5 seconds, load whiteboard anyway
+  useEffect(() => {
+    if (roomId && !isInitialDataLoaded) {
+      const fallbackTimer = setTimeout(() => {
+        if (!isInitialDataLoaded) {
+          console.log("Socket connection timeout, loading whiteboard with empty state");
+          setIsInitialDataLoaded(true);
+        }
+      }, 5000);
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [roomId, isInitialDataLoaded]);
 
   const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: {scrollX: number, scrollY: number}, files: unknown) => {
     if (socket && roomId && !isUpdatingRef.current) {
@@ -304,6 +337,18 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
     };
   }, []);
 
+  // Show loading state while initial data is being loaded
+  if (!isInitialDataLoaded) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading whiteboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full flex relative">
       {/* Whiteboard main area */}
@@ -311,8 +356,10 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
         <Excalidraw
           excalidrawAPI={(api) => {
             setExcalidrawAPI(api);
+            // Set initial load complete after a short delay to ensure API is ready
             setTimeout(() => {
               initialLoadCompleteRef.current = true;
+              console.log("Excalidraw API initialized and ready");
             }, 1000);
           }}
           onChange={handleExcalidrawChange}
