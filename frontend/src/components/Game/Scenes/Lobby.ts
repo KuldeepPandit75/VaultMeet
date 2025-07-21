@@ -27,6 +27,9 @@ class Lobby extends Scene {
   private isNearWhiteboard: boolean = false;
   private whiteboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string; // NEW: Event-specific identifier
+  private computerArea: { x: number; y: number; width: number; height: number } | null = null;
+  private isNearComputer: boolean = false;
+  private computerPrompt?: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: "Lobby" });
@@ -201,12 +204,14 @@ class Lobby extends Scene {
           }
           if (data.dirX < 0) {
             this.otherPlayers[data.id].setScale(0.9, 0.9);
+            this.otherPlayers[data.id].setFlipX(false);
             this.otherPlayers[data.id].anims.play(
               data.isRunning ? "runR&L" : "walkR&L",
               true
             );
           } else if (data.dirX > 0) {
-            this.otherPlayers[data.id].setScale(-0.9, 0.9);
+            this.otherPlayers[data.id].setScale(0.9, 0.9);
+            this.otherPlayers[data.id].setFlipX(true);
             this.otherPlayers[data.id].anims.play(
               data.isRunning ? "runR&L" : "walkR&L",
               true
@@ -319,6 +324,13 @@ class Lobby extends Scene {
           0,
           0
         ) as Tilemaps.TilemapLayer;
+
+        // Set boundary layer opacity to 0 for collision detection without visual rendering
+        if (layer.name === "Boundary") {
+          layers[layer.name].setAlpha(0);
+          // Set the boundary layer as collidable
+          layers[layer.name].setCollisionByProperty({ collides: true });
+        }
       }
     });
 
@@ -345,6 +357,17 @@ class Lobby extends Scene {
     // Whiteboard area is defined by the whiteboardArea property
     // No sprite loading needed - just detect proximity to the area
 
+    // Computer area: parse from map object layer
+    const computerObj = map.getObjectLayer("Computer")?.objects?.[0];
+    if (computerObj) {
+      this.computerArea = {
+        x: computerObj.x ?? 0,
+        y: computerObj.y ?? 0,
+        width: computerObj.width ?? 32,
+        height: computerObj.height ?? 32,
+      };
+    }
+
     this.player = this.physics.add.sprite(
       mapWidth / 2,
       mapHeight / 2,
@@ -352,6 +375,11 @@ class Lobby extends Scene {
     );
     this.player.setScale(0.9);
     this.player.setFrame(117);
+
+    // Add colliders for boundary and borders
+    if (layers["Boundary"]) {
+      this.physics.add.collider(this.player, layers["Boundary"]);
+    }
 
     // Add player name text below the avatar
     const user = useAuthStore.getState().user;
@@ -387,6 +415,14 @@ class Lobby extends Scene {
       }
     });
 
+    // Add C key for computer interaction
+    const cKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+    cKey?.on('down', () => {
+      if (this.isNearComputer) {
+        this.onComputerInteract();
+      }
+    });
+
     // Create player animations
     this.createAnimations();
 
@@ -407,6 +443,13 @@ class Lobby extends Scene {
         player.setDepth(player.y);
       });
     });
+
+    // this.physics.world.createDebugGraphic();
+    // layers["Boundary"].renderDebug(this.add.graphics(), {
+    //   tileColor: null, // Color of non-colliding tiles
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 200), // Color of colliding tiles
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255) // Color of colliding face edges
+    // });
   }
 
   // NEW: Helper method to create player sprites
@@ -560,6 +603,23 @@ class Lobby extends Scene {
     window.dispatchEvent(whiteboardEvent);
   }
 
+  private onComputerInteract() {
+    console.log("Interacting with computer...");
+    // Emit socket event or dispatch a custom event, similar to whiteboard
+    this.socket?.emit("computerInteraction", {
+      action: "open",
+      playerId: this.socket.id
+    });
+
+    const computerEvent = new CustomEvent('openComputer', {
+      detail: {
+        playerId: this.socket?.id,
+        action: 'open'
+      }
+    });
+    window.dispatchEvent(computerEvent);
+  }
+
   update(time: number) {
     const speed = this.running ? 150 : 100;
 
@@ -602,9 +662,11 @@ class Lobby extends Scene {
 
     if (dirX < 0) {
       this.player?.setScale(0.9, 0.9);
+      this.player?.setFlipX(false);
       this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
     } else if (dirX > 0) {
-      this.player?.setScale(-0.9, 0.9);
+      this.player?.setScale(0.9, 0.9);
+      this.player?.setFlipX(true);
       this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
     } else if (dirY < 0) {
       this.player?.anims.play(this.running ? "runU" : "walkU", true);
@@ -690,6 +752,44 @@ class Lobby extends Scene {
       }
     }
 
+    // Check computer proximity
+    if (this.player && this.computerArea) {
+      const playerX = this.player.x;
+      const playerY = this.player.y;
+
+      const COMPUTER_PROXIMITY_RADIUS = 100; // Adjust as needed
+      const computerCenterX = this.computerArea.x + this.computerArea.width / 2;
+      const computerCenterY = this.computerArea.y + this.computerArea.height / 2;
+
+      const dist = Phaser.Math.Distance.Between(
+        playerX,
+        playerY,
+        computerCenterX,
+        computerCenterY
+      );
+
+      this.isNearComputer = dist <= COMPUTER_PROXIMITY_RADIUS;
+
+      // Show/hide interaction prompt
+      if (this.isNearComputer) {
+        if (!this.computerPrompt) {
+          this.computerPrompt = this.add.text(playerX, playerY - 80, "Press C to use Computer", {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#ffffff",
+            backgroundColor: "#000000",
+            padding: { left: 8, right: 8, top: 4, bottom: 4 },
+            align: "center",
+          }).setOrigin(0.5, 0);
+          this.computerPrompt.setDepth(10000);
+        }
+        this.computerPrompt.setPosition(playerX, playerY - 80);
+        this.computerPrompt.setVisible(true);
+      } else if (this.computerPrompt) {
+        this.computerPrompt.setVisible(false);
+      }
+    }
+
     if (this.socket && this.player) {
       this.socket.emit("playerMove", {
         id: this.socket.id,
@@ -747,6 +847,11 @@ class Lobby extends Scene {
     // Clean up whiteboard prompt
     if (this.whiteboardPrompt && this.whiteboardPrompt.destroy) {
       this.whiteboardPrompt.destroy();
+    }
+
+    // Clean up computer prompt
+    if (this.computerPrompt && this.computerPrompt.destroy) {
+      this.computerPrompt.destroy();
     }
 
     // Reset state

@@ -205,7 +205,8 @@ class GeneralSpace extends Scene {
               true
             );
           } else if (data.dirX > 0) {
-            this.otherPlayers[data.id].setScale(-0.9, 0.9);
+            this.otherPlayers[data.id].setScale(0.9, 0.9);
+            this.otherPlayers[data.id].setFlipX(true);
             this.otherPlayers[data.id].anims.play(
               data.isRunning ? "runR&L" : "walkR&L",
               true
@@ -456,6 +457,13 @@ class GeneralSpace extends Scene {
         player.setDepth(player.y);
       });
     });
+
+    // this.physics.world.createDebugGraphic();
+    // layers["Boundary"].renderDebug(this.add.graphics(), {
+    //   tileColor: null, // Color of non-colliding tiles
+    //   collidingTileColor: new Phaser.Display.Color(243, 134, 48, 200), // Color of colliding tiles
+    //   faceColor: new Phaser.Display.Color(40, 39, 37, 255) // Color of colliding face edges
+    // });
   }
 
   // Helper method to create player sprites
@@ -681,9 +689,11 @@ class GeneralSpace extends Scene {
     if (isMoving && !isColliding) {
       if (dirX < 0) {
         this.player?.setScale(0.9, 0.9);
+        this.player?.setFlipX(false);
         this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
       } else if (dirX > 0) {
-        this.player?.setScale(-0.9, 0.9);
+        this.player?.setScale(0.9, 0.9);
+        this.player?.setFlipX(true);
         this.player?.anims.play(this.running ? "runR&L" : "walkR&L", true);
       } else if (dirY < 0) {
         this.player?.anims.play(this.running ? "runU" : "walkU", true);
