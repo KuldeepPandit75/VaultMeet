@@ -242,41 +242,55 @@ const handleSocketEvents = (io) => {
 
     // Whiteboard room management
     socket.on("joinWhiteboardRoom", ({ roomId }) => {
-      console.log(`User ${socket.id} joining whiteboard room ${roomId}`);
-      
-      socket.join(`whiteboard-${roomId}`);
-      
-      if (!whiteboardRoomPlayers.has(roomId)) {
-        whiteboardRoomPlayers.set(roomId, new Set());
-      }
-      whiteboardRoomPlayers.get(roomId).add(socket.id);
+      try {
+        console.log(`User ${socket.id} joining whiteboard room ${roomId}`);
+        
+        if (!roomId) {
+          console.error("No roomId provided for whiteboard join");
+          socket.emit("whiteboardError", { message: "No room ID provided" });
+          return;
+        }
+        
+        socket.join(`whiteboard-${roomId}`);
+        
+        if (!whiteboardRoomPlayers.has(roomId)) {
+          whiteboardRoomPlayers.set(roomId, new Set());
+        }
+        whiteboardRoomPlayers.get(roomId).add(socket.id);
 
-      // Initialize whiteboard data if it doesn't exist
-      if (!whiteboardRooms.has(roomId)) {
-        whiteboardRooms.set(roomId, {
-          elements: [],
-          appState: {},
-          files: {},
-          collaborators: {}
+        // Initialize whiteboard data if it doesn't exist
+        if (!whiteboardRooms.has(roomId)) {
+          whiteboardRooms.set(roomId, {
+            elements: [],
+            appState: {},
+            files: {},
+            collaborators: {}
+          });
+        }
+
+        const currentRoomData = whiteboardRooms.get(roomId);
+        const currentPlayers = Array.from(whiteboardRoomPlayers.get(roomId));
+
+        // Notify the user they joined the whiteboard room
+        socket.emit("whiteboardRoomJoined", {
+          roomId,
+          players: currentPlayers,
+          whiteboardData: currentRoomData
         });
+
+        // Notify other users in the room
+        socket.to(`whiteboard-${roomId}`).emit("whiteboardUserJoined", {
+          roomId,
+          userId: socket.id,
+          players: currentPlayers
+        });
+
+        console.log(`User ${socket.id} joined whiteboard room ${roomId}. Total players: ${currentPlayers.length}`);
+        console.log("Current whiteboard rooms:", Array.from(whiteboardRoomPlayers.keys()));
+      } catch (error) {
+        console.error("Error joining whiteboard room:", error);
+        socket.emit("whiteboardError", { message: "Failed to join whiteboard room" });
       }
-
-      // Notify the user they joined the whiteboard room
-      socket.emit("whiteboardRoomJoined", {
-        roomId,
-        players: Array.from(whiteboardRoomPlayers.get(roomId)),
-        whiteboardData: whiteboardRooms.get(roomId)
-      });
-
-      // Notify other users in the room
-      socket.to(`whiteboard-${roomId}`).emit("whiteboardUserJoined", {
-        roomId,
-        userId: socket.id,
-        players: Array.from(whiteboardRoomPlayers.get(roomId))
-      });
-
-      console.log(`User ${socket.id} joined whiteboard room ${roomId}. Total players: ${whiteboardRoomPlayers.get(roomId).size}`);
-      console.log("Current whiteboard rooms:", Array.from(whiteboardRoomPlayers.keys()));
     });
 
     socket.on("leaveWhiteboardRoom", ({ roomId }) => {
