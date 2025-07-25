@@ -20,7 +20,7 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="flex flex-col-reverse md:flex-row items-center justify-between min-h-[60vh] px-8 lg:px-[80px] md:py-[80px] overflow-hidden">
+    <section className="flex flex-col-reverse md:flex-row items-center justify-between h-[80vh] px-8 lg:px-[80px] md:py-[80px] overflow-hidden">
       <div className="w-full md:min-w-[70%] text-center md:text-left">
         <h1
           className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-4 md:mb-6"

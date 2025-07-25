@@ -70,7 +70,7 @@ const CategoryBadge = ({ category, color }: { category: string; color: string })
       color: color
     }}
   >
-    {category}
+    {category.charAt(0).toUpperCase() + category.slice(1)}
   </span>
 );
 
@@ -231,13 +231,13 @@ export default function EventsPage() {
           className="text-3xl md:text-5xl font-bold mb-4 md:mb-6"
           style={{ color: secondaryAccentColor }}
         >
-          Listed Hackathons
+          Listed Events
         </h1>
         <p 
           className="text-base md:text-xl max-w-2xl mx-auto mb-4 md:mb-8"
           style={{ color: primaryAccentColor }}
         >
-          Join exciting hackathons, showcase your skills, and win amazing prizes
+          Discover all listed events, find your next challenge, and compete for top prizes
         </p>
       </div>
 

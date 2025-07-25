@@ -1,6 +1,6 @@
 import express from 'express';
 import authMiddleware from '../middlewares/auth.middleware.js';
-import { createEvent, getPublishedEvents, uploadCompanyLogo, uploadEventBanner, uploadMarketingMaterials, getEventById } from '../controllers/event.controllers.js';
+import { createEvent, getPublishedEvents, uploadCompanyLogo, uploadEventBanner, uploadMarketingMaterials, getEventById, updateEvent, publishEvent, registerForEvent, getRegistrationStatus, createTeam, joinTeam, getTeamDetails, getTeamByInviteCode, getEventParticipants, updateParticipantStatus, bulkUpdateParticipants } from '../controllers/event.controllers.js';
 import { upload } from '../config/file.upload.js';
 
 const router = express.Router();
@@ -8,6 +8,23 @@ const router = express.Router();
 router.post('/create', authMiddleware, createEvent);
 router.get('/published', getPublishedEvents);
 router.get('/:eventId', getEventById);
+router.put('/:eventId', authMiddleware, updateEvent);
+router.patch('/:eventId/publish', authMiddleware, publishEvent);
+
+// Registration routes
+router.post('/:eventId/register', authMiddleware, registerForEvent);
+router.get('/:eventId/registration-status', authMiddleware, getRegistrationStatus);
+
+// Participant management routes (for event organizers)
+router.get('/:eventId/participants', authMiddleware, getEventParticipants);
+router.patch('/:eventId/participants/:participantId/status', authMiddleware, updateParticipantStatus);
+router.patch('/:eventId/participants/bulk-status', authMiddleware, bulkUpdateParticipants);
+
+// Team routes
+router.post('/:eventId/teams', authMiddleware, createTeam);
+router.post('/:eventId/teams/:teamId/join', authMiddleware, joinTeam);
+router.get('/:eventId/teams/:teamId', authMiddleware, getTeamDetails);
+router.get('/:eventId/teams/by-invite/:inviteCode', getTeamByInviteCode);
 
 router.post('/upload-company-logo', authMiddleware,upload.single('companyLogo'), uploadCompanyLogo);
 router.post('/upload-event-banner', authMiddleware, upload.single('eventBanner'), uploadEventBanner);

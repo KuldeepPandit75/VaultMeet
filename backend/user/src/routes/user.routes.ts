@@ -21,7 +21,7 @@ router.post('/login', [
 
 router.get('/me', authMiddleware, userController.getMe);
 
-router.get('/profile/:profileId', userController.getUserProfileById);
+router.get('/profile/:username', userController.getUserProfileByUsername);
 
 router.post('/logout', authMiddleware, userController.logoutUser);
 

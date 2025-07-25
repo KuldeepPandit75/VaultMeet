@@ -301,7 +301,7 @@ const handleSocketEvents = (io) => {
         
         if (whiteboardRoomPlayers.get(roomId).size === 0) {
           whiteboardRoomPlayers.delete(roomId);
-          whiteboardRooms.delete(roomId);
+          // whiteboardRooms.delete(roomId);
         }
       }
 

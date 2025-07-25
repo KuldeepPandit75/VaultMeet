@@ -162,11 +162,13 @@ export default function CompanyHostPage() {
         })),
       };
 
+      console.log(eventData);
+
       // Create event
-      await createEvent(eventData);
+      const createdEvent = await createEvent(eventData);
       
-      // Redirect to success page or dashboard
-      router.push('/host/dashboard');
+      // Redirect to event-specific dashboard
+      router.push(`/host/${createdEvent._id}/dashboard`);
     } catch (error) {
       console.error('Error creating event:', error);
       // Handle error (you might want to show an error message to the user)

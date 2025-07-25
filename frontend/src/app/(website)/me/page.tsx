@@ -8,7 +8,7 @@ import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 
 export default function MePage() {
-  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser } =
+  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser, checkUsernameAvailability } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +43,9 @@ export default function MePage() {
     },
     achievements: "" as string,
   });
+  const [usernameStatus, setUsernameStatus] = useState<null | "checking" | "available" | "taken">(null);
+  const [usernameError, setUsernameError] = useState<string>("");
+  const usernameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -74,10 +77,43 @@ export default function MePage() {
     }
   }, [user]);
 
+  // Username check effect
+  useEffect(() => {
+    if (!isEditing) return;
+    if (!formData.username || formData.username === user?.username) {
+      setUsernameStatus(null);
+      setUsernameError("");
+      return;
+    }
+    setUsernameStatus("checking");
+    setUsernameError("");
+    if (usernameCheckTimeout.current) clearTimeout(usernameCheckTimeout.current);
+    usernameCheckTimeout.current = setTimeout(async () => {
+      try {
+        const available = await checkUsernameAvailability(formData.username);
+        if (available) {
+          setUsernameStatus("available");
+          setUsernameError("");
+        } else {
+          setUsernameStatus("taken");
+          setUsernameError("Username is already taken");
+        }
+      } catch {
+        setUsernameStatus(null);
+        setUsernameError("Error checking username");
+      }
+    }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.username, isEditing]);
+
   console.log(user);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isEditing && formData.username !== user?.username && usernameStatus === "taken") {
+      toast.error("Username is already taken");
+      return;
+    }
     setIsSubmitting(true);
     try {
       await updateProfile(formData);
@@ -246,7 +282,7 @@ export default function MePage() {
       )}
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
-        <div className="relative px-8 pt-8 pb-6 -mt-28">
+        <div className="relative px-8 pt-8 pb-6 -mt-22">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6">
             {/* Profile Picture */}
             <input
@@ -275,6 +311,32 @@ export default function MePage() {
                   </span>
                 )}
               </div>
+              {/* Share Button */}
+              {user?.username && (
+                <button
+                  className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 rounded-full p-2 shadow transition-colors"
+                  title="Copy profile link"
+                  onClick={() => {
+                    const url = `${window.location.origin}/profile/${user.username}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Profile link copied!");
+                  }}
+                >
+                  {/* Link icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" 
+     width="24" height="24" viewBox="0 0 24 24" 
+     fill="none" stroke="currentColor" stroke-width="2" 
+     stroke-linecap="round" stroke-linejoin="round" 
+     className="feather feather-share-2">
+  <circle cx="18" cy="5" r="3"></circle>
+  <circle cx="6" cy="12" r="3"></circle>
+  <circle cx="18" cy="19" r="3"></circle>
+  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+</svg>
+
+                </button>
+              )}
               <div
                 className="absolute bottom-0 right-0 p-2 rounded-full bg-white shadow-lg cursor-pointer hover:bg-gray-100"
                 onClick={() => avatarInputRef.current?.click()}
@@ -302,64 +364,66 @@ export default function MePage() {
             </div>
 
             {/* User Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-3 mb-1">
-                <h1
-                  className="text-4xl font-bold"
-                  style={{ color: secondaryAccentColor }}
-                >
-                  {user?.fullname.firstname} {user?.fullname.lastname}
-                </h1>
-                {!user?.isVerified && (
-                  <button
-                    onClick={handleSendOTP}
-                    className="px-3 py-1 text-sm rounded-full bg-yellow-500 text-black hover:bg-yellow-600 transition-colors"
+            <div className="flex-1 flex flex-col items-center sm:items-start text-center sm:text-left">
+              <div className="flex flex-col items-center sm:items-start w-full">
+                <div className="flex items-center gap-3 w-full justify-center sm:justify-start">
+                  <h1
+                    className="text-4xl font-bold leading-tight"
+                    style={{ color: secondaryAccentColor }}
                   >
-                    Verify Email
-                  </button>
-                )}
-              </div>
-              <div className="flex gap-[30px] items-center">
-                <p className="text-white/80 text-lg">{user?.email}</p>
-
-                {user?.location && (
-                  <div className="flex items-center gap-2 text-white/80">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {user?.fullname.firstname} {user?.fullname.lastname}
+                  </h1>
+                  {!user?.isVerified && (
+                    <button
+                      onClick={handleSendOTP}
+                      className="px-3 py-1 text-sm rounded-full bg-yellow-500 text-black hover:bg-yellow-600 transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    {user.location}
+                      Verify Email
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-[30px] w-full mt-1">
+                {/* Username display */}
+                {!isEditing ? (
+                  <div className="mt-1 mb-2 flex items-center gap-2">
+                    <span className="text-base font-mono text-white/80 bg-black/20 px-3 py-1 rounded-full border border-white/10">@{user?.username}</span>
+                  </div>
+                ) : (
+                  <div className="mb-2 max-w-xs w-full">
+                    <input
+                      type="text"
+                      value={formData.username}
+                      onChange={e => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ "--tw-ring-color": secondaryAccentColor } as React.CSSProperties }
+                      autoComplete="off"
+                    />
+                    {formData.username && formData.username !== user?.username && (
+                      <div className="mt-1 text-xs">
+                        {usernameStatus === "checking" && <span className="text-gray-400">Checking availability...</span>}
+                        {usernameStatus === "available" && <span className="text-green-500">Username is available</span>}
+                        {usernameStatus === "taken" && <span className="text-red-500">Username is already taken</span>}
+                        {usernameError && <span className="text-red-500">{usernameError}</span>}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
-
             {/* Edit Button */}
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              style={{
-                backgroundColor: secondaryAccentColor,
-                color: "#000",
-              }}
-            >
-              {isEditing ? "Cancel" : "Edit Profile"}
-            </button>
+            <div className="mt-6 sm:mt-0 sm:self-end flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-end">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-6 py-2.5 rounded-lg text-sm font-medium transition-all hover:scale-105 shadow-md"
+                style={{
+                  backgroundColor: secondaryAccentColor,
+                  color: "#000",
+                }}
+              >
+                {isEditing ? "Cancel" : "Edit Profile"}
+              </button>
+            </div>
           </div>
         </div>
         {/* Profile Content */}
@@ -368,6 +432,43 @@ export default function MePage() {
             className="rounded-2xl shadow-xl overflow-hidden"
             style={{ backgroundColor: `${primaryAccentColor}20` }}
           >
+            {/* Email and Location Row - moved here to match public profile */}
+            {(user?.email || user?.location) && (
+              <div className="px-0 pt-4 pb-2 mx-8">
+                <div 
+                  className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start sm:items-center p-4 rounded-xl justify-between"
+                  // style={{ backgroundColor: `${secondaryAccentColor}15` }}
+                >
+                  {user?.email && (
+                    <div className="flex items-center gap-3 text-white">
+                      <div 
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: `${secondaryAccentColor}30` }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <span className="text-base font-medium">{user.email}</span>
+                    </div>
+                  )}
+                  {user?.location && (
+                    <div className="flex items-center gap-3 text-white">
+                      <div 
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: `${secondaryAccentColor}30` }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-base font-medium">{user.location}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {/* Profile Details */}
             <div className="px-8 py-6">
               {isEditing ? (

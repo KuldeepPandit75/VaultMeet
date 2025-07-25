@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-interface Event {
+export interface Event {
   _id: string;
   company: {
     name: string;
@@ -84,13 +84,59 @@ interface PaginationInfo {
   hasPreviousPage: boolean;
 }
 
+export interface Registration {
+  _id: string;
+  userId: string;
+  eventId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  experience: string;
+  motivation: string;
+  skills: string;
+  previousProjects?: string;
+  expectations: string;
+  teamPreference: string;
+  teamId?: string;
+  createdAt: Date;
+}
+
+interface TeamMember {
+  userId: {
+    _id: string;
+    fullname: { firstname: string; lastname: string };
+    email: string;
+    avatar?: string;
+  };
+  status: 'pending' | 'accepted' | 'declined';
+  joinedAt: Date;
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  eventId: string;
+  leaderId: {
+    _id: string;
+    fullname: { firstname: string; lastname: string };
+    email: string;
+    avatar?: string;
+  };
+  members: TeamMember[];
+  inviteCode: string;
+  maxMembers: number;
+  createdAt: Date;
+}
+
 interface EventState {
   events: Event[];
   currentEvent: Event | null;
   loading: boolean;
   error: string | null;
   pagination: PaginationInfo | null;
-  createEvent: (eventData: Partial<Event>) => Promise<void>;
+  userRegistration: Registration | null;
+  userTeam: Team | null;
+  createEvent: (eventData: Partial<Event>) => Promise<Event>;
+  updateEvent: (eventId: string, eventData: Event) => Promise<Event>;
+  publishEvent: (eventId: string) => Promise<Event>;
   uploadCompanyLogo: (file: File) => Promise<string>;
   uploadEventBanner: (file: File) => Promise<string>;
   uploadMarketingMaterials: (files: File[]) => Promise<string[]>;
@@ -102,7 +148,31 @@ interface EventState {
     mode?: 'online' | 'offline' | 'hybrid';
     type?: string;
   }) => Promise<void>;
-  getEventById: (eventId: string) => Promise<void>;
+  getEventById: (eventId: string) => Promise<Event>;
+  // Registration methods
+  registerForEvent: (eventId: string, registrationData: {
+    experience: string;
+    motivation: string;
+    skills: string;
+    previousProjects?: string;
+    expectations: string;
+    teamPreference: string;
+  }) => Promise<Registration>;
+  getRegistrationStatus: (eventId: string) => Promise<{ registration: Registration | null; team: Team | null }>;
+  // Team methods
+  createTeam: (eventId: string, teamName: string) => Promise<Team>;
+  joinTeam: (eventId: string, teamId: string, inviteCode: string) => Promise<Team>;
+  getTeamDetails: (eventId: string, teamId: string) => Promise<Team>;
+  getTeamByInviteCode: (eventId: string, inviteCode: string) => Promise<{ team: Team; event: void }>;
+  // Participant management methods
+  getEventParticipants: (eventId: string, params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+  }) => Promise<void>;
+  updateParticipantStatus: (eventId: string, participantId: string, status: string) => Promise<void>;
+  bulkUpdateParticipants: (eventId: string, participantIds: string[], status: string) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -113,19 +183,65 @@ const useEventStore = create<EventState>()((set) => ({
   loading: false,
   error: null,
   pagination: null,
+  userRegistration: null,
+  userTeam: null,
 
   createEvent: async (eventData) => {
     set({ loading: true, error: null });
     try {
       const response = await api.post('/create', eventData);
+      const createdEvent = response.data.data;
       set((state) => ({
-        events: [...state.events, response.data.data],
+        events: [...state.events, createdEvent],
         loading: false
       }));
+      return createdEvent;
     } catch (error: unknown) {
       console.error('Error creating event:', error);
       set({ 
         error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to create event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  updateEvent: async (eventId, eventData) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.put(`/${eventId}`, eventData);
+      const updatedEvent = response.data.data;
+      set((state) => ({
+        events: state.events.map(event => event._id === eventId ? updatedEvent : event),
+        currentEvent: state.currentEvent?._id === eventId ? updatedEvent : state.currentEvent,
+        loading: false
+      }));
+      return updatedEvent;
+    } catch (error: unknown) {
+      console.error('Error updating event:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to update event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  publishEvent: async (eventId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.patch(`/${eventId}/publish`);
+      const publishedEvent = response.data.data;
+      set((state) => ({
+        events: state.events.map(event => event._id === eventId ? publishedEvent : event),
+        currentEvent: state.currentEvent?._id === eventId ? publishedEvent : state.currentEvent,
+        loading: false
+      }));
+      return publishedEvent;
+    } catch (error: unknown) {
+      console.error('Error publishing event:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to publish event',
         loading: false 
       });
       throw error;
@@ -269,10 +385,174 @@ const useEventStore = create<EventState>()((set) => ({
         currentEvent: eventData,
         loading: false
       });
+      return eventData;
     } catch (error: unknown) {
       console.error('Error fetching event:', error);
       set({ 
         error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to fetch event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  registerForEvent: async (eventId, registrationData) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/${eventId}/register`, registrationData);
+      const registration = response.data.data;
+      set({ userRegistration: registration, loading: false });
+      return registration;
+    } catch (error: unknown) {
+      console.error('Error registering for event:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to register for event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getRegistrationStatus: async (eventId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/${eventId}/registration-status`);
+      const { registration, team } = response.data.data;
+      set({ 
+        userRegistration: registration, 
+        userTeam: team, 
+        loading: false 
+      });
+      return { registration, team };
+    } catch (error: unknown) {
+      console.error('Error getting registration status:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to get registration status',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  createTeam: async (eventId, teamName) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/${eventId}/teams`, { name: teamName });
+      const team = response.data.data;
+      set({ userTeam: team, loading: false });
+      return team;
+    } catch (error: unknown) {
+      console.error('Error creating team:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to create team',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  joinTeam: async (eventId, teamId, inviteCode) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/${eventId}/teams/${teamId}/join`, { inviteCode });
+      const team = response.data.data;
+      set({ userTeam: team, loading: false });
+      return team;
+    } catch (error: unknown) {
+      console.error('Error joining team:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to join team',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getTeamDetails: async (eventId, teamId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/${eventId}/teams/${teamId}`);
+      const team = response.data.data;
+      set({ userTeam: team, loading: false });
+      return team;
+    } catch (error: unknown) {
+      console.error('Error getting team details:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to get team details',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getTeamByInviteCode: async (eventId, inviteCode) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/${eventId}/teams/by-invite/${inviteCode}`);
+      const { team, event } = response.data.data;
+      set({ loading: false });
+      return { team, event };
+    } catch (error: unknown) {
+      console.error('Error getting team by invite code:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to get team by invite code',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getEventParticipants: async (eventId, params = {}) => {
+    set({ loading: true, error: null });
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.status) queryParams.append('status', params.status);
+      if (params.search) queryParams.append('search', params.search);
+
+      const response = await api.get(`/${eventId}/participants?${queryParams.toString()}`);
+      set({ loading: false });
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error('Error getting event participants:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to get event participants',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  updateParticipantStatus: async (eventId, participantId, status) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.patch(`/${eventId}/participants/${participantId}/status`, { status });
+      set({ loading: false });
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error('Error updating participant status:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to update participant status',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  bulkUpdateParticipants: async (eventId, participantIds, status) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.patch(`/${eventId}/participants/bulk-status`, { 
+        participantIds, 
+        status 
+      });
+      set({ loading: false });
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error('Error bulk updating participants:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to bulk update participants',
         loading: false 
       });
       throw error;

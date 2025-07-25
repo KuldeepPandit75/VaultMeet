@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileById = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
+exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileByUsername = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
 const user_service_js_1 = __importDefault(require("../services/user.service.js"));
 const express_validator_1 = require("express-validator");
@@ -305,15 +305,15 @@ const googleLogin = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.googleLogin = googleLogin;
-const getUserProfileById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { profileId } = req.params;
-    const user = yield user_model_js_1.default.findById(profileId).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
+const getUserProfileByUsername = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { username } = req.params;
+    const user = yield user_model_js_1.default.findOne({ username }).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
     if (!user) {
         return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json({ user });
 });
-exports.getUserProfileById = getUserProfileById;
+exports.getUserProfileByUsername = getUserProfileByUsername;
 const updateSocketId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { socketId, userId } = req.body;
     const user = yield user_model_js_2.default.findById(userId);

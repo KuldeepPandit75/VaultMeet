@@ -109,7 +109,7 @@ interface AuthState {
   sendOTP: (email: string) => Promise<void>;
   verifyOTP: (email: string, otp: string) => Promise<{ result: string; _id: string; role: string }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
-  getUserProfileById: (profileId: string) => Promise<User>;
+  getUserProfileByUsername: (username: string) => Promise<User>;
   updateSocketId: (socketId: string, userId: string) => Promise<void>;
   getUserBySocketId: (socketId: string) => Promise<User>;
   profileBox: string;
@@ -365,9 +365,9 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
-      getUserProfileById: async (profileId: string) => {
+      getUserProfileByUsername: async (username: string) => {
         try{
-          const response = await api.get(`/profile/${profileId}`);
+          const response = await api.get(`/profile/${username}`);
           return response.data.user;
         }catch(error: unknown){
           console.error('Error getting user profile:', error);

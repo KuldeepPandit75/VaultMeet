@@ -188,33 +188,39 @@ const eventSchema = new mongoose.Schema({
     prizePool: {
       type: String,
       required: function() {
-        return this.prizes.hasPrizes === true;
+        // Handle both document context (this) and update context
+        const hasPrizes = this.prizes?.hasPrizes ?? this.hasPrizes ?? false;
+        return hasPrizes === true;
       }
     },
 
     prize1:{
         type: String,
         required: function() {
-            return this.prizes.hasPrizes === true;
+            const hasPrizes = this.prizes?.hasPrizes ?? this.hasPrizes ?? false;
+            return hasPrizes === true;
           },
     },
     prize2:{
         type: String,
         required: function() {
-            return this.prizes.hasPrizes === true;
+            const hasPrizes = this.prizes?.hasPrizes ?? this.hasPrizes ?? false;
+            return hasPrizes === true;
           },
     },
     prize3:{
         type: String,
         required: function() {
-            return this.prizes.hasPrizes === true;
+            const hasPrizes = this.prizes?.hasPrizes ?? this.hasPrizes ?? false;
+            return hasPrizes === true;
           },
     },
 
     details: {
       type: String,
       required: function() {
-        return this.prizes.hasPrizes === true;
+        const hasPrizes = this.prizes?.hasPrizes ?? this.hasPrizes ?? false;
+        return hasPrizes === true;
       }
     }
   },
@@ -265,6 +271,12 @@ const eventSchema = new mongoose.Schema({
       type: Number,
       default: 0
     }
+  },
+
+  // Created By
+  createdBy: {
+    type: String,
+    required: true
   }
 }, { timestamps: true });
 
@@ -275,7 +287,104 @@ eventSchema.index({ status: 1 });
 eventParticipantSchema.index({ userId: 1, eventId: 1 }, { unique: true });
 eventParticipantSchema.index({ eventId: 1, role: 1 });
 
+// Registration Schema
+const registrationSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  eventId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event',
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  experience: {
+    type: String,
+    required: true,
+    enum: ['beginner', 'intermediate', 'advanced', 'expert']
+  },
+  motivation: {
+    type: String,
+    required: true
+  },
+  skills: {
+    type: String,
+    required: true
+  },
+  previousProjects: {
+    type: String
+  },
+  expectations: {
+    type: String,
+    required: true
+  },
+  teamPreference: {
+    type: String,
+    required: true,
+    enum: ['individual', 'with_team', 'find_team']
+  },
+  teamId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Team'
+  }
+}, { timestamps: true });
+
+// Team Schema
+const teamSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  eventId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event',
+    required: true
+  },
+  leaderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  members: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'declined'],
+      default: 'pending'
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  inviteCode: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  maxMembers: {
+    type: Number,
+    default: 4
+  }
+}, { timestamps: true });
+
+// Create indexes for better query performance
+registrationSchema.index({ userId: 1, eventId: 1 }, { unique: true });
+teamSchema.index({ inviteCode: 1 });
+
 // Create models
 export const Event = mongoose.model('Event', eventSchema);
 export const EventParticipant = mongoose.model('EventParticipant', eventParticipantSchema);
+export const Registration = mongoose.model('Registration', registrationSchema);
+export const Team = mongoose.model('Team', teamSchema);
 

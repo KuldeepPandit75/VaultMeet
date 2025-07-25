@@ -2,12 +2,14 @@
 
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import useEventStore from "@/Zustand_Store/EventStore";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { FaCalendarAlt, FaUsers, FaTrophy, FaClock, FaBuilding, FaGlobe, FaLinkedin } from "react-icons/fa";
+import { FaCalendarAlt, FaUsers, FaTrophy, FaClock, FaBuilding, FaGlobe, FaLinkedin, FaTimes, FaCopy } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 interface Stage {
   stageName: string;
@@ -60,6 +62,9 @@ interface Event {
     details?: string;
     sponsorshipDetails?: string;
     prizePool?: string;
+    prize1?: string;
+    prize2?: string;
+    prize3?: string;
   };
   promotion: {
     needsPromotion: boolean;
@@ -72,6 +77,8 @@ interface Event {
     approvedParticipants: number;
   };
 }
+
+
 
 interface InfoCardProps {
   title: string;
@@ -153,18 +160,169 @@ const SponsorCard = ({ sponsor }: { sponsor: Sponsor }) => {
 
 export default function EventDetailsPage() {
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
-  const { getEventById, currentEvent, loading, error } = useEventStore();
+  const { 
+    getEventById, 
+    currentEvent, 
+    loading, 
+    error, 
+    userRegistration, 
+    userTeam,
+    registerForEvent,
+    getRegistrationStatus,
+    createTeam
+  } = useEventStore();
+  const { user, isAuthenticated } = useAuthStore();
   const params = useParams();
-  const router=useRouter();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  
+  // UI states
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showProfileIncompleteModal, setShowProfileIncompleteModal] = useState(false);
+  const [teamName, setTeamName] = useState('');
+  
+  // Registration form data
+  const [registrationData, setRegistrationData] = useState({
+    experience: '',
+    motivation: '',
+    skills: '',
+    previousProjects: '',
+    expectations: '',
+    teamPreference: 'individual', // 'individual', 'with_team', 'find_team'
+  });
 
   useEffect(() => {
     if (params.eventId) {
       setHasAttemptedFetch(true);
       getEventById(params.eventId as string);
+      
+      // Check if user is registered and load their registration/team data
+      if (isAuthenticated && user) {
+        checkUserRegistration();
+      }
     }
-  }, [params.eventId, getEventById]);
+  }, [params.eventId, getEventById, isAuthenticated, user]);
+
+  // Check if user profile is at least 75% complete
+  const checkProfileCompletion = () => {
+    if (!user) return false;
+    
+    const fields = [
+      user.fullname.firstname,
+      user.fullname.lastname,
+      user.email,
+      user.bio,
+      user.location,
+      user.skills,
+      user.interests,
+      user.social?.github || user.social?.linkedin || user.website,
+    ];
+    
+    const completedFields = fields.filter(field => field && field.trim() !== '').length;
+    const completionPercentage = (completedFields / fields.length) * 100;
+    
+    return completionPercentage >= 75;
+  };
+
+  // Check user registration status
+  const checkUserRegistration = async () => {
+    try {
+      if (params.eventId) {
+        await getRegistrationStatus(params.eventId as string);
+      }
+    } catch (error) {
+      console.error('Error checking registration:', error);
+    }
+  };
+
+  // Handle registration button click
+  const handleRegisterClick = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to register for this event');
+      router.push('/login');
+      return;
+    }
+
+    if (!checkProfileCompletion()) {
+      setShowProfileIncompleteModal(true);
+      return;
+    }
+
+    if (userRegistration) {
+      // User is already registered, show team management
+      setShowTeamModal(true);
+    } else {
+      // Show registration form
+      setShowRegistrationModal(true);
+    }
+  };
+
+  // Handle registration submission
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await registerForEvent(params.eventId as string, registrationData);
+      setShowRegistrationModal(false);
+      setShowTeamModal(true);
+      toast.success('Registration successful! You can now manage your team.');
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Failed to register. Please try again.');
+    }
+  };
+
+  // Handle team creation
+  const handleCreateTeam = async () => {
+    if (!teamName.trim()) {
+      toast.error('Please enter a team name');
+      return;
+    }
+
+    try {
+      await createTeam(params.eventId as string, teamName.trim());
+      setTeamName('');
+      toast.success('Team created successfully!');
+    } catch (error) {
+      console.error('Error creating team:', error);
+      toast.error('Failed to create team. Please try again.');
+    }
+  };
+
+  // Check if event has started
+  const isEventStarted = () => {
+    if (!currentEvent) return false;
+    return new Date() >= new Date(currentEvent.startDate);
+  };
+
+  // Check if user can join virtual space
+  const canJoinVirtualSpace = () => {
+    return isEventStarted() && 
+           userRegistration?.status === 'approved' && 
+           (currentEvent?.mode === 'online' || currentEvent?.mode === 'hybrid');
+  };
+
+  // Get registration button text and action
+  const getRegistrationButtonProps = () => {
+    if (!isAuthenticated) {
+      return { text: 'Login to Register', disabled: false };
+    }
+    
+    if (userRegistration) {
+      if (isEventStarted()) {
+        return { text: 'Manage Team', disabled: false };
+      }
+      return { text: 'Manage Team', disabled: false };
+    }
+    
+    if (isEventStarted()) {
+      return { text: 'Registration Closed', disabled: true };
+    }
+    
+    return { text: 'Register Now', disabled: false };
+  };
 
   // Show loading state while fetching data or before first fetch attempt
   if (loading || !hasAttemptedFetch) {
@@ -228,15 +386,25 @@ export default function EventDetailsPage() {
             </div>
             <div className="flex gap-4">
               <button
-                className="px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105"
+                onClick={handleRegisterClick}
+                disabled={getRegistrationButtonProps().disabled}
+                className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 ${
+                  getRegistrationButtonProps().disabled 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:scale-105'
+                }`}
                 style={{
-                  background: `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
+                  background: getRegistrationButtonProps().disabled 
+                    ? '#666' 
+                    : `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
                   color: '#222',
                 }}
               >
-                Register Now
+                {getRegistrationButtonProps().text}
               </button>
-              {(event.mode === 'online' || event.mode === 'hybrid') && (
+              
+              {/* Show Join Virtual Space button only for approved users when event has started */}
+              {canJoinVirtualSpace() && (
                 <button
                   onClick={() => router.push(`/event-space/${event._id}`)}
                   className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 border-2 ${
@@ -334,6 +502,24 @@ export default function EventDetailsPage() {
                         <p className="text-xl">{event.prizes.prizePool}</p>
                       </div>
                     )}
+                    {event.prizes.prize1 && (
+                      <div className={`text-center p-6 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100/80'}`}>
+                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-700'}`}>1st Prize</h4>
+                        <p className="text-lg">{event.prizes.prize1}</p>
+                      </div>
+                    )}
+                    {event.prizes.prize2 && (
+                      <div className={`text-center p-6 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100/80'}`}>
+                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>2nd Prize</h4>
+                        <p className="text-lg">{event.prizes.prize2}</p>
+                      </div>
+                    )}
+                    {event.prizes.prize3 && (
+                      <div className={`text-center p-6 rounded-xl ${isDarkMode ? 'bg-white/5' : 'bg-gray-100/80'}`}>
+                        <h4 className={`text-xl font-semibold mb-2 ${isDarkMode ? 'text-orange-200' : 'text-orange-700'}`}>3rd Prize</h4>
+                        <p className="text-lg">{event.prizes.prize3}</p>
+                      </div>
+                    )}
                   </div>
                   {event.prizes.details && (
                     <p className={`mt-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{event.prizes.details}</p>
@@ -407,10 +593,6 @@ export default function EventDetailsPage() {
                   <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{event.stats.registeredParticipants}</p>
                 </div>
                 <div>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Approved Participants</p>
-                  <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{event.stats.approvedParticipants}</p>
-                </div>
-                <div>
                   <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Maximum Participants</p>
                   <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{event.maxParticipants}</p>
                 </div>
@@ -419,6 +601,428 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Profile Incomplete Modal */}
+      {showProfileIncompleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md`}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Complete Your Profile
+              </h2>
+              <button
+                onClick={() => setShowProfileIncompleteModal(false)}
+                className={`p-2 rounded-lg hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700' : ''}`}
+              >
+                <FaTimes className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+              </button>
+            </div>
+            <p className={`mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Please complete at least 75% of your profile to register for this event. This helps organizers understand participants better.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowProfileIncompleteModal(false)}
+                className={`px-4 py-2 rounded-lg border ${
+                  isDarkMode 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowProfileIncompleteModal(false);
+                  router.push('/me');
+                }}
+                className="px-4 py-2 rounded-lg text-white"
+                style={{ backgroundColor: primaryAccentColor }}
+              >
+                Complete Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Registration Modal */}
+      {showRegistrationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Register for {event.name}
+              </h2>
+              <button
+                onClick={() => setShowRegistrationModal(false)}
+                className={`p-2 rounded-lg hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700' : ''}`}
+              >
+                <FaTimes className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleRegistrationSubmit} className="space-y-6">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Experience Level *
+                </label>
+                <select
+                  value={registrationData.experience}
+                  onChange={(e) => setRegistrationData(prev => ({ ...prev, experience: e.target.value }))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                  required
+                >
+                  <option value="">Select your experience level</option>
+                  <option value="beginner">Beginner (0-1 years)</option>
+                  <option value="intermediate">Intermediate (1-3 years)</option>
+                  <option value="advanced">Advanced (3-5 years)</option>
+                  <option value="expert">Expert (5+ years)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Why do you want to participate? *
+                </label>
+                <textarea
+                  value={registrationData.motivation}
+                  onChange={(e) => setRegistrationData(prev => ({ ...prev, motivation: e.target.value }))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                  rows={4}
+                  placeholder="Tell us what motivates you to join this event..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Relevant Skills *
+                </label>
+                <input
+                  type="text"
+                  value={registrationData.skills}
+                  onChange={(e) => setRegistrationData(prev => ({ ...prev, skills: e.target.value }))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                  placeholder="e.g., React, Python, UI/UX, Project Management"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Previous Projects/Experience
+                </label>
+                <textarea
+                  value={registrationData.previousProjects}
+                  onChange={(e) => setRegistrationData(prev => ({ ...prev, previousProjects: e.target.value }))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                  rows={3}
+                  placeholder="Describe any relevant projects or experience..."
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  What do you expect to gain? *
+                </label>
+                <textarea
+                  value={registrationData.expectations}
+                  onChange={(e) => setRegistrationData(prev => ({ ...prev, expectations: e.target.value }))}
+                  className={`w-full p-3 rounded-lg border ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                  rows={3}
+                  placeholder="What skills, connections, or achievements do you hope to gain?"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Team Preference *
+                </label>
+                <div className="space-y-3">
+                  {[
+                    { value: 'individual', label: 'I want to participate individually' },
+                    { value: 'with_team', label: 'I have my own team' },
+                    { value: 'find_team', label: 'Help me find a team' }
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="teamPreference"
+                        value={option.value}
+                        checked={registrationData.teamPreference === option.value}
+                        onChange={(e) => setRegistrationData(prev => ({ ...prev, teamPreference: e.target.value }))}
+                        className="w-4 h-4"
+                        style={{ accentColor: primaryAccentColor }}
+                      />
+                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRegistrationModal(false)}
+                  className={`px-6 py-2 rounded-lg border ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-lg text-white transition-all hover:scale-105 disabled:opacity-50"
+                  style={{ backgroundColor: primaryAccentColor }}
+                  disabled={loading}
+                >
+                  {loading ? 'Registering...' : 'Register'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Team Management Modal */}
+      {showTeamModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                Team Management
+              </h2>
+              <button
+                onClick={() => setShowTeamModal(false)}
+                className={`p-2 rounded-lg hover:bg-gray-100 ${isDarkMode ? 'hover:bg-gray-700' : ''}`}
+              >
+                <FaTimes className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+              </button>
+            </div>
+
+            {/* Registration Status */}
+            <div className={`p-4 rounded-lg mb-6 ${
+              userRegistration?.status === 'approved' 
+                ? 'bg-green-100 border border-green-200' 
+                : userRegistration?.status === 'rejected'
+                ? 'bg-red-100 border border-red-200'
+                : 'bg-yellow-100 border border-yellow-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  userRegistration?.status === 'approved' 
+                    ? 'bg-green-500' 
+                    : userRegistration?.status === 'rejected'
+                    ? 'bg-red-500'
+                    : 'bg-yellow-500'
+                }`} />
+                <span className={`font-medium ${
+                  userRegistration?.status === 'approved' 
+                    ? 'text-green-800' 
+                    : userRegistration?.status === 'rejected'
+                    ? 'text-red-800'
+                    : 'text-yellow-800'
+                }`}>
+                  Registration Status: {userRegistration?.status?.toUpperCase()}
+                </span>
+              </div>
+              <p className={`text-sm mt-1 ${
+                userRegistration?.status === 'approved' 
+                  ? 'text-green-700' 
+                  : userRegistration?.status === 'rejected'
+                  ? 'text-red-700'
+                  : 'text-yellow-700'
+              }`}>
+                {userRegistration?.status === 'approved' 
+                  ? 'You are approved to participate in this event!'
+                  : userRegistration?.status === 'rejected'
+                  ? 'Your registration was not approved for this event.'
+                  : 'Your registration is under review. You\'ll be notified once it\'s processed.'
+                }
+              </p>
+            </div>
+
+            {/* Team Section */}
+            {userRegistration?.status !== 'rejected' && (
+              <div className="space-y-6">
+                {userTeam ? (
+                  /* Existing Team */
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                      Your Team: {userTeam.name}
+                    </h3>
+                    
+                                         {/* Team Members */}
+                     <div className="space-y-3 mb-4">
+                       {userTeam.members.map((member) => (
+                         <div key={member.userId._id} className={`flex items-center justify-between p-3 rounded-lg ${
+                           isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+                         }`}>
+                           <div className="flex items-center gap-3">
+                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                               isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
+                             }`}>
+                               {member.userId.avatar ? (
+                                 <Image src={member.userId.avatar} alt={`${member.userId.fullname.firstname} ${member.userId.fullname.lastname}`} width={40} height={40} className="rounded-full" />
+                               ) : (
+                                 <span className={`font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                   {member.userId.fullname.firstname.charAt(0)}
+                                 </span>
+                               )}
+                             </div>
+                             <div>
+                               <div className="flex items-center gap-2">
+                                 <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                                   {member.userId.fullname.firstname} {member.userId.fullname.lastname}
+                                 </p>
+                                 {member.userId._id === userTeam.leaderId._id && (
+                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                     isDarkMode 
+                                       ? 'bg-blue-900/30 text-blue-300' 
+                                       : 'bg-blue-100 text-blue-800'
+                                   }`}>
+                                     Team Leader
+                                   </span>
+                                 )}
+                               </div>
+                               <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                 {member.userId.email}
+                               </p>
+                             </div>
+                           </div>
+                           <span className={`px-2 py-1 rounded-full text-xs ${
+                             member.status === 'accepted' 
+                               ? 'bg-green-100 text-green-800' 
+                               : member.status === 'declined'
+                               ? 'bg-red-100 text-red-800'
+                               : 'bg-yellow-100 text-yellow-800'
+                           }`}>
+                             {member.status}
+                           </span>
+                         </div>
+                       ))}
+                     </div>
+
+                                         {/* Invite Link - Only show to team leader */}
+                     {user && userTeam.leaderId._id === user._id && (
+                       <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                         <h4 className={`font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                           Invite Team Members
+                         </h4>
+                         <div className="flex gap-2">
+                           <input
+                             type="text"
+                             value={`${window.location.origin}/events/${params.eventId}/join-team/${userTeam.inviteCode}`}
+                             readOnly
+                             className={`flex-1 p-2 rounded-lg border ${
+                               isDarkMode 
+                                 ? 'bg-gray-600 border-gray-500 text-white' 
+                                 : 'bg-white border-gray-300 text-gray-800'
+                             }`}
+                           />
+                           <button
+                             onClick={() => {
+                               navigator.clipboard.writeText(`${window.location.origin}/events/${params.eventId}/join-team/${userTeam.inviteCode}`);
+                               toast.success('Invite link copied!');
+                             }}
+                             className={`px-4 py-2 rounded-lg ${
+                               isDarkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-200 hover:bg-gray-300'
+                             }`}
+                           >
+                             <FaCopy className={isDarkMode ? 'text-gray-300' : 'text-gray-600'} />
+                           </button>
+                         </div>
+                         <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                           Share this link with your team members ({userTeam.members.length}/{userTeam.maxMembers} members)
+                         </p>
+                       </div>
+                     )}
+                     
+                     {/* Team info for non-leaders */}
+                     {user && userTeam.leaderId._id !== user._id && (
+                       <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                         <h4 className={`font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                           Team Information
+                         </h4>
+                         <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                           You are a member of this team. Only the team leader can invite new members.
+                         </p>
+                         <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                           Team Members: {userTeam.members.length}/{userTeam.maxMembers}
+                         </p>
+                       </div>
+                     )}
+                  </div>
+                ) : (
+                                     /* Create Team */
+                   <div>
+                     <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                       Create Your Team
+                     </h3>
+                     <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                       As the team creator, you will become the team leader and can invite other members.
+                     </p>
+                     <div className="space-y-4">
+                       <input
+                         type="text"
+                         placeholder="Enter team name"
+                         value={teamName}
+                         onChange={(e) => setTeamName(e.target.value)}
+                         className={`w-full p-3 rounded-lg border ${
+                           isDarkMode 
+                             ? 'bg-gray-700 border-gray-600 text-white' 
+                             : 'bg-white border-gray-300 text-gray-800'
+                         } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                         style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
+                       />
+                       <button
+                         onClick={handleCreateTeam}
+                         disabled={loading}
+                         className="w-full py-3 rounded-lg text-white transition-all hover:scale-105 disabled:opacity-50"
+                         style={{ backgroundColor: primaryAccentColor }}
+                       >
+                         {loading ? 'Creating Team...' : 'Create Team & Become Leader'}
+                       </button>
+                     </div>
+                   </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

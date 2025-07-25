@@ -340,9 +340,9 @@ export const googleLogin = async (req: any, res: any) => {
   }
 };
 
-export const getUserProfileById = async (req: any, res: any) => {
-  const { profileId } = req.params;
-  const user = await userModel.findById(profileId).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
+export const getUserProfileByUsername = async (req: any, res: any) => {
+  const { username } = req.params;
+  const user = await userModel.findOne({ username }).select("-googleId -password -role -isVerified -createdAt -updatedAt -__v -otp");
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
