@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import type { Event } from "@/Zustand_Store/EventStore";
 import toast from "react-hot-toast";
+import ParticipantDetailsModal from "@/components/Dashboard/ParticipantDetailsModal";
 
 type EventStatus = 'draft' | 'published' | 'ongoing' | 'completed' | 'cancelled';
 
@@ -26,7 +27,7 @@ export default function EventDashboard() {
   const params = useParams();
   const eventId = params.eventId as string;
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
-  const { getEventById, updateEvent, publishEvent, getEventParticipants, updateParticipantStatus, bulkUpdateParticipants, loading, error } = useEventStore();
+  const { getEventById, updateEvent, publishEvent, unpublishEvent, deleteEvent, getEventParticipants, updateParticipantStatus, bulkUpdateParticipants, loading, error } = useEventStore();
   
   // Update component state
   const [event, setEvent] = useState<DashboardEvent | null>(null);
@@ -49,6 +50,8 @@ export default function EventDashboard() {
   });
   // const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [participantLoading, setParticipantLoading] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<ParticipantWithPopulatedUser | null>(null);
+  const [showParticipantModal, setShowParticipantModal] = useState(false);
 
   // Update participants state type
   const [participants, setParticipants] = useState<ParticipantWithPopulatedUser[]>([]);
@@ -144,8 +147,39 @@ export default function EventDashboard() {
     try {
       await publishEvent(eventId);
       await loadEvent(); // Reload to get updated status
+      toast.success('Event published successfully');
     } catch (error) {
       console.error('Error publishing event:', error);
+      toast.error('Failed to publish event');
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!confirm('Are you sure you want to unpublish this event? It will be moved back to draft status.')) {
+      return;
+    }
+    try {
+      await unpublishEvent(eventId);
+      await loadEvent(); // Reload to get updated status
+      toast.success('Event unpublished successfully');
+    } catch (error) {
+      console.error('Error unpublishing event:', error);
+      toast.error('Failed to unpublish event');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deleteEvent(eventId);
+      toast.success('Event deleted successfully');
+      // Redirect to events list or dashboard
+      window.location.href = '/host';
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
     }
   };
 
@@ -223,6 +257,21 @@ export default function EventDashboard() {
     }
   };
 
+  const handleParticipantClick = (participant: ParticipantWithPopulatedUser) => {
+    setSelectedParticipant(participant);
+    setShowParticipantModal(true);
+  };
+
+  const handleCloseParticipantModal = () => {
+    setShowParticipantModal(false);
+    setSelectedParticipant(null);
+  };
+
+  const handleParticipantStatusUpdateFromModal = async (participantId: string, status: string) => {
+    await handleParticipantStatusUpdate(participantId, status);
+    handleCloseParticipantModal();
+  };
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
@@ -254,13 +303,31 @@ export default function EventDashboard() {
           
           <div className="flex gap-3">
             {event.status === 'draft' && (
+              <>
+                <button
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="px-6 py-2 rounded-lg font-semibold"
+                  style={{ backgroundColor: '#00FF00', color: '#000' }}
+                >
+                  {loading ? 'Publishing...' : 'Publish Event'}
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="px-6 py-2 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  {loading ? 'Deleting...' : 'Delete Event'}
+                </button>
+              </>
+            )}
+            {event.status === 'published' && (
               <button
-                onClick={handlePublish}
+                onClick={handleUnpublish}
                 disabled={loading}
-                className="px-6 py-2 rounded-lg font-semibold"
-                style={{ backgroundColor: '#00FF00', color: '#000' }}
+                className="px-6 py-2 rounded-lg font-semibold bg-yellow-600 hover:bg-yellow-700 text-white transition-colors"
               >
-                {loading ? 'Publishing...' : 'Publish Event'}
+                {loading ? 'Unpublishing...' : 'Unpublish Event'}
               </button>
             )}
             <button
@@ -927,7 +994,10 @@ export default function EventDashboard() {
                             {members.map((participant: ParticipantWithPopulatedUser) => (
                               <tr key={participant._id} className="border-b border-white/10 hover:bg-white/5">
                                 <td className="p-3">
-                                  <div className="flex items-center gap-3">
+                                  <div 
+                                    className="flex items-center gap-3 cursor-pointer hover:bg-white/5 rounded-lg p-2 -m-2 transition-colors"
+                                    onClick={() => handleParticipantClick(participant)}
+                                  >
                                     <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
                                       {participant.userId.avatar ? (
                                         <Image 
@@ -944,7 +1014,7 @@ export default function EventDashboard() {
                                       )}
                                     </div>
                                     <div>
-                                      <p className="text-white font-medium">
+                                      <p className="text-white font-medium hover:text-blue-300 transition-colors">
                                         {participant.userId.fullname.firstname} {participant.userId.fullname.lastname}
                                       </p>
                                       <p className="text-white/60 text-sm">{participant.userId.email}</p>
@@ -1091,6 +1161,14 @@ export default function EventDashboard() {
             </div>
           </div>
         )}
+
+        {/* Participant Details Modal */}
+        <ParticipantDetailsModal
+          isOpen={showParticipantModal}
+          onClose={handleCloseParticipantModal}
+          participant={selectedParticipant}
+          onStatusUpdate={handleParticipantStatusUpdateFromModal}
+        />
       </div>
     </div>
   );

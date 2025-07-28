@@ -2,10 +2,12 @@
 
 import { use, useEffect, useState, useRef } from "react";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
+import useEventStore from "@/Zustand_Store/EventStore";
 import Image from "next/image";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import UserEventsModal from "@/components/Profile/UserEventsModal";
 
 interface User {
   _id: string;
@@ -44,9 +46,12 @@ export default function ProfilePage({
   const { username } = use(params);
   const [profile, setProfile] = useState<User | null>(null);
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { getUserCreatedEvents } = useEventStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { getUserProfileByUsername, user } = useAuthStore();
   const router = useRouter();
+  const [showEventsModal, setShowEventsModal] = useState(false);
+  const [userEventsCount, setUserEventsCount] = useState(0);
 
   useEffect(() => {
     if (user?.username === username) {
@@ -58,9 +63,19 @@ export default function ProfilePage({
     const fetchUserProfile = async () => {
       const profile = await getUserProfileByUsername(username);
       setProfile(profile);
+      
+      // Fetch user events count if profile is found
+      if (profile?._id) {
+        try {
+          const result = await getUserCreatedEvents(profile._id, { page: 1, limit: 1, status: 'published' });
+          setUserEventsCount(result.pagination.totalEvents);
+        } catch (error) {
+          console.error('Error fetching user events count:', error);
+        }
+      }
     };
     fetchUserProfile();
-  }, [username]);
+  }, [username, getUserCreatedEvents]);
 
   return (
     <div className="min-h-screen">
@@ -191,7 +206,6 @@ export default function ProfilePage({
               <div className="px-8 pt-6 pb-4">
                 <div
                   className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start sm:items-center p-4 rounded-xl justify-between"
-                  style={{ backgroundColor: `${secondaryAccentColor}15` }}
                 >
                   {profile?.email && (
                     <div className="flex items-center gap-3 text-white">
@@ -256,22 +270,23 @@ export default function ProfilePage({
             {/* Profile Details */}
             <div className="px-8 py-6">
               <div className="space-y-8">
-                {/* Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div
-                    className="text-center p-6 rounded-xl transition-colors"
-                    style={{
-                      backgroundColor: `${secondaryAccentColor}20`,
-                    }}
-                  >
+                                  {/* Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div
-                      className="text-3xl font-bold mb-1"
-                      style={{ color: secondaryAccentColor }}
+                      className="text-center p-6 rounded-xl transition-colors cursor-pointer hover:scale-105"
+                      style={{
+                        backgroundColor: `${secondaryAccentColor}20`,
+                      }}
+                      onClick={() => setShowEventsModal(true)}
                     >
-                      0
+                      <div
+                        className="text-3xl font-bold mb-1"
+                        style={{ color: secondaryAccentColor }}
+                      >
+                        {userEventsCount}
+                      </div>
+                      <div className="text-sm text-white">Events Hosted</div>
                     </div>
-                    <div className="text-sm text-white">Events Hosted</div>
-                  </div>
                   <div
                     className="text-center p-6 rounded-xl transition-colors"
                     style={{
@@ -583,6 +598,16 @@ export default function ProfilePage({
           </div>
         </div>
       </div>
+
+      {/* User Events Modal */}
+      {profile && (
+        <UserEventsModal
+          isOpen={showEventsModal}
+          onClose={() => setShowEventsModal(false)}
+          userId={profile._id}
+          userName={`${profile.fullname.firstname} ${profile.fullname.lastname}`}
+        />
+      )}
     </div>
   );
 }

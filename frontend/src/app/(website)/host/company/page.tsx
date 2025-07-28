@@ -4,6 +4,7 @@ import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import useEventStore from "@/Zustand_Store/EventStore";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import "./style.css";
 
 type EventType = 'hackathon' | 'workshop' | 'webinar' | 'tech-talk' | 'other';
@@ -106,6 +107,7 @@ export default function CompanyHostPage() {
 
       // Prepare event data
       const eventData = {
+        createdByType: 'company',
         company: {
           name: formData.companyName,
           website: formData.companyWebsite,
@@ -200,12 +202,62 @@ export default function CompanyHostPage() {
   //   }
   // };
 
-  const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
-    window.scrollTo(0, 0);
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    console.log('Next step clicked. Current step:', currentStep);
+    // Validate current step before proceeding
+    if (validateCurrentStep()) {
+      console.log('Validation passed, moving to next step');
+      setCurrentStep(prev => prev + 1);
+      window.scrollTo(0, 0);
+    } else {
+      console.log('Validation failed, staying on current step');
+    }
   };
 
-  const prevStep = () => {
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.companyName || !formData.companyWebsite || !formData.industry) {
+          toast.error('Please fill in all company information');
+          return false;
+        }
+        if (!formData.companyLogo) {
+          toast.error('Please upload a company logo');
+          return false;
+        }
+        return true;
+      case 2:
+        if (!formData.contactName || !formData.contactEmail || !formData.contactPhone) {
+          toast.error('Please fill in all contact information');
+          return false;
+        }
+        return true;
+      case 3:
+        if (!formData.eventName || !formData.eventType || !formData.description || 
+            !formData.eventMode || !formData.startDate || !formData.endDate || 
+            !formData.duration || !formData.targetAudience || !formData.maxParticipants) {
+          toast.error('Please fill in all event details');
+          return false;
+        }
+        if (!formData.eventBanner) {
+          toast.error('Please upload an event banner image');
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const prevStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setCurrentStep(prev => prev - 1);
     window.scrollTo(0, 0);
   };
@@ -500,7 +552,7 @@ export default function CompanyHostPage() {
                 </select>
               </div>
               <div>
-                <label className="block mb-2" style={{ color: secondaryAccentColor }}>Expected Number of Participants</label>
+                <label className="block mb-2" style={{ color: secondaryAccentColor }}>Maximum Number of Participants</label>
                 <input
                   type="number"
                   name="maxParticipants"
@@ -865,7 +917,7 @@ export default function CompanyHostPage() {
             {currentStep > 1 && (
               <button
                 type="button"
-                onClick={prevStep}
+                onClick={(e) => prevStep(e)}
                 className="px-6 py-2 rounded-lg"
                 style={{ backgroundColor: `${primaryAccentColor}40`, color: primaryAccentColor }}
               >
@@ -876,7 +928,7 @@ export default function CompanyHostPage() {
             {currentStep < 5 ? (
               <button
                 type="button"
-                onClick={nextStep}
+                onClick={(e) => nextStep(e)}
                 className="px-6 py-2 rounded-lg"
                 style={{ backgroundColor: primaryAccentColor, color: 'white' }}
               >

@@ -3,19 +3,24 @@
 import { useEffect, useState, useRef } from "react";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
+import useEventStore from "@/Zustand_Store/EventStore";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
+import UserEventsModal from "@/components/Profile/UserEventsModal";
 
 export default function MePage() {
   const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser, checkUsernameAvailability } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { getUserCreatedEvents } = useEventStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const [showEventsModal, setShowEventsModal] = useState(false);
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [userEventsCount, setUserEventsCount] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -74,8 +79,21 @@ export default function MePage() {
         },
         achievements: user.achievements || "",
       });
+      
+      // Fetch user events count
+      fetchUserEventsCount();
     }
   }, [user]);
+
+  const fetchUserEventsCount = async () => {
+    if (!user?._id) return;
+    try {
+      const result = await getUserCreatedEvents(user._id, { page: 1, limit: 1, status: 'published' });
+      setUserEventsCount(result.pagination.totalEvents);
+    } catch (error) {
+      console.error('Error fetching user events count:', error);
+    }
+  };
 
   // Username check effect
   useEffect(() => {
@@ -105,8 +123,6 @@ export default function MePage() {
     }, 500);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.username, isEditing]);
-
-  console.log(user);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -939,16 +955,17 @@ export default function MePage() {
                   {/* Stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div
-                      className="text-center p-6 rounded-xl transition-colors"
+                      className="text-center p-6 rounded-xl transition-colors cursor-pointer hover:scale-105"
                       style={{
                         backgroundColor: `${secondaryAccentColor}20`,
                       }}
+                      onClick={() => setShowEventsModal(true)}
                     >
                       <div
                         className="text-3xl font-bold mb-1"
                         style={{ color: secondaryAccentColor }}
                       >
-                        0
+                        {userEventsCount}
                       </div>
                       <div className="text-sm text-white">Events Hosted</div>
                     </div>
@@ -1318,6 +1335,16 @@ export default function MePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* User Events Modal */}
+      {user && (
+        <UserEventsModal
+          isOpen={showEventsModal}
+          onClose={() => setShowEventsModal(false)}
+          userId={user._id}
+          userName={`${user.fullname.firstname} ${user.fullname.lastname}`}
+        />
       )}
     </div>
   );

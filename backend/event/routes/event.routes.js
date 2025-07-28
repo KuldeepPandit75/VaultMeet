@@ -1,15 +1,18 @@
 import express from 'express';
 import authMiddleware from '../middlewares/auth.middleware.js';
-import { createEvent, getPublishedEvents, uploadCompanyLogo, uploadEventBanner, uploadMarketingMaterials, getEventById, updateEvent, publishEvent, registerForEvent, getRegistrationStatus, createTeam, joinTeam, getTeamDetails, getTeamByInviteCode, getEventParticipants, updateParticipantStatus, bulkUpdateParticipants } from '../controllers/event.controllers.js';
+import { createEvent, getPublishedEvents, uploadCompanyLogo, uploadEventBanner, uploadMarketingMaterials, getEventById, updateEvent, publishEvent, unpublishEvent, deleteEvent, registerForEvent, getRegistrationStatus, createTeam, joinTeam, getTeamDetails, getTeamByInviteCode, getEventParticipants, updateParticipantStatus, bulkUpdateParticipants, getUserCreatedEvents } from '../controllers/event.controllers.js';
 import { upload } from '../config/file.upload.js';
 
 const router = express.Router();
 
 router.post('/create', authMiddleware, createEvent);
 router.get('/published', getPublishedEvents);
+router.get('/user/:userId', getUserCreatedEvents);
 router.get('/:eventId', getEventById);
 router.put('/:eventId', authMiddleware, updateEvent);
 router.patch('/:eventId/publish', authMiddleware, publishEvent);
+router.patch('/:eventId/unpublish', authMiddleware, unpublishEvent);
+router.delete('/:eventId', authMiddleware, deleteEvent);
 
 // Registration routes
 router.post('/:eventId/register', authMiddleware, registerForEvent);

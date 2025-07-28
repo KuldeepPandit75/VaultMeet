@@ -309,7 +309,10 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
             api.setAppState(appStateToApply || {});
           }
           lastElementsUpdateRef.current = elementsString;
-          lastScrollUpdateRef.current = scrollString;
+          // Only update scroll reference if we're actually applying scroll changes
+          if (data.userId === followedUserId) {
+            lastScrollUpdateRef.current = scrollString;
+          }
           if (!initialLoadCompleteRef.current) {
             initialLoadCompleteRef.current = true;
           }

@@ -30,7 +30,14 @@ const eventParticipantSchema = new mongoose.Schema({
 
 // Event Schema
 const eventSchema = new mongoose.Schema({
-  // Company Information
+  // Who created this event - company or student
+  createdByType: {
+    type: String,
+    enum: ['company', 'student'],
+    default: 'company'
+  },
+
+  // Company Information (for company events) / College Information (for student events)
   company: {
     name: {
       type: String,
@@ -47,7 +54,7 @@ const eventSchema = new mongoose.Schema({
     },
     logo: {
       type: String, // URL to stored image
-      required: true
+      required: false
     }
   },
 
@@ -68,6 +75,33 @@ const eventSchema = new mongoose.Schema({
     socialProfiles: {
       type: String
     }
+  },
+
+  // Student-specific fields (only for student-created events)
+  facultyCoordinator: {
+    name: {
+      type: String,
+      required: function() {
+        return this.createdByType === 'student';
+      }
+    },
+    email: {
+      type: String,
+      required: function() {
+        return this.createdByType === 'student';
+      }
+    },
+    phone: {
+      type: String,
+      required: function() {
+        return this.createdByType === 'student';
+      }
+    }
+  },
+
+  // Budget field (mainly for student events)
+  expectedBudget: {
+    type: String
   },
 
   // Event Details
@@ -97,7 +131,7 @@ const eventSchema = new mongoose.Schema({
   }],
   banner: {
     type: String, // URL to stored image
-    required: true
+    required: false
   },
   type: {
     type: String,
@@ -275,7 +309,8 @@ const eventSchema = new mongoose.Schema({
 
   // Created By
   createdBy: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   }
 }, { timestamps: true });

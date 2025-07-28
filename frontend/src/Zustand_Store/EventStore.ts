@@ -134,9 +134,13 @@ interface EventState {
   pagination: PaginationInfo | null;
   userRegistration: Registration | null;
   userTeam: Team | null;
+  userEvents: Event[];
+  userEventsPagination: PaginationInfo | null;
   createEvent: (eventData: Partial<Event>) => Promise<Event>;
   updateEvent: (eventId: string, eventData: Event) => Promise<Event>;
   publishEvent: (eventId: string) => Promise<Event>;
+  unpublishEvent: (eventId: string) => Promise<Event>;
+  deleteEvent: (eventId: string) => Promise<void>;
   uploadCompanyLogo: (file: File) => Promise<string>;
   uploadEventBanner: (file: File) => Promise<string>;
   uploadMarketingMaterials: (files: File[]) => Promise<string[]>;
@@ -148,6 +152,11 @@ interface EventState {
     mode?: 'online' | 'offline' | 'hybrid';
     type?: string;
   }) => Promise<void>;
+  getUserCreatedEvents: (userId: string, params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }) => Promise<{ events: Event[]; pagination: PaginationInfo }>;
   getEventById: (eventId: string) => Promise<Event>;
   // Registration methods
   registerForEvent: (eventId: string, registrationData: {
@@ -185,6 +194,8 @@ const useEventStore = create<EventState>()((set) => ({
   pagination: null,
   userRegistration: null,
   userTeam: null,
+  userEvents: [],
+  userEventsPagination: null,
 
   createEvent: async (eventData) => {
     set({ loading: true, error: null });
@@ -242,6 +253,47 @@ const useEventStore = create<EventState>()((set) => ({
       console.error('Error publishing event:', error);
       set({ 
         error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to publish event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  unpublishEvent: async (eventId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.patch(`/${eventId}/unpublish`);
+      const unpublishedEvent = response.data.data;
+      set((state) => ({
+        events: state.events.map(event => event._id === eventId ? unpublishedEvent : event),
+        currentEvent: state.currentEvent?._id === eventId ? unpublishedEvent : state.currentEvent,
+        loading: false
+      }));
+      return unpublishedEvent;
+    } catch (error: unknown) {
+      console.error('Error unpublishing event:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to unpublish event',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  deleteEvent: async (eventId) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/${eventId}`);
+      set((state) => ({
+        events: state.events.filter(event => event._id !== eventId),
+        userEvents: state.userEvents.filter(event => event._id !== eventId),
+        currentEvent: state.currentEvent?._id === eventId ? null : state.currentEvent,
+        loading: false
+      }));
+    } catch (error: unknown) {
+      console.error('Error deleting event:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to delete event',
         loading: false 
       });
       throw error;
@@ -553,6 +605,48 @@ const useEventStore = create<EventState>()((set) => ({
       console.error('Error bulk updating participants:', error);
       set({ 
         error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to bulk update participants',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getUserCreatedEvents: async (userId, params = {}) => {
+    set({ loading: true, error: null });
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add pagination params
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.status) queryParams.append('status', params.status);
+
+      const response = await api.get(`/user/${userId}?${queryParams.toString()}`);
+      
+      // Convert string dates to Date objects
+      const eventsWithDates = response.data.data.events.map((event: Omit<Event, 'startDate' | 'endDate'> & { 
+        startDate: string; 
+        endDate: string 
+      }) => ({
+        ...event,
+        startDate: new Date(event.startDate),
+        endDate: new Date(event.endDate)
+      }));
+      
+      set({
+        userEvents: eventsWithDates,
+        userEventsPagination: response.data.data.pagination,
+        loading: false
+      });
+      
+      return { 
+        events: eventsWithDates, 
+        pagination: response.data.data.pagination 
+      };
+    } catch (error: unknown) {
+      console.error('Error fetching user created events:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to fetch user events',
         loading: false 
       });
       throw error;

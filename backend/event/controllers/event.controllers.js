@@ -109,14 +109,17 @@ export const createEvent = async (req, res) => {
       prizes,
       promotion,
       additionalNotes,
-      banner
+      banner,
+      createdByType = 'company', // Default to company if not specified
+      facultyCoordinator,
+      expectedBudget
     } = req.body;
 
     // Validate required fields
-    if (!company?.name || !company?.website || !company?.industry) {
+    if (!company?.name || !company?.industry) {
       return res.status(400).json({
         success: false,
-        message: 'Company information is required'
+        message: 'Company/College information is required'
       });
     }
 
@@ -132,6 +135,16 @@ export const createEvent = async (req, res) => {
         success: false,
         message: 'All event details are required'
       });
+    }
+
+    // Validate student-specific fields if createdByType is 'student'
+    if (createdByType === 'student') {
+      if (!facultyCoordinator?.name || !facultyCoordinator?.email || !facultyCoordinator?.phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Faculty coordinator information is required for student events'
+        });
+      }
     }
 
     // Validate dates
@@ -169,11 +182,21 @@ export const createEvent = async (req, res) => {
       });
     }
 
+    // Set default website for student events if not provided
+    const companyWebsite = company.website || (createdByType === 'student' ? 'https://example.edu' : '');
+    if (!companyWebsite) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company/College website is required'
+      });
+    }
+
     // Create event object
     const eventData = {
+      createdByType,
       company: {
         name: company.name,
-        website: company.website,
+        website: companyWebsite,
         industry: company.industry,
         logo: company.logo || ''
       },
@@ -184,7 +207,7 @@ export const createEvent = async (req, res) => {
         socialProfiles: contact.socialProfiles || ''
       },
       name,
-      banner,
+      banner: banner || '',
       type,
       description,
       mode,
@@ -220,8 +243,18 @@ export const createEvent = async (req, res) => {
         registeredParticipants: 0,
         approvedParticipants: 0
       },
-      createdBy: req.user.username
+      createdBy: req.user._id
     };
+
+    // Add student-specific fields if event is created by a student
+    if (createdByType === 'student') {
+      eventData.facultyCoordinator = {
+        name: facultyCoordinator.name,
+        email: facultyCoordinator.email,
+        phone: facultyCoordinator.phone
+      };
+      eventData.expectedBudget = expectedBudget || '';
+    }
 
     // Create event
     const event = await Event.create(eventData);
@@ -388,7 +421,7 @@ export const updateEvent = async (req, res) => {
     }
 
     // Check if user is the creator of the event (authorization)
-    if (existingEvent.createdBy !== req.user.username) {
+    if (!existingEvent.createdBy.equals(req.user._id)) {
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to update this event'
@@ -536,7 +569,7 @@ export const publishEvent = async (req, res) => {
     }
 
     // Check if user is the creator of the event
-    if (event.createdBy !== req.user.username) {
+    if (!event.createdBy.equals(req.user._id)) {
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to publish this event'
@@ -577,6 +610,125 @@ export const publishEvent = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error publishing event',
+      error: error.message
+    });
+  }
+};
+
+// Unpublish event (change status from published to draft)
+export const unpublishEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    // Validate eventId
+    if (!eventId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event ID is required'
+      });
+    }
+
+    // Find the event
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    // Check if user is the creator of the event
+    if (!event.createdBy.equals(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to unpublish this event'
+      });
+    }
+
+    // Check if event is already draft
+    if (event.status === 'draft') {
+      return res.status(400).json({
+        success: false,
+        message: 'Event is already in draft status'
+      });
+    }
+
+    // Update event status to draft
+    const unpublishedEvent = await Event.findByIdAndUpdate(
+      eventId,
+      { status: 'draft' },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Event unpublished successfully',
+      data: unpublishedEvent
+    });
+
+  } catch (error) {
+    console.error('Error unpublishing event:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error unpublishing event',
+      error: error.message
+    });
+  }
+};
+
+// Delete event (only for draft events)
+export const deleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    // Validate eventId
+    if (!eventId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event ID is required'
+      });
+    }
+
+    // Find the event
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    // Check if user is the creator of the event
+    if (!event.createdBy.equals(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to delete this event'
+      });
+    }
+
+    // Only allow deletion of draft events
+    if (event.status !== 'draft') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only draft events can be deleted. Unpublish the event first if you want to delete it.'
+      });
+    }
+
+    // Delete the event
+    await Event.findByIdAndDelete(eventId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Event deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error deleting event',
       error: error.message
     });
   }
@@ -977,6 +1129,57 @@ export const getTeamByInviteCode = async (req, res) => {
   }
 };
 
+// Get events created by a specific user
+export const getUserCreatedEvents = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 10, status } = req.query;
+
+    // Build filter object
+    const filter = { createdBy: userId };
+    
+    // Add status filter if provided
+    if (status) {
+      filter.status = status;
+    }
+
+    // Get total count for pagination
+    const totalEvents = await Event.countDocuments(filter);
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch events with pagination
+    const events = await Event.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('company.name company.logo banner name type mode startDate endDate prizes.prizePool status stats _id createdAt');
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        events,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalEvents / parseInt(limit)),
+          totalEvents,
+          hasNextPage: skip + events.length < totalEvents,
+          hasPreviousPage: parseInt(page) > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching user created events:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching user created events',
+      error: error.message
+    });
+  }
+};
+
 // Get event participants (for event organizers)
 export const getEventParticipants = async (req, res) => {
   try {
@@ -993,7 +1196,7 @@ export const getEventParticipants = async (req, res) => {
     }
 
     // Check if user is the event creator
-    if (event.createdBy !== req.user.username) {
+    if (!event.createdBy.equals(req.user._id)) {
       return res.status(403).json({
         success: false,
         message: 'Only event creators can view participants'
@@ -1100,7 +1303,7 @@ export const updateParticipantStatus = async (req, res) => {
       });
     }
 
-    if (event.createdBy !== req.user.username) {
+    if (!event.createdBy.equals(req.user._id)) {
       return res.status(403).json({
         success: false,
         message: 'Only event creators can manage participants'
@@ -1174,7 +1377,7 @@ export const bulkUpdateParticipants = async (req, res) => {
       });
     }
 
-    if (event.createdBy !== req.user.username) {
+    if (!event.createdBy.equals(req.user._id)) {
       return res.status(403).json({
         success: false,
         message: 'Only event creators can manage participants'

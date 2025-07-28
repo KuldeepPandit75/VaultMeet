@@ -58,7 +58,7 @@ exports.registerUser = registerUser;
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ message: "Invalid email or password", errors: errors.array() });
     }
     const { email, password } = req.body;
     const user = yield user_model_js_1.default.findOne({ email }).select("+password");
