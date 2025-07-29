@@ -35,8 +35,16 @@ export default async function initializeClient(
 async function createLocalMediaTracks() {
   try {
     const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
-    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+    
+    // NEW: Optimized media track creation with bandwidth settings
+    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+      encoderConfig: "music_standard", // Better quality for voice
+    });
+    
+    localVideoTrack = await AgoraRTC.createCameraVideoTrack({
+      encoderConfig: "480p_1", // Lower resolution for better performance
+      facingMode: "user",
+    });
 
     // Initially disable tracks
     if (localAudioTrack) {
@@ -47,7 +55,6 @@ async function createLocalMediaTracks() {
       localVideoTrack.setEnabled(true);
       localVideoTrack.setMuted(true);
     }
-
 
   } catch (error) {
     console.error("Error creating media tracks:", error);

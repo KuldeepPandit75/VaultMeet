@@ -8,9 +8,10 @@ import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 import UserEventsModal from "@/components/Profile/UserEventsModal";
+import ConnectionsModal from "@/components/Profile/ConnectionsModal";
 
 export default function MePage() {
-  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser, checkUsernameAvailability } =
+  const { user, updateProfile, updateAvatar, updateBanner, sendOTP, verifyOTP, verifyUser, checkUsernameAvailability, getConnectionsCount } =
     useAuthStore();
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const { getUserCreatedEvents } = useEventStore();
@@ -18,9 +19,11 @@ export default function MePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [userEventsCount, setUserEventsCount] = useState(0);
+  const [connectionsCount, setConnectionsCount] = useState(0);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -82,6 +85,8 @@ export default function MePage() {
       
       // Fetch user events count
       fetchUserEventsCount();
+      // Fetch connections count
+      fetchConnectionsCount();
     }
   }, [user]);
 
@@ -92,6 +97,16 @@ export default function MePage() {
       setUserEventsCount(result.pagination.totalEvents);
     } catch (error) {
       console.error('Error fetching user events count:', error);
+    }
+  };
+
+  const fetchConnectionsCount = async () => {
+    if (!user?._id) return;
+    try {
+      const result = await getConnectionsCount(user._id);
+      setConnectionsCount(result.connectionsCount);
+    } catch (error) {
+      console.error('Error fetching connections count:', error);
     }
   };
 
@@ -984,16 +999,17 @@ export default function MePage() {
                       <div className="text-sm text-white">Events Attended</div>
                     </div>
                     <div
-                      className="text-center p-6 rounded-xl transition-colors"
+                      className="text-center p-6 rounded-xl transition-colors cursor-pointer hover:scale-105"
                       style={{
                         backgroundColor: `${secondaryAccentColor}20`,
                       }}
+                      onClick={() => setShowConnectionsModal(true)}
                     >
                       <div
                         className="text-3xl font-bold mb-1"
                         style={{ color: secondaryAccentColor }}
                       >
-                        0
+                        {connectionsCount}
                       </div>
                       <div className="text-sm text-white">Connections</div>
                     </div>
@@ -1342,6 +1358,16 @@ export default function MePage() {
         <UserEventsModal
           isOpen={showEventsModal}
           onClose={() => setShowEventsModal(false)}
+          userId={user._id}
+          userName={`${user.fullname.firstname} ${user.fullname.lastname}`}
+        />
+      )}
+
+      {/* Connections Modal */}
+      {user && (
+        <ConnectionsModal
+          isOpen={showConnectionsModal}
+          onClose={() => setShowConnectionsModal(false)}
           userId={user._id}
           userName={`${user.fullname.firstname} ${user.fullname.lastname}`}
         />

@@ -46,6 +46,7 @@ interface IUser extends Document {
     message: string;
     isRead: boolean;
     createdAt: Date;
+    senderId?: mongoose.Types.ObjectId;
   }[];
   createdAt: Date;
   isVerified: boolean;
@@ -70,7 +71,6 @@ const userSchema = new mongoose.Schema({
     },
     lastname: {
       type: String,
-      minlength: [3, "Last name must be at least 3 characters long"],
     },
   },
   email: {
@@ -200,6 +200,7 @@ const userSchema = new mongoose.Schema({
       message: String,
       isRead: { type: Boolean, default: false },
       createdAt: { type: Date, default: Date.now },
+      senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     },
   ],
 

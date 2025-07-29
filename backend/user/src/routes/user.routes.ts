@@ -1,6 +1,7 @@
 import express from 'express';
 import { body } from 'express-validator';
 import * as userController from '../controllers/user.controller.js';
+import * as chatController from '../controllers/chat.controller.js';
 import authMiddleware from '../middlewares/auth.middleware.js';
 import { upload } from '../config/file.upload.js';
 import { resetPassword, sendOTP, verifyOTP } from '../controllers/auth.controller.js';
@@ -44,5 +45,28 @@ router.post('/google-login', userController.googleLogin);
 router.post('/send-otp', sendOTP);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);
+
+// Connection request routes
+router.post('/connections/send-request', authMiddleware, userController.sendConnectionRequest);
+router.post('/connections/respond', authMiddleware, userController.respondToConnectionRequest);
+router.get('/connections/status/:targetUserId', authMiddleware, userController.getConnectionStatus);
+
+// Notification routes
+router.get('/notifications', authMiddleware, userController.getNotifications);
+router.patch('/notifications/:notificationId/read', authMiddleware, userController.markNotificationAsRead);
+router.patch('/notifications/read-all', authMiddleware, userController.markAllNotificationsAsRead);
+router.get('/notifications/unread-count', authMiddleware, userController.getUnreadNotificationCount);
+
+// Connections routes
+router.get('/connections/count/:userId', authMiddleware, userController.getConnectionsCount);
+router.get('/connections/:userId', authMiddleware, userController.getConnections);
+router.delete('/connections/remove', authMiddleware, userController.removeConnection);
+
+// Chat routes
+router.get('/chat/conversations', authMiddleware, chatController.getConversations);
+router.get('/chat/messages/:conversationId', authMiddleware, chatController.getMessages);
+router.post('/chat/send', authMiddleware, chatController.sendMessage);
+router.patch('/chat/read', authMiddleware, chatController.markMessagesAsRead);
+router.get('/chat/unread-count', authMiddleware, chatController.getUnreadMessageCount);
 
 export default router;

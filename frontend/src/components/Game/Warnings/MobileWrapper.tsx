@@ -5,7 +5,7 @@ import MobileWarning from "@/components/Game/Warnings/MobileWarning";
 import { usePathname } from "next/navigation";
 
 const isGameTab = (path: string) => {
-  const homeTabs = ["/coding-space"];
+  const homeTabs = ["/coding-spacee"];
   return homeTabs.some((tab) => path.includes(tab));
 };
 

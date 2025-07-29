@@ -5,9 +5,12 @@ import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import useEventStore from "@/Zustand_Store/EventStore";
 import Image from "next/image";
 import useAuthStore from "@/Zustand_Store/AuthStore";
+import useChatStore, { Conversation } from "@/Zustand_Store/ChatStore";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import UserEventsModal from "@/components/Profile/UserEventsModal";
+import ConnectionsModal from "@/components/Profile/ConnectionsModal";
+import RemoveConnectionModal from "@/components/Profile/RemoveConnectionModal";
 
 interface User {
   _id: string;
@@ -45,13 +48,19 @@ export default function ProfilePage({
 }) {
   const { username } = use(params);
   const [profile, setProfile] = useState<User | null>(null);
-  const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
   const { getUserCreatedEvents } = useEventStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const { getUserProfileByUsername, user } = useAuthStore();
+  const { getUserProfileByUsername, user, sendConnectionRequest, getConnectionStatus, getConnectionsCount, getConversations, isAuthenticated } = useAuthStore();
+  const { openChat } = useChatStore();
   const router = useRouter();
   const [showEventsModal, setShowEventsModal] = useState(false);
+  const [showConnectionsModal, setShowConnectionsModal] = useState(false);
+  const [showRemoveConnectionModal, setShowRemoveConnectionModal] = useState(false);
   const [userEventsCount, setUserEventsCount] = useState(0);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [isLoadingConnection, setIsLoadingConnection] = useState(false);
 
   useEffect(() => {
     if (user?.username === username) {
@@ -72,10 +81,113 @@ export default function ProfilePage({
         } catch (error) {
           console.error('Error fetching user events count:', error);
         }
+
+        // Fetch connections count
+        try {
+          const connectionsData = await getConnectionsCount(profile._id);
+          console.log(connectionsData);
+          setConnectionsCount(connectionsData.connectionsCount);
+        } catch (error) {
+          console.error('Error fetching connections count:', error);
+        }
+
+        // Check connection status if user is authenticated and viewing someone else's profile
+        if (isAuthenticated && user && user._id !== profile._id) {
+          try {
+            const status = await getConnectionStatus(profile._id);
+            setConnectionStatus(status.status);
+          } catch (error) {
+            console.error('Error fetching connection status:', error);
+          }
+        }
       }
     };
     fetchUserProfile();
-  }, [username, getUserCreatedEvents]);
+  }, [username, getUserCreatedEvents, isAuthenticated, user, getConnectionStatus, getConnectionsCount]);
+
+  const handleConnectionRequest = async () => {
+    if (!profile || !isAuthenticated) return;
+    
+    // If already connected, show remove connection modal
+    if (connectionStatus === 'connected') {
+      setShowRemoveConnectionModal(true);
+      return;
+    }
+    
+    setIsLoadingConnection(true);
+    try {
+      const response = await sendConnectionRequest(profile._id);
+      setConnectionStatus(response.status==='pending' ? 'pending' : 'connected');
+      toast.success(response.status === 'pending' ? 'Connection request sent!' : response.message);
+    } catch {
+      toast.error('Failed to send connection request');
+    } finally {
+      setIsLoadingConnection(false);
+    }
+  };
+
+  const handleConnectionRemoved = () => {
+    setConnectionStatus('not_connected');
+    // Refresh connections count
+    if (profile) {
+      getConnectionsCount(profile._id).then((data) => {
+        setConnectionsCount(data.connectionsCount);
+      }).catch(console.error);
+    }
+  };
+
+  const handleStartChat = async () => {
+    if (!profile || !isAuthenticated) return;
+
+    try {
+      // First, try to find an existing conversation
+      const conversationsResult = await getConversations(1, 50);
+      const existingConversation = conversationsResult.conversations.find(
+        conv => conv.otherUser._id === profile._id
+      );
+
+      if (existingConversation) {
+        // Open existing conversation
+        openChat(existingConversation);
+        toast.success('Chat opened!');
+      } else {
+        // Create a new conversation object without sending a message
+        const newConversation: Conversation = {
+          conversationId: [user?._id, profile._id].sort().join('_'),
+          otherUser: {
+            _id: profile._id,
+            fullname: profile.fullname,
+            avatar: profile.avatar,
+            username: profile.username,
+            isOnline: false,
+            lastSeen: new Date().toISOString()
+          },
+          unreadCount: 0
+        };
+        
+        openChat(newConversation);
+        toast.success('Chat opened!');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      toast.error('Failed to start chat');
+    }
+  };
+
+  const getConnectionButtonText = () => {
+    if (!connectionStatus || connectionStatus === 'not_connected') {
+      return 'Connect';
+    } else if (connectionStatus === 'pending') {
+      return 'Request Sent';
+    } else if (connectionStatus === 'connected') {
+      return 'Connected';
+    }
+    return 'Connect';
+  };
+
+  const isConnectionButtonDisabled = () => {
+    return isLoadingConnection || connectionStatus === 'pending';
+  };
 
   return (
     <div className="min-h-screen">
@@ -193,6 +305,42 @@ export default function ProfilePage({
                 </div>
               )}
             </div>
+
+            {/* Action Buttons */}
+            {isAuthenticated && user && profile && user._id !== profile._id && (
+              <div className="flex-shrink-0 flex gap-3">
+                {/* Message Button */}
+                <button
+                  onClick={handleStartChat}
+                  className={`px-6 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 border-2 ${
+                    isDarkMode 
+                      ? 'border-white text-white hover:bg-white hover:text-black' 
+                      : 'border-gray-800 text-gray-800 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  Chat
+                </button>
+
+                {/* Connect Button */}
+                <button
+                  onClick={handleConnectionRequest}
+                  disabled={isConnectionButtonDisabled()}
+                  className={`px-6 py-3 rounded-lg font-semibold text-lg transition-all duration-300 ${
+                    isConnectionButtonDisabled() 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : 'hover:scale-105'
+                  }`}
+                  style={{
+                    background: isConnectionButtonDisabled() 
+                      ? '#666' 
+                      : `linear-gradient(90deg, ${secondaryAccentColor} 0%, ${primaryAccentColor} 100%)`,
+                    color: '#222',
+                  }}
+                >
+                  {isLoadingConnection ? 'Connecting...' : getConnectionButtonText()}
+                </button>
+              </div>
+            )}
           </div>
         </div>
         {/* Profile Content */}
@@ -302,16 +450,17 @@ export default function ProfilePage({
                     <div className="text-sm text-white">Events Attended</div>
                   </div>
                   <div
-                    className="text-center p-6 rounded-xl transition-colors"
+                    className="text-center p-6 rounded-xl transition-colors cursor-pointer hover:scale-105"
                     style={{
                       backgroundColor: `${secondaryAccentColor}20`,
                     }}
+                    onClick={() => setShowConnectionsModal(true)}
                   >
                     <div
                       className="text-3xl font-bold mb-1"
                       style={{ color: secondaryAccentColor }}
                     >
-                      0
+                      {connectionsCount}
                     </div>
                     <div className="text-sm text-white">Connections</div>
                   </div>
@@ -606,6 +755,27 @@ export default function ProfilePage({
           onClose={() => setShowEventsModal(false)}
           userId={profile._id}
           userName={`${profile.fullname.firstname} ${profile.fullname.lastname}`}
+        />
+      )}
+
+      {/* Connections Modal */}
+      {profile && (
+        <ConnectionsModal
+          isOpen={showConnectionsModal}
+          onClose={() => setShowConnectionsModal(false)}
+          userId={profile._id}
+          userName={`${profile.fullname.firstname} ${profile.fullname.lastname}`}
+        />
+      )}
+
+      {/* Remove Connection Modal */}
+      {profile && (
+        <RemoveConnectionModal
+          isOpen={showRemoveConnectionModal}
+          onClose={() => setShowRemoveConnectionModal(false)}
+          targetUserId={profile._id}
+          targetUserName={`${profile.fullname.firstname} ${profile.fullname.lastname}`}
+          onConnectionRemoved={handleConnectionRemoved}
         />
       )}
     </div>

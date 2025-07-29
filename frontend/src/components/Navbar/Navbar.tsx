@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 // Types
 interface NavLink {
@@ -17,6 +18,20 @@ interface NavButton {
   href: string;
   label: string;
   isPrimary?: boolean;
+}
+
+interface Notification {
+  _id: string;
+  type: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  senderId?: {
+    _id: string;
+    fullname: { firstname: string; lastname: string };
+    avatar?: string;
+    username?: string;
+  };
 }
 
 // Constants
@@ -33,6 +48,101 @@ const NAV_BUTTONS: NavButton[] = [
 ];
 
 // Components
+const NotificationItem = ({ 
+  notification
+}: { 
+  notification: Notification; 
+}) => {
+  const { markNotificationAsRead, respondToConnectionRequest, getNotifications } = useAuthStore();
+
+  const handleAction = async (action: 'accept' | 'decline') => {
+    try {
+      if (notification.type === 'connection_request' && notification.senderId) {
+        await respondToConnectionRequest(notification.senderId._id, action);
+        await handleMarkAsRead();
+        await getNotifications(); // Refresh notifications
+        toast.success(`Connection request ${action}ed`);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(`Failed to ${action} connection request`);
+    }
+  };
+
+  const handleMarkAsRead = async () => {
+    if (!notification.isRead) {
+      try {
+        await markNotificationAsRead(notification._id);
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+    }
+  };
+
+  return (
+    <div 
+      className={`px-4 py-3 hover:bg-gray-50 border-l-4 ${
+        notification.isRead 
+          ? 'border-transparent bg-gray-50/50' 
+          : 'border-blue-500 bg-blue-50/30'
+      }`}
+      onClick={notification.type === 'connection_request' ? handleMarkAsRead : undefined}
+    >
+      <div className="flex items-start gap-3">
+        {notification.senderId?.avatar ? (
+          <Image
+            src={notification.senderId.avatar}
+            alt={`${notification.senderId.fullname.firstname} ${notification.senderId.fullname.lastname}`}
+            className="w-8 h-8 rounded-full"
+            width={32}
+            height={32}
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+            <span className="text-xs font-semibold text-gray-600">
+              {notification.senderId?.fullname.firstname.charAt(0)}
+            </span>
+          </div>
+        )}
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-gray-900">{notification.message}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {new Date(notification.createdAt).toLocaleDateString()}
+          </p>
+          
+          {notification.type === 'connection_request' && !notification.isRead && (
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAction('accept');
+                }}
+                className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Accept
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAction('decline');
+                }}
+                className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Decline
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {!notification.isRead && (
+          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const NavLink = ({ href, label }: NavLink) => {
   const pathname = usePathname();
   const isActive = pathname === href;
@@ -83,7 +193,51 @@ const Navbar = () => {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showConnectionRequests, setShowConnectionRequests] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+
+  const { 
+    isAuthenticated, 
+    user, 
+    logout, 
+    getUnreadNotificationCount,
+    notifications,
+    getNotifications,
+    markAllNotificationsAsRead 
+  } = useAuthStore();
+
+  // Filter connection requests from notifications
+  const connectionRequests = notifications.filter(n => n.type === 'connection_request' && !n.isRead);
+  const generalNotifications = notifications.filter(n => n.type !== 'connection_request');
+
+  // Fetch notifications and unread count when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      getUnreadNotificationCount();
+      getNotifications();
+    }
+  }, [isAuthenticated, getUnreadNotificationCount, getNotifications]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      console.log(target.closest('.notification-dropdown'));
+      if (showNotifications && !target.closest('.notification-dropdown') && !target.closest('.notification-icon')) {
+        setShowNotifications(false);
+      }
+      if (showConnectionRequests && !target.closest('.connection-requests-dropdown') && !target.closest('.connection-requests-icon')) {
+        setShowConnectionRequests(false);
+      }
+      if (isDropdownOpen && !target.closest('.profile-dropdown') && !target.closest('.profile-icon')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications, showConnectionRequests, isDropdownOpen]);
 
   return (
     <nav className="px-[20px] md:px-[40px] lg:px-[80px] py-[20px] flex justify-between items-center relative z-[100000]">
@@ -139,12 +293,68 @@ const Navbar = () => {
 
       <div className="hidden md:flex gap-[30px] text-[18px] items-center ml-8">
         {isAuthenticated ? (
-          <div className="relative">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              style={{ color: primaryAccentColor }}
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
+          <div className="flex items-center gap-4">
+            {/* Connection Requests Icon */}
+            <div className="relative connection-requests-icon">
+              <button
+                onClick={() => setShowConnectionRequests(!showConnectionRequests)}
+                className="relative p-2 rounded-lg hover:bg-gray-100/10 transition-colors"
+                style={{ color: primaryAccentColor }}
+              >
+                {/* Person Plus Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" height={20} width={20} fill={primaryAccentColor}>
+                  <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3zM544 128V64c0-17.7-14.3-32-32-32s-32 14.3-32 32v64H416c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32V192h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H544z"/>
+                </svg>
+                {/* Connection Requests Badge */}
+                {connectionRequests.length > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    style={{ backgroundColor: secondaryAccentColor }}
+                  >
+                    {connectionRequests.length > 99 ? '99+' : connectionRequests.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Notification Icon */}
+            <div className="relative notification-icon">
+              <button
+                onClick={async () => {
+                  setShowNotifications(!showNotifications);
+                  // Mark all general notifications as read when opening dropdown
+                  if (!showNotifications && generalNotifications.some(n => !n.isRead)) {
+                    try {
+                      await markAllNotificationsAsRead();
+                    } catch (error) {
+                      console.error('Failed to mark notifications as read:', error);
+                    }
+                  }
+                }}
+                className="relative p-2 rounded-lg hover:bg-gray-100/10 transition-colors"
+                style={{ color: primaryAccentColor }}
+              >
+                {/* Bell Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" height={20} width={20} fill={primaryAccentColor}><path d="M320 64C302.3 64 288 78.3 288 96L288 99.2C215 114 160 178.6 160 256L160 277.7C160 325.8 143.6 372.5 113.6 410.1L103.8 422.3C98.7 428.6 96 436.4 96 444.5C96 464.1 111.9 480 131.5 480L508.4 480C528 480 543.9 464.1 543.9 444.5C543.9 436.4 541.2 428.6 536.1 422.3L526.3 410.1C496.4 372.5 480 325.8 480 277.7L480 256C480 178.6 425 114 352 99.2L352 96C352 78.3 337.7 64 320 64zM258 528C265.1 555.6 290.2 576 320 576C349.8 576 374.9 555.6 382 528L258 528z"/></svg>
+                {/* Notification Badge */}
+                {generalNotifications.filter(n => !n.isRead).length > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    style={{ backgroundColor: secondaryAccentColor }}
+                  >
+                    {generalNotifications.filter(n => !n.isRead).length > 99 ? '99+' : generalNotifications.filter(n => !n.isRead).length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* User Profile Dropdown */}
+            <div className="relative profile-icon">
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                style={{ color: primaryAccentColor }}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
               {!user?.avatar ? (
                 <div
                   className="flex items-center justify-center h-[40px] w-[40px] rounded-full"
@@ -184,7 +394,7 @@ const Navbar = () => {
 
             {/* Dropdown Menu */}
             <div
-              className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white transform transition-all duration-200 ease-in-out ${
+              className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white transform transition-all duration-200 ease-in-out profile-dropdown ${
                 isDropdownOpen
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 -translate-y-2 pointer-events-none"
@@ -209,7 +419,80 @@ const Navbar = () => {
                 </button>
               </div>
             </div>
+
+            {/* Connection Requests Dropdown */}
+            <div
+              className={`absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white transform transition-all duration-200 ease-in-out connection-requests-dropdown ${
+                showConnectionRequests
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2 pointer-events-none"
+              }`}
+              style={{ zIndex: 1000 }}
+            >
+              <div className="py-2">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900">Connection Requests</h3>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {connectionRequests.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                      No connection requests
+                    </div>
+                  ) : (
+                    connectionRequests.slice(0, 10).map((notification) => (
+                      <NotificationItem 
+                        key={notification._id} 
+                        notification={notification}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Notification Dropdown */}
+            <div
+              className={`absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white transform transition-all duration-200 ease-in-out notification-dropdown ${
+                showNotifications
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 -translate-y-2 pointer-events-none"
+              }`}
+              style={{ zIndex: 1000 }}
+            >
+              <div className="py-2">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {generalNotifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    generalNotifications.slice(0, showAllNotifications ? generalNotifications.length : 10).map((notification) => (
+                      <NotificationItem 
+                        key={notification._id} 
+                        notification={notification}
+                      />
+                    ))
+                  )}
+                </div>
+                {generalNotifications.length > 10 && (
+                  <div className="px-4 py-2 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        setShowAllNotifications(!showAllNotifications);
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      {showAllNotifications ? 'Show less' : `View all ${generalNotifications.length} notifications`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+        </div>
         ) : (
           NAV_BUTTONS.map((button) => (
             <NavButton key={button.label} {...button} />

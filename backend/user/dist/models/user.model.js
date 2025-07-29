@@ -24,7 +24,6 @@ const userSchema = new mongoose_1.default.Schema({
         },
         lastname: {
             type: String,
-            minlength: [3, "Last name must be at least 3 characters long"],
         },
     },
     email: {
@@ -141,6 +140,7 @@ const userSchema = new mongoose_1.default.Schema({
             message: String,
             isRead: { type: Boolean, default: false },
             createdAt: { type: Date, default: Date.now },
+            senderId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User" },
         },
     ],
     createdAt: {

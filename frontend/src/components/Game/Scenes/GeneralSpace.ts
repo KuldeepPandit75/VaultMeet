@@ -1,6 +1,6 @@
 import { Scene, Tilemaps } from "phaser";
 import { Socket } from "socket.io-client";
-import { PROXIMITY_RADIUS } from "@/data/game";
+import { PROXIMITY_RADIUS, LEADBOARD_DATA } from "@/data/game";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 
 class GeneralSpace extends Scene {
@@ -61,6 +61,11 @@ class GeneralSpace extends Scene {
 
     // Load leaderboard image
     this.load.image("leaderboard_image", "/game/leaderboard.png");
+
+    // Load leaderboard logos
+    LEADBOARD_DATA.forEach((item, index) => {
+      this.load.image(`leaderboard_logo_${index + 1}`, item.logo);
+    });
 
     // Add loading error handler
     this.load.on("loaderror", (file: { key: string; src: string }) => {
@@ -200,6 +205,7 @@ class GeneralSpace extends Scene {
           }
           if (data.dirX < 0) {
             this.otherPlayers[data.id].setScale(0.9, 0.9);
+            this.otherPlayers[data.id].setFlipX(false);
             this.otherPlayers[data.id].anims.play(
               data.isRunning ? "runR&L" : "walkR&L",
               true
@@ -394,6 +400,9 @@ class GeneralSpace extends Scene {
     leaderboardImage.setDepth(530);  
     
     console.log("Leaderboard image added at:", { x: 392, y: 418 });
+
+    // Load leaderboard content (logos and names)
+    this.createLeaderboardContent();
 
     this.player = this.physics.add.sprite(
       mapWidth / 2,
@@ -846,6 +855,67 @@ class GeneralSpace extends Scene {
     this.running = false;
     
     console.log('Lobby scene shutdown complete');
+  }
+
+  // Helper method to create leaderboard content
+  private createLeaderboardContent() {
+    console.log("Creating leaderboard content...");
+    
+    // Create logos for top 3 positions
+    LEADBOARD_DATA.forEach((item) => {
+      const logoLayerName = `top${item.rank}Logo`;
+      const nameLayerName = `top${item.rank}Name`;
+      
+      // Add logo if object layer exists
+      if (this.objectLayerData[logoLayerName] && this.objectLayerData[logoLayerName].length > 0) {
+        const logoObj = this.objectLayerData[logoLayerName][0];
+        const logoX = (logoObj.x || 0) + (logoObj.width || 0) / 2;
+        const logoY = (logoObj.y || 0) + (logoObj.height || 0) / 2;
+        
+        const logo = this.add.image(logoX, logoY, `leaderboard_logo_${item.rank}`);
+        logo.setDepth(540); // Above leaderboard background
+        
+        // Scale logo to fit the object area
+        const scaleX = (logoObj.width || 32) / logo.width;
+        const scaleY = (logoObj.height || 32) / logo.height;
+        const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
+        logo.setScale(scale);
+        
+        console.log(`Added logo for rank ${item.rank} at (${logoX}, ${logoY})`);
+        
+        // Add rank number on top of the logo
+        const rankText = this.add.text(logoX - 15, logoY - 15, `#${item.rank}`, {
+          fontSize: "14px",
+          fontFamily: "pixel-font",
+          color: "#FFD700", // Gold color
+          fontStyle: "bold",
+          stroke: "#000000",
+          strokeThickness: 2,
+        }).setOrigin(0.5);
+        
+        rankText.setDepth(550); // Above logo
+        console.log(`Added rank #${item.rank} at (${logoX - 15}, ${logoY - 15})`);
+      }
+      
+      // Add name text if object layer exists
+      if (this.objectLayerData[nameLayerName] && this.objectLayerData[nameLayerName].length > 0) {
+        const nameObj = this.objectLayerData[nameLayerName][0];
+        const nameX = (nameObj.x || 0) + (nameObj.width || 0) / 2;
+        const nameY = (nameObj.y || 0) + (nameObj.height || 0) / 2;
+        
+        const nameText = this.add.text(nameX, nameY, item.name, {
+          fontSize: "12px",
+          fontFamily: "pixel-font",
+          color: "#000000",
+          fontStyle: "bold",
+          align: "center",
+        }).setOrigin(0.5);
+        
+        nameText.setDepth(540); // Above leaderboard background
+        
+        console.log(`Added name "${item.name}" for rank ${item.rank} at (${nameX}, ${nameY})`);
+      }
+    });
   }
 }
 

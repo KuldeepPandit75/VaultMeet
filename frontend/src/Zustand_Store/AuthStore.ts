@@ -81,6 +81,20 @@ export interface User {
   achievements: string;
 }
 
+interface Notification {
+  _id: string;
+  type: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  senderId?: {
+    _id: string;
+    fullname: { firstname: string; lastname: string };
+    avatar?: string;
+    username?: string;
+  };
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
@@ -114,6 +128,97 @@ interface AuthState {
   getUserBySocketId: (socketId: string) => Promise<User>;
   profileBox: string;
   setProfileBox: (modalName:string) => void;
+  
+  // Connection methods
+  sendConnectionRequest: (targetUserId: string) => Promise<{ status: string, message: string }>;
+  respondToConnectionRequest: (senderId: string, action: 'accept' | 'decline') => Promise<void>;
+  getConnectionStatus: (targetUserId: string) => Promise<{ status: string }>;
+  getConnectionsCount: (userId: string) => Promise<{ connectionsCount: number }>;
+  getConnections: (userId: string, page?: number, limit?: number) => Promise<{
+    connections: Array<{
+      _id: string;
+      fullname: { firstname: string; lastname: string };
+      avatar?: string;
+      username?: string;
+      email: string;
+      location?: string;
+    }>;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalConnections: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }>;
+  removeConnection: (targetUserId: string) => Promise<{ message: string }>;
+
+  // Chat methods
+  getConversations: (page?: number, limit?: number) => Promise<{
+    conversations: Array<{
+      conversationId: string;
+      otherUser: {
+        _id: string;
+        fullname: { firstname: string; lastname: string };
+        avatar?: string;
+        username?: string;
+        isOnline?: boolean;
+        lastSeen?: string;
+      };
+      lastMessage: {
+        _id: string;
+        message: string;
+        senderId: string;
+        createdAt: string;
+      };
+      unreadCount: number;
+    }>;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }>;
+  getMessages: (conversationId: string, page?: number, limit?: number) => Promise<{
+    messages: Array<{
+      _id: string;
+      message: string;
+      senderId: { _id: string; fullname: { firstname: string; lastname: string }; avatar?: string };
+      receiverId: { _id: string; fullname: { firstname: string; lastname: string }; avatar?: string };
+      createdAt: string;
+      isRead: boolean;
+    }>;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalMessages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }>;
+  sendMessage: (receiverId: string, message: string) => Promise<{
+    message: string;
+    data: {
+      _id: string;
+      message: string;
+      senderId: { _id: string; fullname: { firstname: string; lastname: string }; avatar?: string };
+      receiverId: { _id: string; fullname: { firstname: string; lastname: string }; avatar?: string };
+      createdAt: string;
+    };
+  }>;
+  markMessagesAsRead: (conversationId: string) => Promise<{ message: string }>;
+  getUnreadMessageCount: () => Promise<{ unreadCount: number }>;
+  
+  // Notification methods
+  notifications: Notification[];
+  unreadNotificationCount: number;
+  getNotifications: () => Promise<void>;
+  markNotificationAsRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+  getUnreadNotificationCount: () => Promise<void>;
+  setNotifications: (notifications: Notification[]) => void;
+  setUnreadNotificationCount: (count: number) => void;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -124,6 +229,8 @@ const useAuthStore = create<AuthState>()(
       user: null,
       loading: false,
       error: null,
+      notifications: [],
+      unreadNotificationCount: 0,
 
       setIsAuthenticated: (value) => set({ isAuthenticated: value }),
 
@@ -396,7 +503,192 @@ const useAuthStore = create<AuthState>()(
       },
 
       profileBox: "close",
-      setProfileBox: (modalName)=>set({profileBox:modalName})
+      setProfileBox: (modalName)=>set({profileBox:modalName}),
+
+      // Connection methods
+      sendConnectionRequest: async (targetUserId: string) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post('/connections/send-request', { targetUserId });
+          set({ loading: false });
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error sending connection request:', error);
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to send connection request',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      respondToConnectionRequest: async (senderId: string, action: 'accept' | 'decline') => {
+        set({ loading: true, error: null });
+        try {
+          await api.post('/connections/respond', { senderId, action });
+          // Refresh notifications after responding
+          const { getNotifications, getUnreadNotificationCount } = useAuthStore.getState();
+          await getNotifications();
+          await getUnreadNotificationCount();
+          set({ loading: false });
+        } catch (error: unknown) {
+          console.error('Error responding to connection request:', error);
+          set({ 
+            error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to respond to connection request',
+            loading: false 
+          });
+          throw error;
+        }
+      },
+
+      getConnectionStatus: async (targetUserId: string) => {
+        try {
+          const response = await api.get(`/connections/status/${targetUserId}`);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting connection status:', error);
+          throw error;
+        }
+      },
+
+      getConnectionsCount: async (userId: string) => {
+        try {
+          const response = await api.get(`/connections/count/${userId}`);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting connections count:', error);
+          throw error;
+        }
+      },
+
+      getConnections: async (userId: string, page = 1, limit = 10) => {
+        try {
+          const response = await api.get(`/connections/${userId}?page=${page}&limit=${limit}`);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting connections:', error);
+          throw error;
+        }
+      },
+
+      removeConnection: async (targetUserId: string) => {
+        try {
+          const response = await api.delete('/connections/remove', { data: { targetUserId } });
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error removing connection:', error);
+          throw error;
+        }
+      },
+
+      // Chat methods
+      getConversations: async (page = 1, limit = 20) => {
+        try {
+          const response = await api.get(`/chat/conversations?page=${page}&limit=${limit}`);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting conversations:', error);
+          throw error;
+        }
+      },
+
+      getMessages: async (conversationId: string, page = 1, limit = 50) => {
+        try {
+          const response = await api.get(`/chat/messages/${conversationId}?page=${page}&limit=${limit}`);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting messages:', error);
+          throw error;
+        }
+      },
+
+      sendMessage: async (receiverId: string, message: string) => {
+        try {
+          const response = await api.post('/chat/send', { receiverId, message });
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error sending message:', error);
+          throw error;
+        }
+      },
+
+      markMessagesAsRead: async (conversationId: string) => {
+        try {
+          const response = await api.patch('/chat/read', { conversationId });
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error marking messages as read:', error);
+          throw error;
+        }
+      },
+
+      getUnreadMessageCount: async () => {
+        try {
+          const response = await api.get('/chat/unread-count');
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error getting unread message count:', error);
+          throw error;
+        }
+      },
+
+      // Notification methods
+      getNotifications: async () => {
+        try {
+          const response = await api.get('/notifications');
+          set({ notifications: response.data.notifications });
+        } catch (error: unknown) {
+          console.error('Error getting notifications:', error);
+          throw error;
+        }
+      },
+
+      markNotificationAsRead: async (notificationId: string) => {
+        try {
+          await api.patch(`/notifications/${notificationId}/read`);
+          // Update local state
+          set((state) => ({
+            notifications: state.notifications.map(notification =>
+              notification._id === notificationId
+                ? { ...notification, isRead: true }
+                : notification
+            )
+          }));
+          // Refresh unread count
+          const { getUnreadNotificationCount } = useAuthStore.getState();
+          await getUnreadNotificationCount();
+        } catch (error: unknown) {
+          console.error('Error marking notification as read:', error);
+          throw error;
+        }
+      },
+
+      markAllNotificationsAsRead: async () => {
+        try {
+          await api.patch('/notifications/read-all');
+          // Update local state
+          set((state) => ({
+            notifications: state.notifications.map(notification => ({ ...notification, isRead: true })),
+            unreadNotificationCount: 0
+          }));
+        } catch (error: unknown) {
+          console.error('Error marking all notifications as read:', error);
+          throw error;
+        }
+      },
+
+      getUnreadNotificationCount: async () => {
+        try {
+          const response = await api.get('/notifications/unread-count');
+          set({ unreadNotificationCount: response.data.unreadCount });
+        } catch (error: unknown) {
+          console.error('Error getting unread notification count:', error);
+          throw error;
+        }
+      },
+
+      setNotifications: (notifications: Notification[]) => set({ notifications }),
+      setUnreadNotificationCount: (count: number) => set({ unreadNotificationCount: count })
     }),
     {
       name: 'hackmeet-auth',

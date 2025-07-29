@@ -298,11 +298,11 @@ export default function EventDetailsPage() {
   };
 
   // Check if user can join virtual space
-  const canJoinVirtualSpace = () => {
-    return isEventStarted() && 
-           userRegistration?.status === 'approved' && 
-           (currentEvent?.mode === 'online' || currentEvent?.mode === 'hybrid');
-  };
+  // const canJoinVirtualSpace = () => {
+  //   return isEventStarted() && 
+  //          userRegistration?.status === 'approved' && 
+  //          (currentEvent?.mode === 'online' || currentEvent?.mode === 'hybrid');
+  // };
 
   // Get registration button text and action
   const getRegistrationButtonProps = () => {
@@ -404,7 +404,8 @@ export default function EventDetailsPage() {
               </button>
               
               {/* Show Join Virtual Space button only for approved users when event has started */}
-              {canJoinVirtualSpace() && (
+              {/* {canJoinVirtualSpace() && ( */}
+              {true && (
                 <button
                   onClick={() => router.push(`/event-space/${event._id}`)}
                   className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 border-2 ${

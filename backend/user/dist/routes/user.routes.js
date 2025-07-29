@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const userController = __importStar(require("../controllers/user.controller.js"));
+const chatController = __importStar(require("../controllers/chat.controller.js"));
 const auth_middleware_js_1 = __importDefault(require("../middlewares/auth.middleware.js"));
 const file_upload_js_1 = require("../config/file.upload.js");
 const auth_controller_js_1 = require("../controllers/auth.controller.js");
@@ -69,4 +70,23 @@ router.post('/google-login', userController.googleLogin);
 router.post('/send-otp', auth_controller_js_1.sendOTP);
 router.post('/verify-otp', auth_controller_js_1.verifyOTP);
 router.post('/reset-password', auth_controller_js_1.resetPassword);
+// Connection request routes
+router.post('/connections/send-request', auth_middleware_js_1.default, userController.sendConnectionRequest);
+router.post('/connections/respond', auth_middleware_js_1.default, userController.respondToConnectionRequest);
+router.get('/connections/status/:targetUserId', auth_middleware_js_1.default, userController.getConnectionStatus);
+// Notification routes
+router.get('/notifications', auth_middleware_js_1.default, userController.getNotifications);
+router.patch('/notifications/:notificationId/read', auth_middleware_js_1.default, userController.markNotificationAsRead);
+router.patch('/notifications/read-all', auth_middleware_js_1.default, userController.markAllNotificationsAsRead);
+router.get('/notifications/unread-count', auth_middleware_js_1.default, userController.getUnreadNotificationCount);
+// Connections routes
+router.get('/connections/count/:userId', auth_middleware_js_1.default, userController.getConnectionsCount);
+router.get('/connections/:userId', auth_middleware_js_1.default, userController.getConnections);
+router.delete('/connections/remove', auth_middleware_js_1.default, userController.removeConnection);
+// Chat routes
+router.get('/chat/conversations', auth_middleware_js_1.default, chatController.getConversations);
+router.get('/chat/messages/:conversationId', auth_middleware_js_1.default, chatController.getMessages);
+router.post('/chat/send', auth_middleware_js_1.default, chatController.sendMessage);
+router.patch('/chat/read', auth_middleware_js_1.default, chatController.markMessagesAsRead);
+router.get('/chat/unread-count', auth_middleware_js_1.default, chatController.getUnreadMessageCount);
 exports.default = router;
