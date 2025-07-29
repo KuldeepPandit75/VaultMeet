@@ -21,7 +21,7 @@ export default function RemoveConnectionModal({
   targetUserName,
   onConnectionRemoved 
 }: RemoveConnectionModalProps) {
-  const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
+  const { isDarkMode } = useThemeStore();
   const { removeConnection } = useAuthStore();
   
   const [isRemoving, setIsRemoving] = useState(false);

@@ -103,14 +103,15 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
 
              // Listen for new messages
        socketOn('new-message', async (data) => {
-         if (data.conversationId === conversation.conversationId) {
+         const messageData = data as { conversationId: string; message: string; senderId: string; timestamp: string };
+         if (messageData.conversationId === conversation.conversationId) {
            // Add the new message to the conversation
            const newMsg: Message = {
              _id: Date.now().toString(),
-             message: data.message,
-             senderId: { _id: data.senderId, fullname: { firstname: '', lastname: '' } },
+             message: messageData.message,
+             senderId: { _id: messageData.senderId, fullname: { firstname: '', lastname: '' } },
              receiverId: { _id: user._id, fullname: { firstname: '', lastname: '' } },
-             createdAt: data.timestamp,
+             createdAt: messageData.timestamp,
              isRead: !isMinimized // Mark as read if chat window is open and not minimized
            };
            setMessages(prev => [...prev, newMsg]);
@@ -130,25 +131,28 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
          }
        });
 
-      // Listen for typing indicators
-      socketOn('user-typing', (data) => {
-        if (data.conversationId === conversation.conversationId) {
-          setIsTyping(data.isTyping);
-        }
-      });
+             // Listen for typing indicators
+       socketOn('user-typing', (data) => {
+         const typingData = data as { conversationId: string; isTyping: boolean };
+         if (typingData.conversationId === conversation.conversationId) {
+           setIsTyping(typingData.isTyping);
+         }
+       });
 
-      // Listen for message sent confirmation
-      socketOn('message-sent', (data) => {
-        if (data.success) {
-          setSending(false);
-        }
-      });
+       // Listen for message sent confirmation
+       socketOn('message-sent', (data) => {
+         const sentData = data as { success: boolean };
+         if (sentData.success) {
+           setSending(false);
+         }
+       });
 
-      // Listen for message errors
-      socketOn('message-error', (data) => {
-        toast.error(data.error || 'Failed to send message');
-        setSending(false);
-      });
+       // Listen for message errors
+       socketOn('message-error', (data) => {
+         const errorData = data as { error?: string };
+         toast.error(errorData.error || 'Failed to send message');
+         setSending(false);
+       });
     }
 
     return () => {

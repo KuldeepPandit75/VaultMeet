@@ -24,7 +24,7 @@ interface ConnectionsModalProps {
 }
 
 export default function ConnectionsModal({ isOpen, onClose, userId, userName }: ConnectionsModalProps) {
-  const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
+  const {  secondaryAccentColor, isDarkMode } = useThemeStore();
   const { getConnections } = useAuthStore();
   
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -82,7 +82,7 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div>
             <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {userName}'s Connections
+              {userName}&apos;s Connections
             </h2>
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
               {pagination.totalConnections} total connections
@@ -109,7 +109,7 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
                 No connections yet
               </p>
               <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'} mt-2`}>
-                {userName} hasn't made any connections yet.
+                {userName} hasn&apos;t made any connections yet.
               </p>
             </div>
           ) : (

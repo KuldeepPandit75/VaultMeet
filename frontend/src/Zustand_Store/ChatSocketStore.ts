@@ -6,8 +6,8 @@ interface ChatSocketState {
   isConnected: boolean;
   connect: () => void;
   disconnect: () => void;
-  emit: (event: string, data: any) => void;
-  on: (event: string, callback: (data: any) => void) => void;
+  emit: (event: string, data: unknown) => void;
+  on: (event: string, callback: (data: unknown) => void) => void;
   off: (event: string) => void;
   joinChat: (userId: string) => void;
   sendMessage: (data: { senderId: string; receiverId: string; message: string; conversationId: string }) => void;
@@ -37,13 +37,13 @@ const useChatSocketStore = create<ChatSocketState>((set, get) => ({
       set({ socket: null, isConnected: false });
     }
   },
-  emit: (event: string, data: any) => {
+  emit: (event: string, data: unknown) => {
     const { socket } = get();
     if (socket) {
       socket.emit(event, data);
     }
   },
-  on: (event: string, callback: (data: any) => void) => {
+  on: (event: string, callback: (data: unknown) => void) => {
     const { socket } = get();
     if (socket) {
       socket.on(event, callback);
