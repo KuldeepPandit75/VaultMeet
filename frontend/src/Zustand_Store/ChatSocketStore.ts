@@ -20,7 +20,7 @@ const useChatSocketStore = create<ChatSocketState>((set, get) => ({
   socket: null,
   isConnected: false,
   connect: () => {
-    const socket = io("http://localhost:4000");
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL);
     socket.on("connect", () => {
       console.log("Connected to chat socket server");
       set({ socket, isConnected: true });
