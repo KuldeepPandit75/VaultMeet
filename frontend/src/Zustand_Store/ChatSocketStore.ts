@@ -20,7 +20,8 @@ const useChatSocketStore = create<ChatSocketState>((set, get) => ({
   socket: null,
   isConnected: false,
   connect: () => {
-    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL + "/chat", {
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
+      path: "/chat/socket.io",
       auth: {
         token: localStorage.getItem("token"),
       },
