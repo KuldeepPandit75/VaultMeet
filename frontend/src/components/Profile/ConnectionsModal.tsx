@@ -24,7 +24,7 @@ interface ConnectionsModalProps {
 }
 
 export default function ConnectionsModal({ isOpen, onClose, userId, userName }: ConnectionsModalProps) {
-  const {  secondaryAccentColor, isDarkMode } = useThemeStore();
+  const { secondaryAccentColor, isDarkMode, primaryAccentColor } = useThemeStore();
   const { getConnections } = useAuthStore();
   
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -77,7 +77,7 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden`}>
+      <div className={`${isDarkMode ? 'bg-[#333]' : 'bg-white'} rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden`}>
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div>
@@ -118,7 +118,7 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
                 <div
                   key={connection._id}
                   className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:scale-[1.02] ${
-                    isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'
+                    isDarkMode ? 'bg-[#222] hover:bg-[#111]' : 'bg-gray-50 hover:bg-gray-100'
                   }`}
                   onClick={() => handleProfileClick(connection)}
                 >
@@ -149,11 +149,9 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
                         {connection.fullname.firstname} {connection.fullname.lastname}
                       </h3>
                       {connection.username && (
-                        <span className={`text-sm px-2 py-1 rounded-full ${
-                          isDarkMode 
-                            ? 'bg-blue-900/30 text-blue-300' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
+                        <span className={`text-sm px-2 py-1 rounded-full`}
+                        style={{ backgroundColor:  `${primaryAccentColor}cc` , color: isDarkMode ? '#000' : '#fff' }}
+                        >
                           @{connection.username}
                         </span>
                       )}
@@ -179,11 +177,8 @@ export default function ConnectionsModal({ isOpen, onClose, userId, userName }: 
 
                   {/* View Profile Button */}
                   <button
-                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                      isDarkMode 
-                        ? 'bg-gray-600 hover:bg-gray-500 text-white' 
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                    }`}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors`}
+                    style={{ backgroundColor: `${primaryAccentColor}cc`, color: isDarkMode ? '#000' : '#fff' }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleProfileClick(connection);

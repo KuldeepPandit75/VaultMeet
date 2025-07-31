@@ -132,13 +132,13 @@ export default function ChatSidebar({ onOpenChat, isAuthenticated }: ChatSidebar
   if (!isAuthenticated) return null;
 
   return (
-    <div className={`fixed bottom-0 right-4 z-50 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-200 rounded-t-lg shadow-lg transition-all duration-300 ${
+    <div className={`fixed bottom-0 right-4 z-50 ${isDarkMode ? 'bg-[#222]' : 'bg-white'} rounded-t-lg shadow-lg transition-all duration-300 overflow-hidden ${
       isCollapsed ? 'h-12' : 'h-96'
     } w-80`}>
       {/* Header */}
       <div 
         className={`flex items-center justify-between p-3 border-b border-gray-200 cursor-pointer ${
-          isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+          isDarkMode ? `hover:bg-[#333]` : 'hover:bg-gray-50'
         }`}
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
@@ -177,11 +177,11 @@ export default function ChatSidebar({ onOpenChat, isAuthenticated }: ChatSidebar
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 text-sm rounded-lg border ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-gray-50 border-gray-300 text-gray-800 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                        className={`w-full pl-10 pr-4 py-2 text-sm rounded-lg ${
+          isDarkMode 
+            ? 'bg-[#111] text-white placeholder-gray-400' 
+            : 'bg-gray-50  text-gray-800 placeholder-gray-500'
+        } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
                 style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}
               />
             </div>
@@ -204,7 +204,7 @@ export default function ChatSidebar({ onOpenChat, isAuthenticated }: ChatSidebar
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 chat-scroll">
                 {filteredConversations.map((conversation) => (
                   <div
                     key={conversation.conversationId}

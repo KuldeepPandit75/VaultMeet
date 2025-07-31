@@ -38,7 +38,7 @@ const CodingSpace = () => {
   const [box, setBox] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
-  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } = useSocketStore();
+  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
@@ -151,6 +151,8 @@ const CodingSpace = () => {
         };
         if (data.senderId !== socket?.id) {
           addMessage(newMessage);
+          // Increment unread count for messages from others
+          incrementUnreadCount();
         }
       }
     );
@@ -234,6 +236,19 @@ const CodingSpace = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
   };
+
+  // Custom setBox function that clears unread count when chat is opened
+  const handleSetBox = (newBox: boolean | ((prev: boolean) => boolean)) => {
+    const actualNewBox = typeof newBox === 'function' ? newBox(box) : newBox;
+    if (actualNewBox && !box) {
+      // Clear unread count when chat is opened
+      clearUnreadCount();
+    }
+    setBox(newBox);
+  };
+
+  // Debug chat box state
+  console.log("Current box state:", box);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -347,6 +362,7 @@ const CodingSpace = () => {
           handleSentMsg={handleSentMsg}
           setTypedMsg={setTypedMsg}
           typedMsg={typedMsg}
+          onChatOpen={clearUnreadCount}
         />
       ) : null}
 
@@ -358,10 +374,11 @@ const CodingSpace = () => {
         handleMicToggle={handleMicToggle}
         handleVideoToggle={handleVideoToggle}
         handleScreenShareToggle={handleScreenShareToggle}
-        setBox={setBox}
+        setBox={handleSetBox}
         viewMode={viewMode}
         handleViewToggle={toggleViewMode}
         isMeetingViewAvailable={remoteUsers.length > 0}
+        unreadCount={unreadCount}
       />
 
       {/* Profile Box */}

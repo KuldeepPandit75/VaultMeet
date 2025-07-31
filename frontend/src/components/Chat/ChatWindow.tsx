@@ -168,7 +168,7 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView();
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -265,13 +265,13 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
   };
 
   return (
-    <div className={`fixed bottom-0 right-96 z-40 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-200 rounded-t-lg shadow-lg transition-all duration-300 ${
+    <div className={`fixed bottom-0 right-96 z-40 ${isDarkMode ? 'bg-[#111]' : 'bg-white'} rounded-t-lg shadow-lg transition-all duration-300 overflow-hidden ${
       isMinimized ? 'h-12' : 'h-96'
     } w-80`}>
       {/* Header */}
-      <div className={`flex items-center justify-between p-3 border-b border-gray-200 ${
-        isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
-      }`}>
+              <div className={`flex items-center justify-between p-3 border-gray-200 ${
+          isDarkMode ? 'bg-[#333]' : 'bg-gray-50'
+        }`}>
         <div className="flex items-center gap-3 flex-1 min-w-0" onClick={onMinimize}>
           {/* Avatar */}
           <div className="relative flex-shrink-0">
@@ -327,7 +327,7 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
       {/* Messages */}
       {!isMinimized && (
         <div className="flex flex-col h-80">
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 chat-scroll">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -367,7 +367,7 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
                             ? 'bg-gray-700 text-white'
                             : 'bg-gray-200 text-gray-800'
                         }`}
-                        style={isOwnMessage ? { backgroundColor: primaryAccentColor } : {}}>
+                        style={isOwnMessage ? { backgroundColor: primaryAccentColor } : isDarkMode ? { backgroundColor: '#333' } : {}}>
                           <p className="text-sm whitespace-pre-wrap">{message.message}</p>
                           <p className={`text-xs mt-1 ${
                             isOwnMessage 
@@ -404,9 +404,9 @@ export default function ChatWindow({ conversation, onClose, onMinimize, isMinimi
                   handleTyping();
                 }}
                 placeholder="Type a message..."
-                className={`flex-1 px-3 py-2 text-sm rounded-lg border ${
+                className={`flex-1 px-3 py-2 text-sm rounded-lg ${
                   isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    ? 'bg-[#333] text-white placeholder-gray-400' 
                     : 'bg-white border-gray-300 text-gray-800 placeholder-gray-500'
                 } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
                 style={{ '--tw-ring-color': primaryAccentColor } as React.CSSProperties}

@@ -19,6 +19,10 @@ interface SocketStore {
   // Whiteboard state
   isWhiteboardOpen: boolean;
   setIsWhiteboardOpen: (open: boolean) => void;
+  // Unread messages tracking
+  unreadCount: number;
+  incrementUnreadCount: () => void;
+  clearUnreadCount: () => void;
 }
 
 export const useSocketStore = create<SocketStore>((set) => ({
@@ -46,4 +50,8 @@ export const useSocketStore = create<SocketStore>((set) => ({
   // Whiteboard state
   isWhiteboardOpen: false,
   setIsWhiteboardOpen: (open) => set({ isWhiteboardOpen: open }),
+  // Unread messages tracking
+  unreadCount: 0,
+  incrementUnreadCount: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
+  clearUnreadCount: () => set({ unreadCount: 0 }),
 })); 

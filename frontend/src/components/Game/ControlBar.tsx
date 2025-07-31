@@ -20,10 +20,11 @@ interface ControlBarProps {
   handleMicToggle: () => void;
   handleVideoToggle: () => void;
   handleScreenShareToggle: () => void;
-  setBox: (box: (prev: boolean) => boolean) => void;
+  setBox: (box: boolean | ((prev: boolean) => boolean)) => void;
   viewMode: "game" | "meeting" | "whiteboard";
   handleViewToggle: () => void;
   isMeetingViewAvailable: boolean;
+  unreadCount?: number;
 }
 
 export const ControlBar = ({
@@ -36,6 +37,7 @@ export const ControlBar = ({
   setBox,
   viewMode,
   handleViewToggle,
+  unreadCount = 0,
 }: ControlBarProps) => {
   const { user } = useAuthStore();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
@@ -176,7 +178,7 @@ export const ControlBar = ({
 
           {/* Chat Button */}
           <button
-            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg relative"
             onClick={() => setBox((prev: boolean) => !prev)}
             style={{
               backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
@@ -185,6 +187,19 @@ export const ControlBar = ({
             }}
           >
             <FontAwesomeIcon icon={faMessage} className="text-lg" />
+            {/* Unread message indicator */}
+            {unreadCount > 0 && (
+              <div
+                className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg"
+                style={{
+                  backgroundColor: "#ef4444",
+                  minWidth: "20px",
+                  minHeight: "20px",
+                }}
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </div>
+            )}
           </button>
         </div>
       </div>

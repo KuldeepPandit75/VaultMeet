@@ -3,6 +3,7 @@
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import useChatStore, { Conversation } from '@/Zustand_Store/ChatStore';
+import './style.css';
 
 interface ChatContainerProps {
   isAuthenticated: boolean;

@@ -3,6 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Message } from "@/Zustand_Store/SocketStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { Socket } from "socket.io-client";
+import { useEffect, useState } from "react";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 interface ChatBoxProps {
   messages: Message[];
@@ -10,19 +12,62 @@ interface ChatBoxProps {
   handleSentMsg: () => void;
   setTypedMsg: (msg: string) => void;
   typedMsg: string;
+  onChatOpen?: () => void;
 }
 
-export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg }: ChatBoxProps) => {
+export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg, onChatOpen }: ChatBoxProps) => {
   const { primaryAccentColor, isDarkMode } = useThemeStore();
+  const { getUserBySocketId } = useAuthStore();
+  const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
+
+  // Clear unread count when chat box is opened
+  useEffect(() => {
+    if (onChatOpen) {
+      onChatOpen();
+    }
+  }, [onChatOpen]);
+
+  // Fetch usernames for message senders
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      const names: { [key: string]: string } = {};
+      const uniqueSenderIds = [...new Set(messages.map(msg => msg.senderId))];
+      
+      for (const senderId of uniqueSenderIds) {
+        if (senderId !== socket?.id && !userNames[senderId]) {
+          try {
+            const userData = await getUserBySocketId(senderId);
+            names[senderId] = userData.fullname?.firstname || `User ${senderId.slice(-4)}`;
+          } catch (error) {
+            console.error("Error fetching user name:", error);
+            names[senderId] = `User ${senderId.slice(-4)}`;
+          }
+        }
+      }
+      
+      setUserNames(prev => ({ ...prev, ...names }));
+    };
+
+    if (messages.length > 0) {
+      fetchUserNames();
+    }
+  }, [messages, socket?.id, getUserBySocketId, userNames]);
+
+  const getDisplayName = (senderId: string) => {
+    if (senderId === socket?.id) {
+      return 'You';
+    }
+    return userNames[senderId] || `User ${senderId.slice(-4)}`;
+  };
 
   return (
     <div 
       className="z-50 h-[60vh] w-[25vw] absolute bottom-20 right-10 rounded-lg !p-5 flex flex-col shadow-2xl border"
       style={{ 
-        backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-        borderColor: isDarkMode ? '#333333' : '#e5e5e5',
+        backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+        borderColor: isDarkMode ? '#1a1a1a' : '#e5e5e5',
         boxShadow: isDarkMode 
-          ? '0 25px 50px -12px rgba(0, 0, 0, 0.8)' 
+          ? '0 25px 50px -12px rgba(0, 0, 0, 0.9)' 
           : '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
       }}
     >
@@ -54,7 +99,7 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
                 style={{
                   backgroundColor: msg.senderId === socket?.id 
                     ? primaryAccentColor 
-                    : isDarkMode ? '#2a2a2a' : '#f5f5f5',
+                    : isDarkMode ? '#0a0a0a' : '#f5f5f5',
                   color: msg.senderId === socket?.id 
                     ? '#ffffff' 
                     : isDarkMode ? '#ffffff' : '#1a1a1a',
@@ -62,12 +107,12 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
                   overflowWrap: 'break-word',
                   whiteSpace: 'pre-line',
                   boxShadow: isDarkMode
-                    ? '0 2px 8px rgba(0,0,0,0.5)'
+                    ? '0 2px 8px rgba(0,0,0,0.7)'
                     : '0 2px 8px rgba(0,0,0,0.08)'
                 }}
               >
                 <div className="text-sm font-medium mb-1 opacity-70 truncate" style={{ maxWidth: '100%' }}>
-                  {msg.senderId === socket?.id ? 'You' : `User ${msg.senderId.slice(-4)}`}
+                  {getDisplayName(msg.senderId)}
                 </div>
                 <div className="text-sm leading-relaxed break-words" style={{ maxWidth: '100%' }}>
                   {msg.message}
@@ -99,10 +144,10 @@ export const ChatBox = ({ messages, socket, handleSentMsg, setTypedMsg, typedMsg
             }
           }}
           style={{
-            backgroundColor: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+            backgroundColor: isDarkMode ? '#0a0a0a' : '#f5f5f5',
             color: isDarkMode ? '#ffffff' : '#1a1a1a',
-            border: `1px solid ${isDarkMode ? '#333333' : '#e5e5e5'}`,
-            boxShadow: isDarkMode ? 'inset 0 1px 3px rgba(0, 0, 0, 0.3)' : 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: `1px solid ${isDarkMode ? '#1a1a1a' : '#e5e5e5'}`,
+            boxShadow: isDarkMode ? 'inset 0 1px 3px rgba(0, 0, 0, 0.5)' : 'inset 0 1px 3px rgba(0, 0, 0, 0.1)',
             maxWidth: '100%',
             minWidth: 0
           }}

@@ -45,7 +45,7 @@ const EventSpace = () => {
   const [box, setBox] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
-  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen } =
+  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } =
     useSocketStore();
   const { user, getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { getEventById, currentEvent, loading: eventLoading } = useEventStore();
@@ -191,6 +191,8 @@ const EventSpace = () => {
         };
         if (data.senderId !== socket?.id) {
           addMessage(newMessage);
+          // Increment unread count for messages from others
+          incrementUnreadCount();
         }
       }
     );
@@ -284,6 +286,16 @@ const EventSpace = () => {
   const closeWhiteboard = () => {
     setIsWhiteboardOpen(false);
     setViewMode("game");
+  };
+
+  // Custom setBox function that clears unread count when chat is opened
+  const handleSetBox = (newBox: boolean | ((prev: boolean) => boolean)) => {
+    const actualNewBox = typeof newBox === 'function' ? newBox(box) : newBox;
+    if (actualNewBox && !box) {
+      // Clear unread count when chat is opened
+      clearUnreadCount();
+    }
+    setBox(newBox);
   };
 
   // Cleanup on component unmount
@@ -440,6 +452,7 @@ const EventSpace = () => {
           handleSentMsg={handleSentMsg}
           setTypedMsg={setTypedMsg}
           typedMsg={typedMsg}
+          onChatOpen={clearUnreadCount}
         />
       ) : null}
 
@@ -451,10 +464,11 @@ const EventSpace = () => {
         handleMicToggle={handleMicToggle}
         handleVideoToggle={handleVideoToggle}
         handleScreenShareToggle={handleScreenShareToggle}
-        setBox={setBox}
+        setBox={handleSetBox}
         viewMode={viewMode}
         handleViewToggle={toggleViewMode}
         isMeetingViewAvailable={remoteUsers.length > 0}
+        unreadCount={unreadCount}
       />
 
       {/* Profile Box */}

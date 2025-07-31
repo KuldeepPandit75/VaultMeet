@@ -1,0 +1,18 @@
+/* For Chrome, Edge, and Safari */
+.chat-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  border-radius: 8px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 8px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
