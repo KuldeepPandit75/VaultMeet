@@ -11,6 +11,7 @@ import {
   toggleMicrophone,
   toggleScreenShare,
   cleanupAgoraClient,
+  onScreenShareStateChange,
 } from "@/components/Game/agora";
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
@@ -24,6 +25,7 @@ import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
 import Image from "next/image";
+import useChatStore from "@/Zustand_Store/ChatStore";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
@@ -35,11 +37,11 @@ const CodingSpace = () => {
   const [mic, setMic] = useState(false);
   const [video, setVideo] = useState(false);
   const [screenShare, setScreenShare] = useState(false);
-  const [box, setBox] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
@@ -74,8 +76,6 @@ const CodingSpace = () => {
   useEffect(() => {
     const handleVideoContainerCreated = (event: CustomEvent) => {
       console.log("Video container created for user:", event.detail.userId);
-      // Force a re-render by updating a state
-      setBox((prev) => prev); // This will trigger a re-render
     };
 
     window.addEventListener(
@@ -120,6 +120,14 @@ const CodingSpace = () => {
     };
   }, [currentRoomId, setIsWhiteboardOpen]);
 
+  // Register screen share state change callback
+  useEffect(() => {
+    onScreenShareStateChange((isSharing: boolean) => {
+      console.log("Screen share state changed:", isSharing);
+      setScreenShare(isSharing);
+    });
+  }, []);
+
   useEffect(() => {
     console.log(socket,currentRoomId)
     if (!socket) return;
@@ -152,7 +160,10 @@ const CodingSpace = () => {
         if (data.senderId !== socket?.id) {
           addMessage(newMessage);
           // Increment unread count for messages from others
-          incrementUnreadCount();
+          if(!isInGameChatOpen){
+            console.log("incrementing unread count")
+            incrementUnreadCount();
+          }
         }
       }
     );
@@ -175,7 +186,7 @@ const CodingSpace = () => {
       // Clean up Agora client
       cleanupAgoraClient();
     };
-  }, [socket, addMessage, setIsWhiteboardOpen]); // Removed currentRoomId dependency
+  }, [socket, addMessage, setIsWhiteboardOpen, isInGameChatOpen]); // Added box dependency
 
   // Fetch user names for remote users
   useEffect(() => {
@@ -238,17 +249,16 @@ const CodingSpace = () => {
   };
 
   // Custom setBox function that clears unread count when chat is opened
-  const handleSetBox = (newBox: boolean | ((prev: boolean) => boolean)) => {
-    const actualNewBox = typeof newBox === 'function' ? newBox(box) : newBox;
-    if (actualNewBox && !box) {
+  const handleSetBox = (newBox: boolean) => {
+    if (!isInGameChatOpen) {
       // Clear unread count when chat is opened
       clearUnreadCount();
     }
-    setBox(newBox);
+    setIsInGameChatOpen(newBox);
   };
 
   // Debug chat box state
-  console.log("Current box state:", box);
+  console.log("Current box state:", isInGameChatOpen);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -355,7 +365,7 @@ const CodingSpace = () => {
       )}
 
       {/* Chat Box */}
-      {box ? (
+      {isInGameChatOpen ? (
         <ChatBox
           messages={messages}
           socket={socket}

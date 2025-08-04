@@ -30,6 +30,12 @@ interface ChatStore {
   closeChat: (conversationId: string) => void;
   minimizeChat: (conversationId: string) => void;
   closeAllChats: () => void;
+  isInGameChatOpen: boolean;
+  setIsInGameChatOpen: (isInGameChatOpen: boolean) => void;
+  gameChatTab: string;
+  setGameChatTab: (gameChatTab: "game" | "general") => void;
+  gameChatSelectedConversation: Conversation | null;
+  setGameChatSelectedConversation: (conversation: Conversation | null) => void;
 }
 
 const useChatStore = create<ChatStore>((set, get) => ({
@@ -79,6 +85,15 @@ const useChatStore = create<ChatStore>((set, get) => ({
   closeAllChats: () => {
     set({ openChats: [] });
   },
+
+  isInGameChatOpen: false,
+  setIsInGameChatOpen: (isInGameChatOpen: boolean) => set({ isInGameChatOpen }),
+
+  gameChatTab: "game",
+  setGameChatTab: (gameChatTab: "game" | "general") => set({ gameChatTab }),
+  
+  gameChatSelectedConversation: null,
+  setGameChatSelectedConversation: (conversation: Conversation | null) => set({ gameChatSelectedConversation: conversation }),
 }));
 
 export default useChatStore; 

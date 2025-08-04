@@ -24,6 +24,7 @@ class GeneralSpace extends Scene {
   private whiteboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string;
   private objectLayerData: { [key: string]: Phaser.Types.Tilemaps.TiledObject[] } = {};
+  private proximityCircle?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: "GeneralSpace" });
@@ -413,10 +414,8 @@ class GeneralSpace extends Scene {
     this.player.setFrame(117);
 
     // Add player name text below the avatar
-    const user = useAuthStore.getState().user;
-    const playerName = user
-      ? `${user.fullname.firstname} ${user.fullname.lastname}`
-      : "You";
+    // const user = useAuthStore.getState().user;
+    const playerName = "You"
     this.playerNameText = this.add
       .text(this.player.x, this.player.y + 40, playerName, {
         fontSize: "10px",
@@ -467,6 +466,9 @@ class GeneralSpace extends Scene {
       });
     });
 
+    // Create proximity circle
+    this.createProximityCircle();
+
     // this.physics.world.createDebugGraphic();
     // layers["Boundary"].renderDebug(this.add.graphics(), {
     //   tileColor: null, // Color of non-colliding tiles
@@ -489,7 +491,7 @@ class GeneralSpace extends Scene {
       try {
         const user = await useAuthStore.getState().getUserBySocketId(playerId);
         const name = user
-          ? `${user.fullname.firstname} ${user.fullname.lastname}`
+          ? `${user.username}`
           : playerId;
         this.otherPlayerNameTexts[playerId] = this.add
           .text(x, y + 40, name, {
@@ -648,7 +650,7 @@ class GeneralSpace extends Scene {
   }
 
   update(time: number) {
-    const speed = this.running ? 150 : 100;
+    const speed = this.running ? 250 : 200;
 
     let dirX = 0;
     let dirY = 0;
@@ -805,6 +807,9 @@ class GeneralSpace extends Scene {
     if (this.player && this.playerNameText) {
       this.playerNameText.setPosition(this.player.x, this.player.y + 40);
     }
+
+    // Update proximity circle position
+    this.updateProximityCircle();
   }
 
   shutdown() {
@@ -847,6 +852,11 @@ class GeneralSpace extends Scene {
     // Clean up whiteboard prompt
     if (this.whiteboardPrompt && this.whiteboardPrompt.destroy) {
       this.whiteboardPrompt.destroy();
+    }
+
+    // Clean up proximity circle
+    if (this.proximityCircle && this.proximityCircle.destroy) {
+      this.proximityCircle.destroy();
     }
 
     // Reset state
@@ -916,6 +926,31 @@ class GeneralSpace extends Scene {
         console.log(`Added name "${item.name}" for rank ${item.rank} at (${nameX}, ${nameY})`);
       }
     });
+  }
+
+  // Helper method to create proximity circle
+  private createProximityCircle() {
+    if (!this.player) return;
+    
+    this.proximityCircle = this.add.graphics();
+    this.proximityCircle.setDepth(100); // Below player but above tiles
+    
+    // Draw the circle with a semi-transparent fill and border
+    this.proximityCircle.lineStyle(2, 0x00ff00, 0.8); // Green border
+    this.proximityCircle.fillStyle(0x00ff00, 0.1); // Light green fill
+    this.proximityCircle.strokeCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+    this.proximityCircle.fillCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+  }
+
+  // Helper method to update proximity circle position
+  private updateProximityCircle() {
+    if (this.proximityCircle && this.player) {
+      this.proximityCircle.clear();
+      this.proximityCircle.lineStyle(2, 0x00ff00, 0.8); // Green border
+      this.proximityCircle.fillStyle(0x00ff00, 0.1); // Light green fill
+      this.proximityCircle.strokeCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+      this.proximityCircle.fillCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+    }
   }
 }
 

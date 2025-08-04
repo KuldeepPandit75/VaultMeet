@@ -30,6 +30,7 @@ class Lobby extends Scene {
   private computerArea: { x: number; y: number; width: number; height: number } | null = null;
   private isNearComputer: boolean = false;
   private computerPrompt?: Phaser.GameObjects.Text;
+  private proximityCircle?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super({ key: "Lobby" });
@@ -444,6 +445,9 @@ class Lobby extends Scene {
       });
     });
 
+    // Create proximity circle
+    this.createProximityCircle();
+
     // this.physics.world.createDebugGraphic();
     // layers["Boundary"].renderDebug(this.add.graphics(), {
     //   tileColor: null, // Color of non-colliding tiles
@@ -503,9 +507,17 @@ class Lobby extends Scene {
       this.otherPlayers[playerId].on("pointerout", () => {
         this.otherPlayers[playerId].clearTint();
       });
-      this.otherPlayers[playerId].on("pointerdown", () => {
+      this.otherPlayers[playerId].on("pointerdown", (pointer: Phaser.Input.Pointer) => {
         if (this.nearbyPlayers.includes(playerId)) {
-          useAuthStore.getState().setProfileBox(playerId);
+          // Check if Ctrl key is pressed during click
+          if (pointer.event.ctrlKey) {
+            // Ctrl+click action - you can customize this action
+            console.log(`Ctrl+clicked on player: ${playerId}`);
+            this.handleCtrlClickOnPlayer(playerId);
+          } else {
+            // Regular click action
+            useAuthStore.getState().setProfileBox(playerId);
+          }
         }
       });
     }
@@ -621,7 +633,7 @@ class Lobby extends Scene {
   }
 
   update(time: number) {
-    const speed = this.running ? 150 : 100;
+    const speed = this.running ? 250 : 200;
 
     let dirX = 0;
     let dirY = 0;
@@ -805,6 +817,9 @@ class Lobby extends Scene {
     if (this.player && this.playerNameText) {
       this.playerNameText.setPosition(this.player.x, this.player.y + 40);
     }
+
+    // Update proximity circle position
+    this.updateProximityCircle();
   }
 
   shutdown() {
@@ -854,12 +869,63 @@ class Lobby extends Scene {
       this.computerPrompt.destroy();
     }
 
+    // Clean up proximity circle
+    if (this.proximityCircle && this.proximityCircle.destroy) {
+      this.proximityCircle.destroy();
+    }
+
     // Reset state
     this.nearbyPlayers = [];
     this.isNearWhiteboard = false;
     this.running = false;
     
     console.log('Lobby scene shutdown complete');
+  }
+
+  // Helper method to create proximity circle
+  private createProximityCircle() {
+    if (!this.player) return;
+    
+    this.proximityCircle = this.add.graphics();
+    this.proximityCircle.setDepth(100); // Below player but above tiles
+    
+    // Draw the circle with a semi-transparent fill and border
+    this.proximityCircle.lineStyle(2, 0x00ff00, 0.8); // Green border
+    this.proximityCircle.fillStyle(0x00ff00, 0.1); // Light green fill
+    this.proximityCircle.strokeCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+    this.proximityCircle.fillCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+  }
+
+  // Helper method to update proximity circle position
+  private updateProximityCircle() {
+    if (this.proximityCircle && this.player) {
+      this.proximityCircle.clear();
+      this.proximityCircle.lineStyle(2, 0x00ff00, 0.8); // Green border
+      this.proximityCircle.fillStyle(0x00ff00, 0.1); // Light green fill
+      this.proximityCircle.strokeCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+      this.proximityCircle.fillCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
+    }
+  }
+
+  // Handle Ctrl+click on player avatar
+  private handleCtrlClickOnPlayer(playerId: string) {
+    // You can customize this action based on your requirements
+    // For example: open chat, send friend request, view detailed profile, etc.
+    console.log(`Ctrl+click action triggered for player: ${playerId}`);
+    
+    // Example: Dispatch a custom event to notify React components
+    const ctrlClickEvent = new CustomEvent('playerCtrlClick', {
+      detail: {
+        playerId: playerId,
+        action: 'ctrlClick'
+      }
+    });
+    window.dispatchEvent(ctrlClickEvent);
+    
+    // You can also emit a socket event if needed
+    this.socket?.emit("startConversation", {
+      targetSocketId: playerId,
+    });
   }
 }
 

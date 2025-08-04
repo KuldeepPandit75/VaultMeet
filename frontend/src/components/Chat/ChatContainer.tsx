@@ -3,7 +3,6 @@
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import useChatStore, { Conversation } from '@/Zustand_Store/ChatStore';
-import './style.css';
 
 interface ChatContainerProps {
   isAuthenticated: boolean;
@@ -43,7 +42,7 @@ export default function ChatContainer({ isAuthenticated }: ChatContainerProps) {
         <div
           key={openChat.conversation.conversationId}
           style={getChatWindowStyle(index)}
-          className="fixed bottom-0 z-40"
+          className="fixed bottom-0 z-50"
         >
           <ChatWindow
             conversation={openChat.conversation}

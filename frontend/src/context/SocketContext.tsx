@@ -71,7 +71,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     console.log("Current path:", path, "Socket connected:", isConnected);
     
     // Connect socket for specific pages that need it
-    const needsSocket = path.includes('coding-space') || 
+    const needsSocket = path.includes('room') || 
                        path.includes('event-space') || 
                        path.includes('test') ||
                        path.includes('whiteboard');

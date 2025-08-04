@@ -19,6 +19,21 @@ let localScreenTrack: ILocalVideoTrack | null = null; // Screen track type
 let currentChannel: string | null = null;
 let isScreenSharing = false;
 
+// Callback function for screen share state changes
+let screenShareStateCallback: ((isSharing: boolean) => void) | null = null;
+
+// Function to register screen share state callback
+export const onScreenShareStateChange = (callback: (isSharing: boolean) => void) => {
+  screenShareStateCallback = callback;
+};
+
+// Function to notify about screen share state changes
+const notifyScreenShareStateChange = (isSharing: boolean) => {
+  isScreenSharing = isSharing;
+  if (screenShareStateCallback) {
+    screenShareStateCallback(isSharing);
+  }
+};
 
 export default async function initializeClient(
   socket: Socket
@@ -33,31 +48,43 @@ export default async function initializeClient(
 }
 
 async function createLocalMediaTracks() {
+  const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+  
+  // Create audio track independently
   try {
-    const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
-    
-    // NEW: Optimized media track creation with bandwidth settings
     localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
       encoderConfig: "music_standard", // Better quality for voice
     });
     
-    localVideoTrack = await AgoraRTC.createCameraVideoTrack({
-      encoderConfig: "480p_1", // Lower resolution for better performance
-      facingMode: "user",
-    });
-
-    // Initially disable tracks
+    // Initially mute audio track
     if (localAudioTrack) {
       localAudioTrack.setEnabled(true);
       localAudioTrack.setMuted(true);
     }
+    
+    console.log("Audio track created successfully");
+  } catch (error) {
+    console.error("Error creating audio track:", error);
+    localAudioTrack = null;
+  }
+
+  // Create video track independently
+  try {
+    localVideoTrack = await AgoraRTC.createCameraVideoTrack({
+      encoderConfig: "480p_1", // Lower resolution for better performance
+      facingMode: "user",
+    });
+    
+    // Initially mute video track
     if (localVideoTrack) {
       localVideoTrack.setEnabled(true);
       localVideoTrack.setMuted(true);
     }
-
+    
+    console.log("Video track created successfully");
   } catch (error) {
-    console.error("Error creating media tracks:", error);
+    console.error("Error creating video track:", error);
+    localVideoTrack = null;
   }
 }
 
@@ -69,13 +96,29 @@ async function joinChannel(channelName: string, uid: string) {
     await client.join(appId, channelName, token, uid);
     console.log("Successfully joined channel");
 
-    // Publish tracks after joining
-    if (localAudioTrack && localVideoTrack) {
-      console.log("Publishing local tracks");
-      await client.publish([localAudioTrack, localVideoTrack]);
+    // Publish available tracks after joining
+    const tracksToPublish = [];
+    
+    if (localAudioTrack) {
+      tracksToPublish.push(localAudioTrack);
+      console.log("Audio track added for publishing");
+    } else {
+      console.log("No audio track available");
+    }
+    
+    if (localVideoTrack) {
+      tracksToPublish.push(localVideoTrack);
+      console.log("Video track added for publishing");
+    } else {
+      console.log("No video track available");
+    }
+    
+    if (tracksToPublish.length > 0) {
+      console.log(`Publishing ${tracksToPublish.length} track(s)`);
+      await client.publish(tracksToPublish);
       console.log("Local tracks published successfully");
     } else {
-      console.log("No local tracks available to publish");
+      console.log("No tracks available to publish");
     }
 
     currentChannel = channelName;
@@ -254,13 +297,111 @@ export const toggleCamera = async () => {
     const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
     if (localPlayerContainer) {
       if (!isMuted) {
-        // We're muting now — optionally stop showing video
-        localVideoTrack.stop(); // Uncomment if you want to remove video feed
+        // We're muting now — stop the video track
+        localVideoTrack.stop();
+        localPlayerContainer.style.display = "none";
       } else {
         // We're unmuting now — play the video
-        localVideoTrack.play(localPlayerContainer);
+        await localVideoTrack.play(localPlayerContainer);
+        localPlayerContainer.style.display = "block";
       }
     }
+  }
+};
+
+// Function to get available media devices
+export const getAvailableDevices = async () => {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    
+    const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
+    const videoInputDevices = devices.filter(device => device.kind === 'videoinput');
+    
+    return {
+      audioInputDevices,
+      videoInputDevices
+    };
+  } catch (error) {
+    console.error("Error getting available devices:", error);
+    return {
+      audioInputDevices: [],
+      videoInputDevices: []
+    };
+  }
+};
+
+// Function to switch audio input device
+export const switchAudioDevice = async (deviceId: string) => {
+  if (!client) return false;
+  
+  try {
+    const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+    
+    // Create new audio track with selected device
+    const newAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+      microphoneId: deviceId,
+      encoderConfig: "music_standard",
+    });
+    
+    // Unpublish old track if it exists
+    if (localAudioTrack) {
+      await client.unpublish(localAudioTrack);
+      localAudioTrack.close();
+    }
+    
+    localAudioTrack = newAudioTrack;
+    
+    // Publish new audio track
+    if (localAudioTrack) {
+      await client.publish(localAudioTrack);
+    }
+    
+    console.log("Audio device switched successfully");
+    return true;
+  } catch (error) {
+    console.error("Error switching audio device:", error);
+    return false;
+  }
+};
+
+// Function to switch video input device
+export const switchVideoDevice = async (deviceId: string) => {
+  if (!client) return false;
+  
+  try {
+    const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+    
+    // Create new video track with selected device
+    const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
+      cameraId: deviceId,
+      encoderConfig: "480p_1",
+      facingMode: "user",
+    });
+    
+    // Unpublish old track if it exists
+    if (localVideoTrack) {
+      await client.unpublish(localVideoTrack);
+      localVideoTrack.close();
+    }
+    
+    localVideoTrack = newVideoTrack;
+    
+    // Publish new video track
+    if (localVideoTrack) {
+      await client.publish(localVideoTrack);
+      
+      // Update local video display
+      const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
+      if (localPlayerContainer && !localVideoTrack.muted) {
+        await localVideoTrack.play(localPlayerContainer);
+      }
+    }
+    
+    console.log("Video device switched successfully");
+    return true;
+  } catch (error) {
+    console.error("Error switching video device:", error);
+    return false;
   }
 };
 
@@ -268,6 +409,40 @@ export const toggleMicrophone = async () => {
   if (localAudioTrack) {
     const isMuted = localAudioTrack.muted;
     await localAudioTrack.setMuted(!isMuted);
+  }
+};
+
+// Function to retry creating video track (useful when camera becomes available)
+export const retryVideoTrack = async () => {
+  if (!client) return false;
+  
+  try {
+    const AgoraRTC = (await import("agora-rtc-sdk-ng")).default;
+    
+    // Try to create video track again
+    const newVideoTrack = await AgoraRTC.createCameraVideoTrack({
+      encoderConfig: "480p_1",
+      facingMode: "user",
+    });
+    
+    localVideoTrack = newVideoTrack;
+    
+    // Initially mute the video track
+    if (localVideoTrack) {
+      localVideoTrack.setEnabled(true);
+      localVideoTrack.setMuted(true);
+    }
+    
+    // Publish the new video track if we're in a channel
+    if (currentChannel && localVideoTrack) {
+      await client.publish(localVideoTrack);
+    }
+    
+    console.log("Video track created and published successfully");
+    return true;
+  } catch (error) {
+    console.error("Error retrying video track creation:", error);
+    return false;
   }
 };
 
@@ -286,11 +461,51 @@ async function createScreenTrack() {
       localScreenTrack = screenTrackResult;
     }
     
+    // Add event listener for when screen sharing ends externally
+    if (localScreenTrack) {
+      localScreenTrack.on("track-ended", () => {
+        console.log("Screen sharing ended by user (external)");
+        handleScreenShareEndedExternally();
+      });
+    }
+    
     console.log("Screen track created successfully");
     return localScreenTrack;
   } catch (error) {
     console.error("Error creating screen track:", error);
     return null;
+  }
+}
+
+// Function to handle screen share ending externally (from browser popup)
+async function handleScreenShareEndedExternally() {
+  if (!client || !currentChannel) {
+    console.error("Client not connected or no channel");
+    return;
+  }
+
+  try {
+    console.log("Handling external screen share stop...");
+    
+    // Unpublish screen track
+    if (localScreenTrack) {
+      await client.unpublish(localScreenTrack);
+      localScreenTrack.close();
+      localScreenTrack = null;
+      console.log("Unpublished and closed screen track");
+    }
+
+    // Republish video track if available
+    if (localVideoTrack) {
+      await client.publish(localVideoTrack);
+      console.log("Republished video track");
+    }
+    
+    // Notify about state change
+    notifyScreenShareStateChange(false);
+    console.log("Screen share stopped externally");
+  } catch (error) {
+    console.error("Error handling external screen share stop:", error);
   }
 }
 
@@ -321,7 +536,8 @@ export const startScreenShare = async () => {
     await client.publish(screenTrack);
     console.log("Published screen track");
     
-    isScreenSharing = true;
+    // Notify about state change
+    notifyScreenShareStateChange(true);
     return true;
   } catch (error) {
     console.error("Error starting screen share:", error);
@@ -353,7 +569,8 @@ export const stopScreenShare = async () => {
       console.log("Republished video track");
     }
     
-    isScreenSharing = false;
+    // Notify about state change
+    notifyScreenShareStateChange(false);
     return true;
   } catch (error) {
     console.error("Error stopping screen share:", error);

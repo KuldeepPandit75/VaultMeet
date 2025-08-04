@@ -11,6 +11,7 @@ import {
   toggleMicrophone,
   toggleScreenShare,
   cleanupAgoraClient,
+  onScreenShareStateChange,
 } from "@/components/Game/agora";
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
@@ -32,6 +33,7 @@ import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
 import Image from "next/image";
 import useEventStore from "@/Zustand_Store/EventStore";
 import { useParams, useRouter } from "next/navigation";
+import useChatStore from "@/Zustand_Store/ChatStore";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
   _video_muted_?: boolean;
@@ -42,12 +44,12 @@ const EventSpace = () => {
   const [mic, setMic] = useState(false);
   const [video, setVideo] = useState(false);
   const [screenShare, setScreenShare] = useState(false);
-  const [box, setBox] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } =
     useSocketStore();
   const { user, getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { getEventById, currentEvent, loading: eventLoading } = useEventStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
   const [userDatas, setUserDatas] = useState<
@@ -116,7 +118,7 @@ const EventSpace = () => {
     const handleVideoContainerCreated = (event: CustomEvent) => {
       console.log("Video container created for user:", event.detail.userId);
       // Force a re-render by updating a state
-      setBox((prev) => prev); // This will trigger a re-render
+      setIsInGameChatOpen(!isInGameChatOpen); // This will trigger a re-render
     };
 
     window.addEventListener(
@@ -160,6 +162,14 @@ const EventSpace = () => {
       );
     };
   }, [currentRoomId, setIsWhiteboardOpen]);
+
+  // Register screen share state change callback
+  useEffect(() => {
+    onScreenShareStateChange((isSharing: boolean) => {
+      console.log("Screen share state changed:", isSharing);
+      setScreenShare(isSharing);
+    });
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
@@ -289,13 +299,12 @@ const EventSpace = () => {
   };
 
   // Custom setBox function that clears unread count when chat is opened
-  const handleSetBox = (newBox: boolean | ((prev: boolean) => boolean)) => {
-    const actualNewBox = typeof newBox === 'function' ? newBox(box) : newBox;
-    if (actualNewBox && !box) {
+  const handleSetBox = (newBox: boolean) => {
+    if (!isInGameChatOpen) {
       // Clear unread count when chat is opened
       clearUnreadCount();
     }
-    setBox(newBox);
+    setIsInGameChatOpen(newBox);
   };
 
   // Cleanup on component unmount
@@ -445,7 +454,7 @@ const EventSpace = () => {
       )}
 
       {/* Chat Box */}
-      {box ? (
+      {isInGameChatOpen ? (
         <ChatBox
           messages={messages}
           socket={socket}

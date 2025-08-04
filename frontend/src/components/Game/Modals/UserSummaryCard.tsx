@@ -4,46 +4,49 @@ import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import type { User } from "@/Zustand_Store/AuthStore";
 import { useSocket } from "@/context/SocketContext";
+import useChatStore, { Conversation } from "@/Zustand_Store/ChatStore";
 
 interface UserCardProps {
   onClose: () => void;
 }
 
 const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
-  const { setProfileBox, profileBox, getUserBySocketId } = useAuthStore();
+  const { setProfileBox, profileBox, getUserBySocketId, getConversations } = useAuthStore();
   const [user, setUser] = useState<User | null>();
-  const { isDarkMode, primaryAccentColor, secondaryAccentColor } = useThemeStore();
+  const { isDarkMode, primaryAccentColor, secondaryAccentColor } =
+    useThemeStore();
   const { socket } = useSocket();
   const [talkLoading, setTalkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setIsInGameChatOpen, setGameChatTab, openChat, setGameChatSelectedConversation } = useChatStore();
 
-  useEffect(()=>{
-      const fetchUserData=async()=>{
-        try{
-          const userData= await getUserBySocketId(profileBox);
-          setUser(userData);
-        }catch(error){
-          console.log(error)
-        }
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUserBySocketId(profileBox);
+        setUser(userData);
+      } catch (error) {
+        console.log(error);
       }
-      fetchUserData();
-  },[profileBox])
+    };
+    fetchUserData();
+  }, [profileBox]);
 
   useEffect(() => {
     if (!socket) return;
     const handleJoinedRoom = () => {
       setTalkLoading(false);
-      setProfileBox('close');
+      setProfileBox("close");
     };
     const handleConversationError = (data: { message?: string }) => {
       setTalkLoading(false);
-      setError(data.message || 'Could not start conversation');
+      setError(data.message || "Could not start conversation");
     };
-    socket.on('joinedRoom', handleJoinedRoom);
-    socket.on('conversationError', handleConversationError);
+    socket.on("joinedRoom", handleJoinedRoom);
+    socket.on("conversationError", handleConversationError);
     return () => {
-      socket.off('joinedRoom', handleJoinedRoom);
-      socket.off('conversationError', handleConversationError);
+      socket.off("joinedRoom", handleJoinedRoom);
+      socket.off("conversationError", handleConversationError);
     };
   }, [socket, setProfileBox]);
 
@@ -51,13 +54,67 @@ const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
     if (!socket || !profileBox) return;
     setTalkLoading(true);
     setError(null);
-    socket.emit('startConversation', { targetSocketId: profileBox });
+    socket.emit("startConversation", { targetSocketId: profileBox });
   };
+
+  const handleStartChat = async (): Promise<Conversation | null> => {
+    if (!user) return null;
+
+    try {
+      // First, try to find an existing conversation
+      const conversationsResult = await getConversations(1, 50);
+      const existingConversation = conversationsResult.conversations.find(
+        conv => conv.otherUser._id === user._id
+      );
+
+      if (existingConversation) {
+        // Open existing conversation
+        openChat(existingConversation);
+        return existingConversation;
+      } else {
+        // Create a new conversation object without sending a message
+        const newConversation: Conversation = {
+          conversationId: [user?._id, user._id].sort().join('_'),
+          otherUser: {
+            _id: user._id,
+            fullname: user.fullname,
+            avatar: user.avatar,
+            username: user.username,
+            isOnline: false,
+            lastSeen: new Date().toISOString()
+          },
+          unreadCount: 0
+        };
+        
+        openChat(newConversation);
+        return newConversation;
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      return null;
+    }
+  };
+
+  const handleChat = async () => {
+    setIsInGameChatOpen(true);
+    setGameChatTab("general");
+    
+    // Set the selected conversation for the game chat
+    const conversation = await handleStartChat();
+    if (conversation) {
+      setGameChatSelectedConversation(conversation);
+    }
+    
+    setProfileBox("close");
+  }
 
   return (
     <div>
-      <div className='w-[100vw] h-[100vh] fixed inset-0 z-10 bg-black/40'
-      onClick={()=>{setProfileBox('close')}}
+      <div
+        className="w-[100vw] h-[100vh] fixed inset-0 z-10 bg-black/40"
+        onClick={() => {
+          setProfileBox("close");
+        }}
       ></div>
       <div
         className="fixed top-1/2 left-1/2 z-50 transform -translate-x-1/2 -translate-y-1/2 shadow-xl border"
@@ -96,10 +153,10 @@ const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
               {user?.fullname.firstname.charAt(0).toUpperCase()}
             </div>
           )}
-          <a 
-          className="text-base font-semibold mt-1 mb-0.5 cursor-pointer hover:underline"
-          href={`/profile/${user?._id}`}
-          target="_blank"
+          <a
+            className="text-base font-semibold mt-1 mb-0.5 cursor-pointer hover:underline"
+            href={`/profile/${user?.username}`}
+            target="_blank"
           >
             {user?.fullname.firstname} {user?.fullname.lastname}
           </a>
@@ -176,26 +233,41 @@ const UserSummaryCard: React.FC<UserCardProps> = ({ onClose }) => {
               )}
             </div>
           )}
-          {/* Talk Button */}
-          <button
-            className="mt-3 px-4 py-1 rounded-full font-medium text-sm shadow"
-            style={{
-              background: secondaryAccentColor,
-              color: isDarkMode ? "#18181b" : "#fff",
-              border: "none",
-              outline: "none",
-              transition: "background 0.2s",
-              opacity: talkLoading ? 0.6 : 1,
-              cursor: talkLoading ? 'not-allowed' : 'pointer',
-            }}
-            onClick={handleTalk}
-            disabled={talkLoading}
-          >
-            {talkLoading ? 'Connecting...' : 'Talk'}
-          </button>
-          {error && (
-            <div className="text-xs text-red-500 mt-1">{error}</div>
-          )}
+          <div className="flex gap-2">
+            {/* Talk Button */}
+            <button
+              className="mt-3 px-4 py-1 rounded-full font-medium text-sm shadow"
+              style={{
+                background: secondaryAccentColor,
+                color: isDarkMode ? "#18181b" : "#fff",
+                border: "none",
+                outline: "none",
+                transition: "background 0.2s",
+                opacity: talkLoading ? 0.6 : 1,
+                cursor: talkLoading ? "not-allowed" : "pointer",
+              }}
+              onClick={handleTalk}
+              disabled={talkLoading}
+            >
+              {talkLoading ? "Connecting..." : "Talk (Ctrl+Click avatar)"}
+            </button>
+            <button
+              className="mt-3 px-4 py-1 rounded-full font-medium text-sm shadow"
+              style={{
+                background: secondaryAccentColor,
+                color: isDarkMode ? "#18181b" : "#fff",
+                border: "none",
+                outline: "none",
+                transition: "background 0.2s",
+                opacity: talkLoading ? 0.6 : 1,
+                cursor: talkLoading ? "not-allowed" : "pointer",
+              }}
+              onClick={handleChat}
+            >
+              Chat
+            </button>
+          </div>
+          {error && <div className="text-xs text-red-500 mt-1">{error}</div>}
         </div>
       </div>
     </div>

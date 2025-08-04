@@ -13,7 +13,7 @@ export default function HeroSection() {
 
   const handleCodSpaceClick = () => {
     // if(user){
-      router.push("/coding-space");
+      router.push("/room");
     // }else{
     //   router.push('/login')
     // }
@@ -48,7 +48,7 @@ export default function HeroSection() {
             }}
             onClick={handleCodSpaceClick}
           >
-            Coding Space
+            Join a Room
           </button>
           <button
             className="text-lg md:text-xl font-semibold cursor-pointer"
