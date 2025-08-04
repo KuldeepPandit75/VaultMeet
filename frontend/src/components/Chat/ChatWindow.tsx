@@ -210,7 +210,7 @@ export default function ChatWindow({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages,loading]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();
