@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSocket } from "@/context/SocketContext";
 import { useSocketStore, Message } from "@/Zustand_Store/SocketStore";
 import { ChatBox } from "@/components/Game/ChatBox";
@@ -43,6 +43,7 @@ const CodingSpace = () => {
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
+  const isInGameChatOpenRef = useRef(isInGameChatOpen);
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
@@ -120,6 +121,11 @@ const CodingSpace = () => {
     };
   }, [currentRoomId, setIsWhiteboardOpen]);
 
+  // Keep ref updated with current chat state
+  useEffect(() => {
+    isInGameChatOpenRef.current = isInGameChatOpen;
+  }, [isInGameChatOpen]);
+
   // Register screen share state change callback
   useEffect(() => {
     onScreenShareStateChange((isSharing: boolean) => {
@@ -160,7 +166,7 @@ const CodingSpace = () => {
         if (data.senderId !== socket?.id) {
           addMessage(newMessage);
           // Increment unread count for messages from others
-          if(!isInGameChatOpen){
+          if(!isInGameChatOpenRef.current){
             console.log("incrementing unread count")
             incrementUnreadCount();
           }
@@ -186,7 +192,7 @@ const CodingSpace = () => {
       // Clean up Agora client
       cleanupAgoraClient();
     };
-  }, [socket, addMessage, setIsWhiteboardOpen, isInGameChatOpen]); // Added box dependency
+  }, [socket, addMessage, setIsWhiteboardOpen]); // Removed isInGameChatOpen dependency
 
   // Fetch user names for remote users
   useEffect(() => {

@@ -528,9 +528,17 @@ class GeneralSpace extends Scene {
       this.otherPlayers[playerId].on("pointerout", () => {
         this.otherPlayers[playerId].clearTint();
       });
-      this.otherPlayers[playerId].on("pointerdown", () => {
+      this.otherPlayers[playerId].on("pointerdown", (pointer: Phaser.Input.Pointer) => {
         if (this.nearbyPlayers.includes(playerId)) {
-          useAuthStore.getState().setProfileBox(playerId);
+          // Check if Ctrl key is pressed during click
+          if (pointer.event.ctrlKey) {
+            // Ctrl+click action - you can customize this action
+            console.log(`Ctrl+clicked on player: ${playerId}`);
+            this.handleCtrlClickOnPlayer(playerId);
+          } else {
+            // Regular click action
+            useAuthStore.getState().setProfileBox(playerId);
+          }
         }
       });
     }
@@ -951,6 +959,27 @@ class GeneralSpace extends Scene {
       this.proximityCircle.strokeCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
       this.proximityCircle.fillCircle(this.player.x, this.player.y, PROXIMITY_RADIUS);
     }
+  }
+
+  // Handle Ctrl+click on player avatar
+  private handleCtrlClickOnPlayer(playerId: string) {
+    // You can customize this action based on your requirements
+    // For example: open chat, send friend request, view detailed profile, etc.
+    console.log(`Ctrl+click action triggered for player: ${playerId}`);
+    
+    // Example: Dispatch a custom event to notify React components
+    const ctrlClickEvent = new CustomEvent('playerCtrlClick', {
+      detail: {
+        playerId: playerId,
+        action: 'ctrlClick'
+      }
+    });
+    window.dispatchEvent(ctrlClickEvent);
+    
+    // You can also emit a socket event if needed
+    this.socket?.emit("startConversation", {
+      targetSocketId: playerId,
+    });
   }
 }
 

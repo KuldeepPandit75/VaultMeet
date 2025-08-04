@@ -75,10 +75,9 @@ async function createLocalMediaTracks() {
       facingMode: "user",
     });
     
-    // Initially mute video track
+    // Initially disable video track
     if (localVideoTrack) {
-      localVideoTrack.setEnabled(true);
-      localVideoTrack.setMuted(true);
+      localVideoTrack.setEnabled(false);
     }
     
     console.log("Video track created successfully");
@@ -291,19 +290,19 @@ async function leaveChannel() {
 
 export const toggleCamera = async () => {
   if (localVideoTrack) {
-    const isMuted = localVideoTrack.muted;
-    await localVideoTrack.setMuted(!isMuted); // Toggle mute state
+    const isEnabled = localVideoTrack.enabled;
+    await localVideoTrack.setEnabled(!isEnabled); // Toggle enabled state
 
     const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
     if (localPlayerContainer) {
-      if (!isMuted) {
-        // We're muting now — stop the video track
-        localVideoTrack.stop();
-        localPlayerContainer.style.display = "none";
-      } else {
-        // We're unmuting now — play the video
+      if (!isEnabled) {
+        // We're enabling now — play the video
         await localVideoTrack.play(localPlayerContainer);
         localPlayerContainer.style.display = "block";
+      } else {
+        // We're disabling now — stop the video track
+        localVideoTrack.stop();
+        localPlayerContainer.style.display = "none";
       }
     }
   }

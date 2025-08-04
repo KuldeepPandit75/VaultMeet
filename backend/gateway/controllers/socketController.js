@@ -472,7 +472,7 @@ const handleSocketEvents = (io) => {
 
         io.to(userRoom).emit("joinedRoom", {
           roomId: userRoom,
-          players: Array.from(roomPlayers.get(userRoom)),
+          players: Array.from(roomPlayers?.get(userRoom) || []),
           socketId: socket.id,
         });
         operationExecuted=true;
