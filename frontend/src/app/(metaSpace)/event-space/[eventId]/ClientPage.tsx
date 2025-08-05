@@ -411,6 +411,7 @@ const EventSpace = () => {
           setTypedMsg={setTypedMsg}
           typedMsg={typedMsg}
           onChatOpen={clearUnreadCount}
+          onClose={() => setIsInGameChatOpen(false)}
         />
       ) : null}
 

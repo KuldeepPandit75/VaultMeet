@@ -77,6 +77,14 @@ export const createRoom = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user._id;
 
+    // Check if user has already created 4 rooms
+    const existingRooms = await Room.countDocuments({ adminId: userId });
+    if (existingRooms >= 4) {
+      return res.status(400).json({ 
+        message: "You have reached the maximum limit of 4 rooms. Please delete an existing room before creating a new one." 
+      });
+    }
+
     // Generate unique room ID
     let roomId;
     let roomExists;

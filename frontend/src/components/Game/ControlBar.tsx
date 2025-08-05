@@ -276,7 +276,7 @@ export const ControlBar = ({
   };
   return (
     <div
-      className="absolute z-50 w-[100vw] h-[70px] bottom-0 right-0 flex justify-between items-center !px-10 backdrop-blur-md border-t"
+      className="absolute z-50 w-[100vw] h-[70px] bottom-0 right-0 flex justify-between items-center !px-10 backdrop-blur-md border-t control-bar-container"
       style={{
         backgroundColor: isDarkMode
           ? "rgba(17, 17, 17, 0.95)"
