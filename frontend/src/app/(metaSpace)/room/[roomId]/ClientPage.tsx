@@ -70,6 +70,7 @@ const CodingSpace = () => {
     if(!socket) return;
     const checkPermission = async ()=>{
       const permission = await checkRoomPermission(roomId)
+      console.log("debug",permission)
       if(!permission.canJoin){
         if(permission.message === "Room not found" || permission.message === "You are banned from this room"){
           router.push("/")
