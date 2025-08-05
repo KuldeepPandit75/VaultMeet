@@ -86,7 +86,7 @@ const CodingSpace = () => {
               avatar: user?.avatar
             }
           })
-          setWaiting("")
+          setWaiting("Waiting for admin approval...")
           setCurrentRoom(permission?.room || null)
         }
       }else{
@@ -411,7 +411,7 @@ const CodingSpace = () => {
             Room ID: <span className="font-mono font-semibold" style={{ color: primaryAccentColor }}>{roomId}</span>
           </p>
           <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-            Waiting for admin approval...
+            {waiting}
           </p>
         </div>
       </div>

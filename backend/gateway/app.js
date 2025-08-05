@@ -16,10 +16,9 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
+
 app.use('/user', expressProxy(process.env.USER_SERVICE_URL, {limit: '5mb'}));
 app.use('/event', expressProxy(process.env.EVENT_SERVICE_URL, {limit: '5mb'}));
 
-// Chat routes - proxy HTTP requests to chat service
-app.use('/chat', expressProxy(process.env.CHAT_SERVICE_URL, {limit: '5mb'}));
 
 export default app;
