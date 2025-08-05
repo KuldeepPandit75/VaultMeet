@@ -366,8 +366,10 @@ export const updateSocketId = async (req: any, res: any) => {
 
 export const getUserBySocketId = async (req: any, res: any) => {
   const { socketId } = req.params;
+  console.log(socketId)
   const user = await userModel.findOne({ socketId });
   if (!user) {
+    console.log('User not found')
     return res.status(404).json({ message: "User not found" });
   }
   res.status(200).json({ user });

@@ -11,6 +11,9 @@ import {
   faCog,
   faTimes,
   faChevronDown,
+  faUserPlus,
+  faCheck,
+  faTimes as faX,
 } from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
@@ -18,6 +21,8 @@ import Image from "next/image";
 import useChatStore from "@/Zustand_Store/ChatStore";
 import { useState, useEffect } from "react";
 import { getAvailableDevices, switchAudioDevice, switchVideoDevice, retryVideoTrack } from "./agora";
+import { useSocketStore } from "@/Zustand_Store/SocketStore";
+import { useSocket } from "@/context/SocketContext";
 
 interface MediaDevice {
   deviceId: string;
@@ -55,6 +60,153 @@ export const ControlBar = ({
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
     useThemeStore();
   const { isInGameChatOpen } = useChatStore();
+  const { currentRoom, approveJoinRequest, rejectJoinRequest, getPendingRequests } = useSocketStore();
+  const { socket } = useSocket();
+  const [isRoomAdmin, setIsRoomAdmin] = useState(false);
+  
+  // Join request state
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<Array<{
+    socketId: string;
+    userId: string;
+    timestamp: number;
+    user?: {
+      fullname: {
+        firstname: string;
+        lastname: string;
+      };
+      username: string;
+      avatar?: string;
+    } | null;
+  }>>([]);
+  
+  // Check if current user is room admin
+  useEffect(()=>{
+    if(!currentRoom) return;
+    console.log(currentRoom?.adminId.toString(), user?._id.toString())
+    setIsRoomAdmin(currentRoom?.adminId.toString() === user?._id.toString());
+  },[currentRoom]);
+  
+  // Fetch pending requests from server when user becomes admin
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      if (!currentRoom?.roomId || !isRoomAdmin) return;
+      
+      try {
+        const result = await getPendingRequests(currentRoom.roomId);
+        if (result.success && result.pendingRequests) {
+          // Transform the server data to match the local state structure
+          const transformedRequests = result.pendingRequests.map(req => ({
+            socketId: '', // Server doesn't provide socketId, we'll use empty string
+            userId: req.id,
+            timestamp: req.timestamp || Date.now(),
+            user: req.user, // Include user details from server
+          }));
+          setPendingRequests(transformedRequests);
+        }
+      } catch (error) {
+        console.error("Error fetching pending requests:", error);
+      }
+    };
+    
+    fetchPendingRequests();
+  }, [currentRoom?.roomId, isRoomAdmin, getPendingRequests]);
+  
+  // Listen for new join requests
+  useEffect(() => {
+    console.log(isRoomAdmin)
+    if (!socket || !isRoomAdmin) return;
+    
+    const handleNewJoinRequest = (data: {
+      roomId: string;
+      socketId: string;
+      userId: string;
+      timestamp: number;
+      userInfo?: {
+        fullname: {
+          firstname: string;
+          lastname: string;
+        };
+        username: string;
+        avatar?: string;
+      };
+    }) => {
+      setPendingRequests(prev => [...prev, {
+        socketId: data.socketId,
+        userId: data.userId,
+        timestamp: data.timestamp,
+        user: data.userInfo ? {
+          fullname: data.userInfo.fullname,
+          username: data.userInfo.username,
+          avatar: data.userInfo.avatar
+        } : null
+      }]);
+    };
+    
+    socket.on("newJoinRequest", handleNewJoinRequest);
+    
+    return () => {
+      socket.off("newJoinRequest", handleNewJoinRequest);
+    };
+  }, [socket, isRoomAdmin]);
+  
+  // Listen for real-time updates when requests are approved/rejected by other admins
+  useEffect(() => {
+    if (!socket || !isRoomAdmin) return;
+    
+    const handleRequestRemoved = (data: { roomId: string; participantId: string }) => {
+      setPendingRequests(prev => prev.filter(req => req.userId !== data.participantId));
+    };
+    
+    socket.on("joinRequestApproved", handleRequestRemoved);
+    socket.on("joinRequestRejected", handleRequestRemoved);
+    
+    return () => {
+      socket.off("joinRequestApproved", handleRequestRemoved);
+      socket.off("joinRequestRejected", handleRequestRemoved);
+    };
+  }, [socket, isRoomAdmin]);
+  
+  // Handle approve/reject join requests
+  const handleApproveRequest = async (participantId: string) => {
+    if (!currentRoom?.roomId) return;
+    
+    try {
+      // Call the API to approve the request
+      await approveJoinRequest({ roomId: currentRoom.roomId, participantId });
+      
+      // Emit socket event for real-time updates
+      socket?.emit("approveJoinRequest", { 
+        roomId: currentRoom.roomId, 
+        participantId 
+      });
+      
+      // Remove from local state
+      setPendingRequests(prev => prev.filter(req => req.userId !== participantId));
+    } catch (error) {
+      console.error("Error approving join request:", error);
+    }
+  };
+  
+  const handleRejectRequest = async (participantId: string) => {
+    if (!currentRoom?.roomId) return;
+    
+    try {
+      // Call the API to reject the request
+      await rejectJoinRequest({ roomId: currentRoom.roomId, participantId });
+      
+      // Emit socket event for real-time updates
+      socket?.emit("rejectJoinRequest", { 
+        roomId: currentRoom.roomId, 
+        participantId 
+      });
+      
+      // Remove from local state
+      setPendingRequests(prev => prev.filter(req => req.userId !== participantId));
+    } catch (error) {
+      console.error("Error rejecting join request:", error);
+    }
+  };
   
   // Device selection state
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
@@ -305,6 +457,46 @@ export const ControlBar = ({
           >
             <FontAwesomeIcon icon={faCog} className="text-lg" />
           </button>
+
+          {/* Join Requests Button (Admin Only) */}
+          {isRoomAdmin && (
+            <button
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg relative"
+              onClick={() => setShowJoinRequests(!showJoinRequests)}
+              title="Join Requests"
+              style={{
+                backgroundColor: showJoinRequests 
+                  ? secondaryAccentColor 
+                  : isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                color: showJoinRequests 
+                  ? "#ffffff" 
+                  : isDarkMode ? "#ffffff" : "#1a1a1a",
+                border: `2px solid ${
+                  showJoinRequests 
+                    ? secondaryAccentColor 
+                    : isDarkMode ? "#333333" : "#e5e5e5"
+                }`,
+                boxShadow: showJoinRequests
+                  ? `0 4px 12px ${secondaryAccentColor}40`
+                  : "none",
+              }}
+            >
+              <FontAwesomeIcon icon={faUserPlus} className="text-lg" />
+              {/* Pending requests indicator */}
+              {pendingRequests.length > 0 && (
+                <div
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg"
+                  style={{
+                    backgroundColor: "#ef4444",
+                    minWidth: "20px",
+                    minHeight: "20px",
+                  }}
+                >
+                  {pendingRequests.length > 99 ? "99+" : pendingRequests.length}
+                </div>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -511,6 +703,113 @@ export const ControlBar = ({
             <p>Found {audioDevices.length} microphone(s) and {videoDevices.length} camera(s)</p>
           </div>
         </div>
+        </>
+      )}
+
+      {/* Join Requests Modal */}
+      {showJoinRequests && isRoomAdmin && (
+        <>
+          {/* Overlay to close modal when clicking outside */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowJoinRequests(false)}
+          />
+          <div
+            className="absolute bottom-20 left-10 bg-white dark:bg-gray-800 rounded-xl shadow-xl border p-6 min-w-[400px] z-50"
+            style={{
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+              borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+              boxShadow: isDarkMode
+                ? "0 20px 40px rgba(0, 0, 0, 0.5)"
+                : "0 20px 40px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-4">
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: isDarkMode ? "#ffffff" : "#1a1a1a" }}
+              >
+                Join Requests ({pendingRequests.length})
+              </h3>
+              <button
+                onClick={() => setShowJoinRequests(false)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+                style={{
+                  backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                  color: isDarkMode ? "#ffffff" : "#1a1a1a",
+                }}
+              >
+                <FontAwesomeIcon icon={faTimes} className="text-sm" />
+              </button>
+            </div>
+
+            {/* Requests List */}
+            {pendingRequests.length === 0 ? (
+              <div
+                className="text-center py-8"
+                style={{ color: isDarkMode ? "#cccccc" : "#666666" }}
+              >
+                <FontAwesomeIcon icon={faUserPlus} className="text-4xl mb-4 opacity-50" />
+                <p>No pending join requests</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {pendingRequests.map((request, index) => (
+                  <div
+                    key={index}
+                    className="p-4 rounded-lg border flex items-center justify-between"
+                    style={{
+                      backgroundColor: isDarkMode ? "#2a2a2a" : "#f8f9fa",
+                      borderColor: isDarkMode ? "#404040" : "#e5e5e5",
+                    }}
+                  >
+                    <div className="flex-1">
+                      <p
+                        className="font-medium"
+                        style={{ color: isDarkMode ? "#ffffff" : "#1a1a1a" }}
+                      >
+                        {request.user?.fullname?.firstname 
+                          ? `${request.user.fullname.firstname} ${request.user.fullname.lastname}`
+                          : `User ${request.userId.slice(-6)}`
+                        }
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: isDarkMode ? "#cccccc" : "#666666" }}
+                      >
+                        Requested {new Date(request.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApproveRequest(request.userId)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+                        style={{
+                          backgroundColor: "#10b981",
+                          color: "#ffffff",
+                        }}
+                        title="Approve"
+                      >
+                        <FontAwesomeIcon icon={faCheck} className="text-sm" />
+                      </button>
+                      <button
+                        onClick={() => handleRejectRequest(request.userId)}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+                        style={{
+                          backgroundColor: "#ef4444",
+                          color: "#ffffff",
+                        }}
+                        title="Reject"
+                      >
+                        <FontAwesomeIcon icon={faX} className="text-sm" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

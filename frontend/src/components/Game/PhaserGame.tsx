@@ -7,10 +7,11 @@ import useAuthStore from "@/Zustand_Store/AuthStore";
 
 interface PhaserGameProps {
   eventId?: string; // Optional eventId for event-specific spaces
+  roomId?: string; // Optional roomId for room-specific spaces
   mapType?: string; // NEW: Map type to load (e.g., "general", "hackmeet")
 }
 
-const PhaserGame = ({ eventId, mapType = "hackmeet" }: PhaserGameProps) => {
+const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -60,6 +61,7 @@ const PhaserGame = ({ eventId, mapType = "hackmeet" }: PhaserGameProps) => {
           socket, 
           userId: user?._id,
           eventId: eventId, // Pass eventId to the scene
+          roomId: roomId, // Pass roomId to the scene
           mapType: mapType // NEW: Pass mapType to the scene
         });
       });
@@ -96,7 +98,7 @@ const PhaserGame = ({ eventId, mapType = "hackmeet" }: PhaserGameProps) => {
         resizeObserver = null;
       }
     };
-  }, [isClient, socket, eventId, user?._id]);
+  }, [isClient, socket, eventId, roomId, user?._id]);
 
   return (
     <div

@@ -327,8 +327,10 @@ const updateSocketId = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.updateSocketId = updateSocketId;
 const getUserBySocketId = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { socketId } = req.params;
+    console.log(socketId);
     const user = yield user_model_js_1.default.findOne({ socketId });
     if (!user) {
+        console.log('User not found');
         return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json({ user });

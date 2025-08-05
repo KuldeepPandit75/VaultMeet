@@ -48,7 +48,7 @@ const EventSpace = () => {
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } =
     useSocketStore();
-  const { user, getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
+  const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { getEventById, currentEvent, loading: eventLoading } = useEventStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
@@ -75,28 +75,6 @@ const EventSpace = () => {
       getEventById(eventId);
     }
   }, [eventId, getEventById]);
-
-  // Register player with event space when socket is connected and event is loaded
-  useEffect(() => {
-    if (socket?.connected && eventId && user?._id && currentEvent) {
-      console.log("Joining event space for event:", eventId);
-      socket.emit("joinEventSpace", {
-        eventId: eventId,
-        userId: user._id,
-      });
-    }
-
-    // Cleanup when component unmounts
-    return () => {
-      if (socket?.connected && eventId && user?._id) {
-        console.log("Leaving event space for event:", eventId);
-        socket.emit("leaveEventSpace", {
-          eventId: eventId,
-          userId: user._id,
-        });
-      }
-    };
-  }, [socket?.connected, eventId, user?._id, currentEvent]);
 
   const toggleViewMode = () => {
     if (viewMode === "game") {
@@ -293,11 +271,6 @@ const EventSpace = () => {
     setProfileBox("close");
   };
 
-  const closeWhiteboard = () => {
-    setIsWhiteboardOpen(false);
-    setViewMode("game");
-  };
-
   // Custom setBox function that clears unread count when chat is opened
   const handleSetBox = (newBox: boolean) => {
     if (!isInGameChatOpen) {
@@ -415,36 +388,12 @@ const EventSpace = () => {
 
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
-        <PhaserGame />
+        <PhaserGame eventId={eventId} />
       </div>
 
       {/* Whiteboard View */}
       {viewMode === "whiteboard" && currentRoomId && (
         <div className="flex-1 relative flex flex-col">
-          {/* Whiteboard Header */}
-          <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm z-10">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Collaborative Whiteboard - Room: {currentRoomId}
-            </h2>
-            <button
-              onClick={closeWhiteboard}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
 
           {/* Whiteboard Content - Takes most of the space */}
           <div className="flex-1 relative">

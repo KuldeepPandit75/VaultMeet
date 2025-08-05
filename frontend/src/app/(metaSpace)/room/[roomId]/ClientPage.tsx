@@ -26,6 +26,9 @@ import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
 import Image from "next/image";
 import useChatStore from "@/Zustand_Store/ChatStore";
+import { useParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { toast } from "react-hot-toast";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
@@ -34,12 +37,16 @@ type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
 };
 
 const CodingSpace = () => {
+  const params = useParams();
+  const roomId = params.roomId as string;
+  
   const [mic, setMic] = useState(false);
   const [video, setVideo] = useState(false);
   const [screenShare, setScreenShare] = useState(false);
+  const [waiting, setWaiting] = useState("Getting the room ready....");
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
-  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount } = useSocketStore();
+  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount, checkRoomPermission, setCurrentRoom, joinRoomRequest } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
@@ -48,15 +55,81 @@ const CodingSpace = () => {
     { [key: string]: User } | undefined
   >();
   const [viewMode, setViewMode] = useState<"game" | "meeting" | "whiteboard">("game");
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
-  // const router= useRouter();
-
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(roomId);
+  const router= useRouter();
+  const pathname = usePathname();
+  const {user} = useAuthStore();
   // Check logged in or not
   // useEffect(()=>{
   //   if(!user){
   //     router.push("/login")
   //   }
   // })
+  
+  useEffect(()=>{
+    if(!socket) return;
+    const checkPermission = async ()=>{
+      const permission = await checkRoomPermission(roomId)
+      if(!permission.canJoin){
+        if(permission.message === "Room not found" || permission.message === "You are banned from this room"){
+          router.push("/")
+          toast.error(permission.message)
+        }else{
+          await joinRoomRequest({roomId: roomId, socketId: socket.id || ""})
+          socket.emit("joinRoomRequest",{
+            roomId: roomId,
+            socketId: socket.id,
+            userId: user?._id,
+            userInfo: {
+              fullname: user?.fullname,
+              username: user?.username,
+              avatar: user?.avatar
+            }
+          })
+          setWaiting("")
+          setCurrentRoom(permission?.room || null)
+        }
+      }else{
+        console.log(permission)
+        setCurrentRoom(permission?.room || null)
+        setWaiting("")
+        
+        // Set room admin if user is the admin
+        if (permission.room?.adminId === user?._id) {
+          socket.emit("setRoomAdmin", { roomId });
+        }
+        
+      }
+    }
+    checkPermission()
+  },[roomId,socket])
+
+  // Listen for join request approval/rejection
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleApprovedRequest = (data: { roomId: string }) => {
+      console.log("Join request approved for room:", data.roomId);
+      toast.success("Your join request has been approved!");
+      // Refresh the page or update the room state
+      window.location.reload();
+    };
+    
+    const handleRejectedRequest = (data: { roomId: string }) => {
+      console.log("Join request rejected for room:", data.roomId);
+      toast.error("Your join request has been rejected.");
+      // Redirect to home or show rejection message
+      router.push("/");
+    };
+    
+    socket.on("approvedJoinRequest", handleApprovedRequest);
+    socket.on("rejectedJoinRequest", handleRejectedRequest);
+    
+    return () => {
+      socket.off("approvedJoinRequest", handleApprovedRequest);
+      socket.off("rejectedJoinRequest", handleRejectedRequest);
+    };
+  }, [socket, router]);
 
   const toggleViewMode = () => {
     if (viewMode === "game") {
@@ -100,9 +173,8 @@ const CodingSpace = () => {
         setIsWhiteboardOpen(true);
         setViewMode("whiteboard");
       } else {
-        // If no room, create a default room for whiteboard
-        const defaultRoomId = 'whiteboard';
-        setCurrentRoomId(defaultRoomId);
+        // Use the roomId from URL params for whiteboard
+        setCurrentRoomId(roomId);
         setIsWhiteboardOpen(true);
         setViewMode("whiteboard");
       }
@@ -119,7 +191,7 @@ const CodingSpace = () => {
         handleOpenWhiteboard as EventListener
       );
     };
-  }, [currentRoomId, setIsWhiteboardOpen]);
+  }, [currentRoomId, setIsWhiteboardOpen, roomId]);
 
   // Keep ref updated with current chat state
   useEffect(() => {
@@ -182,6 +254,10 @@ const CodingSpace = () => {
       }
     });
 
+    socket.on("approvedJoinRequest",()=>{
+      setWaiting("")
+    })
+
     return () => {
       console.log("Cleaning up coding space socket listeners...");
       socket.off("connect", handleConnect);
@@ -192,7 +268,7 @@ const CodingSpace = () => {
       // Clean up Agora client
       cleanupAgoraClient();
     };
-  }, [socket, addMessage, setIsWhiteboardOpen]); // Removed isInGameChatOpen dependency
+  }, [socket, addMessage, setIsWhiteboardOpen, pathname]); // Removed isInGameChatOpen dependency
 
   // Fetch user names for remote users
   useEffect(() => {
@@ -249,11 +325,6 @@ const CodingSpace = () => {
     setProfileBox("close");
   };
 
-  const closeWhiteboard = () => {
-    setIsWhiteboardOpen(false);
-    setViewMode("game");
-  };
-
   // Custom setBox function that clears unread count when chat is opened
   const handleSetBox = (newBox: boolean) => {
     if (!isInGameChatOpen) {
@@ -262,9 +333,6 @@ const CodingSpace = () => {
     }
     setIsInGameChatOpen(newBox);
   };
-
-  // Debug chat box state
-  console.log("Current box state:", isInGameChatOpen);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -325,6 +393,31 @@ const CodingSpace = () => {
     );
   };
 
+  // Waiting screen
+  if (waiting!=="") {
+    return (
+      <div
+        className="flex h-screen items-center justify-center"
+        style={{ backgroundColor: isDarkMode ? "#0f0f0f" : "#f8f9fa" }}
+      >
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2" style={{ borderColor: primaryAccentColor }}></div>
+          </div>
+          <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+            Joining Room
+          </h2>
+          <p className={`text-lg mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+            Room ID: <span className="font-mono font-semibold" style={{ color: primaryAccentColor }}>{roomId}</span>
+          </p>
+          <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+            Waiting for admin approval...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex h-screen overflow-hidden"
@@ -332,36 +425,12 @@ const CodingSpace = () => {
     >
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
-        <PhaserGame mapType="general" />
+        <PhaserGame mapType="general" roomId={roomId} />
       </div>
 
       {/* Whiteboard View */}
       {viewMode === "whiteboard" && currentRoomId && (
         <div className="flex-1 relative flex flex-col">
-          {/* Whiteboard Header */}
-          <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm z-10">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Collaborative Whiteboard - Room: {currentRoomId}
-            </h2>
-            <button
-              onClick={closeWhiteboard}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
 
           {/* Whiteboard Content - Takes most of the space */}
           <div className="flex-1 relative">

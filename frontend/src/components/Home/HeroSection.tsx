@@ -1,19 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import TypingText from "../Misc/TypingText";
 import { useRouter } from "next/navigation";
+import RoomModal from "../Game/Modals/RoomModal";
 
 export default function HeroSection() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const router = useRouter();
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
 
   const words = ["Build.", "Connect.", "Compete.", "All in One Place."];
 
   const handleCodSpaceClick = () => {
     // if(user){
-      router.push("/room");
+      setIsRoomModalOpen(true);
     // }else{
     //   router.push('/login')
     // }
@@ -67,6 +70,12 @@ export default function HeroSection() {
           className="w-[300px] sm:w-[350px] md:w-[400px] mb-10 md:mb-0 h-[300px] sm:h-[350px] md:h-[400px] md:ml-[-100px]"
         />
       </div>
+      
+      {/* Room Modal */}
+      <RoomModal 
+        isOpen={isRoomModalOpen} 
+        onClose={() => setIsRoomModalOpen(false)} 
+      />
     </section>
   );
 }

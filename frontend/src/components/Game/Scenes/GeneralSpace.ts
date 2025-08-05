@@ -23,8 +23,12 @@ class GeneralSpace extends Scene {
   private isNearWhiteboard: boolean = false;
   private whiteboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string;
+  private roomId?: string; // NEW: Room-specific identifier
   private objectLayerData: { [key: string]: Phaser.Types.Tilemaps.TiledObject[] } = {};
   private proximityCircle?: Phaser.GameObjects.Graphics;
+  // NEW: Track pending players to create after ready event
+  private pendingPlayers: { id: string; x: number; y: number }[] = [];
+  private isReady: boolean = false;
 
   constructor() {
     super({ key: "GeneralSpace" });
@@ -77,19 +81,20 @@ class GeneralSpace extends Scene {
     this.load.on("complete", () => {
       if (this.socket) {
         console.log("All assets loaded for GeneralSpace");
-        if (!this.eventId) {
-          console.log("Not in event space, emitting ready immediately");
-          this.socket.emit("ready");
-        } else {
-          console.log("In event space, ready will be emitted after joining event space");
-        }
+        this.isReady = true;
+        console.log("Scene is ready, emitting ready event");
+        this.socket.emit("ready");
+        
+        // Create any pending players that were received before ready
+        this.createPendingPlayers();
       }
     });
   }
 
-  init(data: { socket: Socket; userId?: string; eventId?: string }) {
+  init(data: { socket: Socket; userId?: string; eventId?: string; roomId?: string }) {
     this.socket = data.socket;
     this.eventId = data.eventId;
+    this.roomId = data.roomId; // NEW: Store roomId
     // Set up all socket event listeners first
     this.setupSocketEvents();
   }
@@ -102,8 +107,15 @@ class GeneralSpace extends Scene {
         eventId: this.eventId,
         userId: useAuthStore.getState().user?._id
       });
+    } else if (this.roomId && this.socket) {
+      // NEW: Handle room-specific space joining
+      console.log(`Joining room game space for room: ${this.roomId}`);
+      this.socket.emit("joinRoomGameSpace", {
+        roomId: this.roomId,
+        userId: useAuthStore.getState().user?._id
+      });
     } else {
-      console.log(`Not in event space, eventId: ${this.eventId}`);
+      console.log(`Not in event space or room, eventId: ${this.eventId}, roomId: ${this.roomId}`);
     }
 
     // NEW: Handle event space joined event
@@ -115,11 +127,17 @@ class GeneralSpace extends Scene {
       console.log(`Joined event space for event ${data.eventId}`);
       console.log("Existing players in event:", data.existingPlayers);
       
-      // Create sprites for existing players in this event
-      for (const player of data.existingPlayers) {
-        if (player.id !== this.socket?.id) {
-          console.log(`Creating sprite for event player: ${player.id}`);
-          this.createPlayerSprite(player.id, player.x, player.y);
+      // Store players to create after ready event
+      if (!this.isReady) {
+        console.log("Scene not ready yet, storing players for later creation");
+        this.pendingPlayers.push(...data.existingPlayers);
+      } else {
+        // Create sprites for existing players in this event
+        for (const player of data.existingPlayers) {
+          if (player.id !== this.socket?.id) {
+            console.log(`Creating sprite for event player: ${player.id}`);
+            this.createPlayerSprite(player.id, player.x, player.y);
+          }
         }
       }
       
@@ -136,12 +154,22 @@ class GeneralSpace extends Scene {
     }) => {
       if (data.playerId !== this.socket?.id) {
         console.log(`New player joined event ${data.eventId}:`, data.playerId);
-        console.log(`Creating sprite for new event player: ${data.playerId}`);
-        this.createPlayerSprite(
-          data.playerId,
-          ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
-          ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
-        );
+        
+        if (!this.isReady) {
+          console.log("Scene not ready yet, storing new player for later creation");
+          this.pendingPlayers.push({
+            id: data.playerId,
+            x: ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            y: ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          });
+        } else {
+          console.log(`Creating sprite for new event player: ${data.playerId}`);
+          this.createPlayerSprite(
+            data.playerId,
+            ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          );
+        }
       }
     });
 
@@ -160,31 +188,116 @@ class GeneralSpace extends Scene {
       }
     });
 
-    // MODIFIED: Only handle general space events if not in an event
-    if (!this.eventId) {
-      this.socket?.on(
-        "currentPlayers",
-        async (players: { id: string; x: number; y: number }[]) => {
-          console.log("Received existing players in general space:", players);
+    // NEW: Handle room game space joined event
+    this.socket?.on("roomGameSpaceJoined", async (data: {
+      roomId: string;
+      existingPlayers: { id: string; x: number; y: number }[];
+    }) => {
+      console.log(`Joined room game space for room ${data.roomId}`);
+      console.log("Existing players in room:", data.existingPlayers);
+      
+      // Store players to create after ready event
+      if (!this.isReady) {
+        console.log("Scene not ready yet, storing players for later creation");
+        this.pendingPlayers.push(...data.existingPlayers);
+      } else {
+        // Create sprites for existing players in this room
+        for (const player of data.existingPlayers) {
+          if (player.id !== this.socket?.id) {
+            console.log(`Creating sprite for room player: ${player.id}`);
+            this.createPlayerSprite(player.id, player.x, player.y);
+          }
+        }
+      }
+      
+      // Now emit ready to get any additional players that might have joined while we were loading
+      console.log("Room game space joined, now emitting ready");
+      this.socket?.emit("ready");
+    });
+
+    // NEW: Handle new player joining room
+    this.socket?.on("playerJoinedRoom", async (data: {
+      roomId: string;
+      playerId: string;
+      userId: string;
+    }) => {
+      if (data.playerId !== this.socket?.id) {
+        console.log(`New player joined room ${data.roomId}:`, data.playerId);
+        
+        if (!this.isReady) {
+          console.log("Scene not ready yet, storing new room player for later creation");
+          this.pendingPlayers.push({
+            id: data.playerId,
+            x: ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            y: ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          });
+        } else {
+          console.log(`Creating sprite for new room player: ${data.playerId}`);
+          this.createPlayerSprite(
+            data.playerId,
+            ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          );
+        }
+      }
+    });
+
+    // NEW: Handle player leaving room
+    this.socket?.on("playerLeftRoom", (data: {
+      roomId: string;
+      playerId: string;
+    }) => {
+      if (this.otherPlayers[data.playerId]) {
+        this.otherPlayers[data.playerId].destroy();
+        if (this.otherPlayerNameTexts[data.playerId]) {
+          this.otherPlayerNameTexts[data.playerId].destroy();
+          delete this.otherPlayerNameTexts[data.playerId];
+        }
+        delete this.otherPlayers[data.playerId];
+      }
+    });
+
+    // MODIFIED: Handle currentPlayers for general space and room spaces
+    this.socket?.on(
+      "currentPlayers",
+      async (players: { id: string; x: number; y: number }[]) => {
+        console.log(`Received existing players. EventId: ${this.eventId}, RoomId: ${this.roomId}, Players:`, players);
+        
+        // Store players to create after ready event
+        if (!this.isReady) {
+          console.log("Scene not ready yet, storing players for later creation");
+          this.pendingPlayers.push(...players);
+        } else {
           for (const player of players) {
             if (player.id !== this.socket?.id) {
               this.createPlayerSprite(player.id, player.x, player.y);
             }
           }
         }
-      );
+      }
+    );
 
-      this.socket?.on("playerJoined", async (id: string) => {
-        if (id !== this.socket?.id) {
-          console.log("new player joined general space:", id);
+    // MODIFIED: Handle playerJoined for general space and room spaces
+    this.socket?.on("playerJoined", async (id: string) => {
+      if (id !== this.socket?.id) {
+        console.log(`New player joined. EventId: ${this.eventId}, RoomId: ${this.roomId}, PlayerId: ${id}`);
+        
+        if (!this.isReady) {
+          console.log("Scene not ready yet, storing new general player for later creation");
+          this.pendingPlayers.push({
+            id: id,
+            x: ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
+            y: ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
+          });
+        } else {
           this.createPlayerSprite(
             id,
             ((this.map?.width || 0) * (this.map?.tileWidth || 0)) / 2,
             ((this.map?.height || 0) * (this.map?.tileHeight || 0)) / 2
           );
         }
-      });
-    }
+      }
+    });
 
     // MODIFIED: Handle player movement for both general and event spaces
     this.socket?.on(
@@ -489,6 +602,7 @@ class GeneralSpace extends Scene {
 
       // Fetch and display player name below avatar
       try {
+        console.log(playerId)
         const user = await useAuthStore.getState().getUserBySocketId(playerId);
         const name = user
           ? `${user.username}`
@@ -542,6 +656,19 @@ class GeneralSpace extends Scene {
         }
       });
     }
+  }
+
+  // NEW: Helper method to create sprites for pending players
+  private createPendingPlayers() {
+    console.log(`Creating sprites for ${this.pendingPlayers.length} pending players`);
+    for (const player of this.pendingPlayers) {
+      if (player.id !== this.socket?.id) {
+        console.log(`Creating sprite for pending player: ${player.id}`);
+        this.createPlayerSprite(player.id, player.x, player.y);
+      }
+    }
+    // Clear pending players after creating them
+    this.pendingPlayers = [];
   }
 
   private createAnimations() {
@@ -832,6 +959,9 @@ class GeneralSpace extends Scene {
       this.socket.off("playerMoved");
       this.socket.off("eventSpaceJoined");
       this.socket.off("playerDisconnected");
+      this.socket.off("roomGameSpaceJoined");
+      this.socket.off("playerJoinedRoom");
+      this.socket.off("playerLeftRoom");
     }
 
     // Clean up player sprites and text
@@ -871,6 +1001,8 @@ class GeneralSpace extends Scene {
     this.nearbyPlayers = [];
     this.isNearWhiteboard = false;
     this.running = false;
+    this.pendingPlayers = [];
+    this.isReady = false;
     
     console.log('Lobby scene shutdown complete');
   }

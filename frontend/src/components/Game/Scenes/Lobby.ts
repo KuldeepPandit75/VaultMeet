@@ -383,10 +383,7 @@ class Lobby extends Scene {
     }
 
     // Add player name text below the avatar
-    const user = useAuthStore.getState().user;
-    const playerName = user
-      ? `${user.fullname.firstname} ${user.fullname.lastname}`
-      : "You";
+    const playerName = "You";
     this.playerNameText = this.add
       .text(this.player.x, this.player.y + 40, playerName, {
         fontSize: "10px",
@@ -469,9 +466,7 @@ class Lobby extends Scene {
       // Fetch and display player name below avatar
       try {
         const user = await useAuthStore.getState().getUserBySocketId(playerId);
-        const name = user
-          ? `${user.fullname.firstname} ${user.fullname.lastname}`
-          : playerId;
+        const name = `${user.username}`
         this.otherPlayerNameTexts[playerId] = this.add
           .text(x, y + 40, name, {
             fontSize: "10px",

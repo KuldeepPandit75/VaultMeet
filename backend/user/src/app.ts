@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
+import roomRoutes from './routes/room.routes.js';
 import cookieParser from 'cookie-parser';
 import "dotenv/config";
 
@@ -26,6 +27,7 @@ app.use((req, _, next) => {
   });
 
 app.use('/',userRoutes)
+app.use('/rooms', roomRoutes)
 
 app.get('/',(req, res)=>{
     res.send("Hello World");
