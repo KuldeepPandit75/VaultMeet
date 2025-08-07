@@ -6,6 +6,8 @@ import { useSocket } from "@/context/SocketContext";
 import { useSocketStore, Message } from "@/Zustand_Store/SocketStore";
 import { ChatBox } from "@/components/Game/ChatBox";
 import { ControlBar } from "@/components/Game/ControlBar";
+import ReportModal from "@/components/Game/Modals/ReportModal";
+import HelpModal from "@/components/Game/Modals/HelpModal";
 import {
   toggleCamera,
   toggleMicrophone,
@@ -52,6 +54,8 @@ const EventSpace = () => {
   const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { getEventById, currentEvent, loading: eventLoading } = useEventStore();
   const { primaryAccentColor, isDarkMode } = useThemeStore();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [userDatas, setUserDatas] = useState<
     { [key: string]: User } | undefined
   >();
@@ -428,6 +432,8 @@ const EventSpace = () => {
         handleViewToggle={toggleViewMode}
         isMeetingViewAvailable={remoteUsers.length > 0}
         unreadCount={unreadCount}
+        setIsReportModalOpen={setIsReportModalOpen}
+        setIsHelpModalOpen={setIsHelpModalOpen}
       />
 
       {/* Profile Box */}
@@ -546,6 +552,23 @@ const EventSpace = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          eventId={eventId}
+        />
+      )}
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={() => setIsHelpModalOpen(false)}
+        />
       )}
     </div>
   );
