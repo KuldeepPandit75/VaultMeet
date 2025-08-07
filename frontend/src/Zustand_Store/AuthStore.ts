@@ -79,6 +79,7 @@ export interface User {
     techUsed: string;
   };
   achievements: string;
+  points: number;
 }
 
 interface Notification {

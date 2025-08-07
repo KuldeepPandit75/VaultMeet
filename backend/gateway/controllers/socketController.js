@@ -18,6 +18,10 @@ const playerRoomGameSpaces = new Map(); // socketId -> roomId (for game space)
 const pendingJoinRequests = new Map(); // roomId -> Set of pending requests
 const roomAdmins = new Map(); // roomId -> adminSocketId
 
+// NEW: Challenge management
+const pendingChallenges = new Map(); // challengeId -> challenge data
+const challengeIdCounter = 1; // Simple counter for challenge IDs
+
 const handleSocketEvents = (io) => {
   io.on("connection", (socket) => {
     console.log(`A user connected: ${socket.id}`);
@@ -38,6 +42,173 @@ const handleSocketEvents = (io) => {
         
         userMap.set(userId, socket.id);
         socket.userId = userId;
+      }
+    });
+
+    // NEW: Handle send challenge
+    socket.on("sendChallenge", ({ targetSocketId, challengerInfo, question }) => {
+      console.log(`Challenge sent from ${socket.id} to ${targetSocketId} with question: ${question?.title}`);
+      
+      if (!connectedPlayers.has(targetSocketId)) {
+        socket.emit("challengeError", { message: "Target user is not online" });
+        return;
+      }
+
+      const challengeId = `challenge_${Date.now()}_${socket.id}`;
+      const challengeData = {
+        id: challengeId,
+        challengerSocketId: socket.id,
+        targetSocketId: targetSocketId,
+        challengerInfo: challengerInfo,
+        question: question,
+        timestamp: Date.now(),
+        status: 'pending'
+      };
+
+      pendingChallenges.set(challengeId, challengeData);
+
+      // Send challenge notification to target
+      io.to(targetSocketId).emit("receiveChallenge", {
+        challengeId: challengeId,
+        challengerInfo: challengerInfo,
+        question: question,
+        timestamp: Date.now()
+      });
+
+      // Confirm challenge sent to challenger
+      socket.emit("challengeSent", { challengeId });
+    });
+
+    // NEW: Handle challenge response (accept/reject)
+    socket.on("respondToChallenge", ({ challengeId, response }) => {
+      console.log(`Challenge response: ${response} for challenge ${challengeId}`);
+      
+      const challenge = pendingChallenges.get(challengeId);
+      if (!challenge) {
+        socket.emit("challengeError", { message: "Challenge not found" });
+        return;
+      }
+
+      if (response === 'accept') {
+        // Notify challenger that challenge was accepted
+        io.to(challenge.challengerSocketId).emit("challengeAccepted", {
+          challengeId: challengeId,
+          targetSocketId: socket.id
+        });
+
+        // Create a room for the challenge
+        const challengeRoomId = `challenge_${challengeId}`;
+        socket.join(challengeRoomId);
+        const challengerSocket = io.sockets.sockets.get(challenge.challengerSocketId);
+        if (challengerSocket) {
+          challengerSocket.join(challengeRoomId);
+        }
+        
+        // Both users join the challenge room with question data
+        io.to(challenge.challengerSocketId).emit("challengeRoomCreated", {
+          roomId: challengeRoomId,
+          question: challenge.question,
+          opponent: {
+            socketId: socket.id,
+            userId: socket.userId
+          },
+          role: 'challenger'
+        });
+
+        socket.emit("challengeRoomCreated", {
+          roomId: challengeRoomId,
+          question: challenge.question,
+          opponent: {
+            socketId: challenge.challengerSocketId,
+            userId: challenge.challengerInfo.userId
+          },
+          role: 'accepter'
+        });
+
+      } else if (response === 'reject') {
+        // Notify challenger that challenge was rejected
+        io.to(challenge.challengerSocketId).emit("challengeRejected", {
+          challengeId: challengeId,
+          targetSocketId: socket.id
+        });
+      }
+
+      // Remove challenge from pending
+      pendingChallenges.delete(challengeId);
+    });
+
+    // NEW: Handle challenge progress updates
+    socket.on("challengeProgress", ({ roomId, testsPassed, totalTests }) => {
+      console.log(`Challenge progress from ${socket.id}: ${testsPassed}/${totalTests} tests passed`);
+      socket.to(roomId).emit("opponentProgress", { testsPassed, totalTests });
+    });
+
+    // NEW: Handle challenge completion
+    socket.on("challengeCompleted", ({ roomId, winner, completionTime, testsPassed, totalTests }) => {
+      console.log(`Challenge completed by ${winner} in room ${roomId}`);
+      
+      // Award points for winning (base points + bonus for difficulty and speed)
+      const basePoints = 100;
+      const speedBonus = Math.max(0, Math.floor((300 - completionTime) / 10)); // Bonus for faster completion
+      const winnerPoints = basePoints + speedBonus;
+      
+      io.to(roomId).emit("challengeCompleted", {
+        winner,
+        completionTime,
+        testsPassed,
+        totalTests,
+        pointsAwarded: winnerPoints
+      });
+
+      // Emit points update to winner using their userId
+      const winnerSocket = io.sockets.sockets.get(winner);
+      if (winnerSocket && winnerSocket.userId) {
+        io.to(winner).emit("pointsUpdate", {
+          userId: winnerSocket.userId,
+          pointsChange: winnerPoints,
+          reason: `Won coding challenge in ${Math.floor(completionTime / 60)}:${(completionTime % 60).toString().padStart(2, '0')}`
+        });
+      }
+    });
+
+    // NEW: Handle challenge timeout
+    socket.on("challengeTimeout", ({ roomId }) => {
+      console.log(`Challenge timeout in room ${roomId}`);
+      io.to(roomId).emit("challengeTimeout");
+    });
+
+    // NEW: Handle challenge surrender
+    socket.on("challengeSurrender", ({ roomId, opponentSocketId }) => {
+      console.log(`Challenge surrender by ${socket.id} in room ${roomId}`);
+      
+      const surrenderPenalty = -50; // Lose 50 points for surrendering
+      const opponentReward = 25; // Opponent gets 25 points for opponent surrendering
+      
+      // Notify both users about surrender
+      io.to(roomId).emit("challengeSurrender", {
+        surrenderSocketId: socket.id,
+        surrenderUserId: socket.userId,
+        opponentSocketId,
+        surrenderPenalty,
+        opponentReward
+      });
+
+      // Emit points updates using userIds
+      if (socket.userId) {
+        socket.emit("pointsUpdate", {
+          userId: socket.userId,
+          pointsChange: surrenderPenalty,
+          reason: "Surrendered coding challenge"
+        });
+      }
+
+      const opponentSocket = io.sockets.sockets.get(opponentSocketId);
+      if (opponentSocket && opponentSocket.userId) {
+        io.to(opponentSocketId).emit("pointsUpdate", {
+          userId: opponentSocket.userId,
+          pointsChange: opponentReward,
+          reason: "Opponent surrendered coding challenge"
+        });
       }
     });
 
@@ -616,6 +787,22 @@ const handleSocketEvents = (io) => {
       const roomGameSpaceId = playerRoomGameSpaces.get(socket.id);
       if (roomGameSpaceId) {
         leaveRoomGameSpace(socket, roomGameSpaceId);
+      }
+
+      // Handle pending challenges cleanup
+      for (const [challengeId, challenge] of pendingChallenges.entries()) {
+        if (challenge.challengerSocketId === socket.id || challenge.targetSocketId === socket.id) {
+          pendingChallenges.delete(challengeId);
+          
+          // Notify the other party about the cancellation
+          const otherSocketId = challenge.challengerSocketId === socket.id 
+            ? challenge.targetSocketId 
+            : challenge.challengerSocketId;
+          
+          if (connectedPlayers.has(otherSocketId)) {
+            io.to(otherSocketId).emit("challengeCancelled", { challengeId });
+          }
+        }
       }
 
       connectedPlayers.delete(socket.id);

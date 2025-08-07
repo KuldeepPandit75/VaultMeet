@@ -161,6 +161,11 @@ const userSchema = new mongoose_1.default.Schema({
         type: String,
         default: "",
     },
+    points: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
     googleId: {
         type: String,
         unique: true,

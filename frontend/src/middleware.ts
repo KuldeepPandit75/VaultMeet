@@ -6,8 +6,8 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                     request.nextUrl.pathname.startsWith('/register');
   const isProfilePage = request.nextUrl.pathname === '/me';
-  const isEventSpacePage = request.nextUrl.pathname.startsWith('/event-space');
-  const isCodingSpacePage = request.nextUrl.pathname.startsWith('/coding-space');
+  const isEventSpacePage = request.nextUrl.pathname.startsWith('/event');
+  const isCodingSpacePage = request.nextUrl.pathname.startsWith('/room');
 
   // Check if it's a protected route
   const isProtectedRoute = isProfilePage || isEventSpacePage || isCodingSpacePage;
@@ -63,5 +63,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/me', '/login', '/register', '/event-space/:path*', '/coding-space/:path*']
+  matcher: ['/me', '/login', '/register', '/event-space/:path*', '/room/:path*']
 }; 

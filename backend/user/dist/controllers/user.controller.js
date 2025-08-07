@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeConnection = exports.getConnections = exports.getConnectionsCount = exports.getUnreadNotificationCount = exports.markAllNotificationsAsRead = exports.markNotificationAsRead = exports.getNotifications = exports.getConnectionStatus = exports.respondToConnectionRequest = exports.sendConnectionRequest = exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileByUsername = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
+exports.getLeaderboard = exports.getUserPoints = exports.updateUserPoints = exports.removeConnection = exports.getConnections = exports.getConnectionsCount = exports.getUnreadNotificationCount = exports.markAllNotificationsAsRead = exports.markNotificationAsRead = exports.getNotifications = exports.getConnectionStatus = exports.respondToConnectionRequest = exports.sendConnectionRequest = exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileByUsername = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
 const user_service_js_1 = __importDefault(require("../services/user.service.js"));
 const express_validator_1 = require("express-validator");
@@ -657,3 +657,95 @@ const removeConnection = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.removeConnection = removeConnection;
+// Update user points
+const updateUserPoints = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId, pointsChange, reason } = req.body;
+        if (!userId || pointsChange === undefined) {
+            return res.status(400).json({ message: "User ID and points change are required" });
+        }
+        const user = yield user_model_js_1.default.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        // Calculate new points, ensuring it doesn't go below 0
+        const newPoints = Math.max(0, user.points + pointsChange);
+        user.points = newPoints;
+        // Add notification about points change
+        const notificationMessage = pointsChange > 0
+            ? `You earned ${pointsChange} points! ${reason || ''}`
+            : `You lost ${Math.abs(pointsChange)} points. ${reason || ''}`;
+        user.notifications.push({
+            type: 'points_update',
+            message: notificationMessage,
+            isRead: false,
+            createdAt: new Date()
+        });
+        yield user.save();
+        res.status(200).json({
+            message: "Points updated successfully",
+            newPoints: user.points,
+            pointsChange
+        });
+    }
+    catch (error) {
+        console.error('Error updating user points:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.updateUserPoints = updateUserPoints;
+// Get user points
+const getUserPoints = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId } = req.params;
+        const user = yield user_model_js_1.default.findById(userId).select('points');
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json({ points: user.points });
+    }
+    catch (error) {
+        console.error('Error fetching user points:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getUserPoints = getUserPoints;
+// Get leaderboard data
+const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const currentUserId = req.user._id;
+        // Get all users with points > 0, sorted by points (descending) and createdAt (ascending for tie-breaking)
+        const users = yield user_model_js_1.default.find({ points: { $gt: 0 } })
+            .select('fullname username avatar points createdAt')
+            .sort({ points: -1, createdAt: 1 })
+            .limit(100); // Limit to top 100 users
+        // Calculate ranks and find current user's rank
+        let currentUserRank = null;
+        const leaderboardData = users.map((user, index) => {
+            const rank = index + 1;
+            // Check if this is the current user
+            if (user._id.toString() === currentUserId.toString()) {
+                currentUserRank = rank;
+            }
+            return {
+                rank,
+                userId: user._id,
+                fullname: user.fullname,
+                username: user.username,
+                avatar: user.avatar,
+                points: user.points,
+                createdAt: user.createdAt
+            };
+        });
+        res.status(200).json({
+            leaderboard: leaderboardData,
+            currentUserRank,
+            totalUsers: users.length
+        });
+    }
+    catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getLeaderboard = getLeaderboard;

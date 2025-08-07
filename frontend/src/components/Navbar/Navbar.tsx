@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useThemeStore } from "../../Zustand_Store/ThemeStore";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import useAuthStore from "@/Zustand_Store/AuthStore";
+import useAuthStore, { Role } from "@/Zustand_Store/AuthStore";
 import toast from "react-hot-toast";
 import Image from "next/image";
 
@@ -40,6 +40,10 @@ const NAV_LINKS: NavLink[] = [
   { href: "/events", label: "Events" },
   { href: "/host", label: "Host" },
   { href: "/about", label: "About" },
+];
+
+const ADMIN_LINKS: NavLink[] = [
+  { href: "/admin", label: "Admin" },
 ];
 
 const NAV_BUTTONS: NavButton[] = [
@@ -289,6 +293,11 @@ const Navbar = () => {
         {NAV_LINKS.map((link) => (
           <NavLink key={link.href} {...link} />
         ))}
+        {isAuthenticated && user?.role === Role.Admin && (
+          ADMIN_LINKS.map((link) => (
+            <NavLink key={link.href} {...link} />
+          ))
+        )}
       </div>
 
       <div className="hidden md:flex gap-[30px] text-[18px] items-center ml-8">
@@ -520,6 +529,11 @@ const Navbar = () => {
             {NAV_LINKS.map((link) => (
               <NavLink key={link.href} {...link} />
             ))}
+            {isAuthenticated && user?.role === Role.Admin && (
+              ADMIN_LINKS.map((link) => (
+                <NavLink key={link.href} {...link} />
+              ))
+            )}
           </div>
 
           {isAuthenticated ? (

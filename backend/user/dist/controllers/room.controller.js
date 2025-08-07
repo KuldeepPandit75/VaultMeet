@@ -72,6 +72,13 @@ const canJoinRoom = (roomId, userId) => __awaiter(void 0, void 0, void 0, functi
 const createRoom = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user._id;
+        // Check if user has already created 4 rooms
+        const existingRooms = yield room_model_js_1.default.countDocuments({ adminId: userId });
+        if (existingRooms >= 2) {
+            return res.status(400).json({
+                message: "You have reached the maximum limit of 2 rooms. Please delete an existing room before creating a new one."
+            });
+        }
         // Generate unique room ID
         let roomId;
         let roomExists;

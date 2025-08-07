@@ -57,6 +57,7 @@ interface IUser extends Document {
     techUsed: string;
   };
   achievements: string;
+  points: number;
   googleId?: string;
   generateAuthToken(): string;
   comparePassword(password: string): Promise<boolean>;
@@ -224,6 +225,12 @@ const userSchema = new mongoose.Schema({
   achievements: {
     type: String,
     default: "",
+  },
+
+  points: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
 
   googleId: {

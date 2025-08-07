@@ -29,12 +29,63 @@ import useChatStore from "@/Zustand_Store/ChatStore";
 import { useParams } from "next/navigation";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "react-hot-toast";
+import CodingChallengeInterface from "@/components/Game/CodingChallenge/CodingChallengeInterface";
+import type { DSAQuestion } from "@/data/dsaQuestions";
+import { pointsService } from "@/services/pointsService";
+import RoomInviteModal from "@/components/Game/Modals/RoomInviteModal";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
   _video_muted_?: boolean;
   _audio_muted_?: boolean;
 };
+
+interface Notification {
+  id: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  type?: 'challenge';
+  challengeId?: string;
+  challengerInfo?: {
+    socketId: string;
+    userId: string;
+    username: string;
+    fullname: {
+      firstname: string;
+      lastname: string;
+    };
+  };
+  question?: {
+    id: string;
+    title: string;
+    difficulty: string;
+    timeLimit: number;
+  };
+  timer?: number; // Countdown timer for challenge notifications
+}
+
+
+
+interface ChallengeEvent {
+  challengeId: string;
+  challengerInfo: {
+    socketId: string;
+    userId: string;
+    username: string;
+    fullname: {
+      firstname: string;
+      lastname: string;
+    };
+  };
+  question: {
+    id: string;
+    title: string;
+    difficulty: string;
+    timeLimit: number;
+  };
+  timestamp: number;
+}
 
 const CodingSpace = () => {
   const params = useParams();
@@ -45,6 +96,10 @@ const CodingSpace = () => {
   const [screenShare, setScreenShare] = useState(false);
   const [waiting, setWaiting] = useState("Getting the room ready....");
   const [typedMsg, setTypedMsg] = useState("");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(true);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
   const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount, checkRoomPermission, setCurrentRoom, joinRoomRequest } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
@@ -56,15 +111,115 @@ const CodingSpace = () => {
   >();
   const [viewMode, setViewMode] = useState<"game" | "meeting" | "whiteboard">("game");
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(roomId);
+  const [challengeRoom, setChallengeRoom] = useState<{
+    roomId: string;
+    question: DSAQuestion;
+    opponent: { socketId: string; userId: string };
+    role: 'challenger' | 'accepter';
+  } | null>(null);
   const router= useRouter();
   const pathname = usePathname();
   const {user} = useAuthStore();
-  // Check logged in or not
-  // useEffect(()=>{
-  //   if(!user){
-  //     router.push("/login")
-  //   }
-  // })
+
+  // Handle click outside notification panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationPanelOpen(false);
+      }
+    };
+
+    if (isNotificationPanelOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationPanelOpen]);
+
+  // Toggle notification panel
+  const toggleNotificationPanel = () => {
+    setIsNotificationPanelOpen(!isNotificationPanelOpen);
+  };
+
+  // Add notification
+  const addNotification = (message: string, type?: 'challenge', challengeData?: ChallengeEvent) => {
+    const newNotification: Notification = {
+      id: Date.now().toString(),
+      message,
+      timestamp: Date.now(),
+      read: false,
+      type,
+      ...(type === 'challenge' && challengeData && {
+        challengeId: challengeData.challengeId,
+        challengerInfo: challengeData.challengerInfo,
+        question: challengeData.question,
+        timer: type === 'challenge' ? 10 : undefined // 10 second timer for challenges
+      })
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  // Mark notification as read
+  const markAsRead = (notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, read: true }
+          : notification
+      )
+    );
+  };
+
+  // Handle challenge response
+  const handleChallengeResponse = (challengeId: string, response: 'accept' | 'reject') => {
+    if (!socket) return;
+    
+    socket.emit("respondToChallenge", { challengeId, response });
+    
+    // Remove the challenge notification completely
+    setNotifications(prev => 
+      prev.filter(notification => notification.challengeId !== challengeId)
+    );
+    
+    if (response === 'accept') {
+      toast.success("Challenge accepted!");
+    } else {
+      toast.error("Challenge rejected");
+    }
+  };
+
+  // Timer effect for challenge notifications
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNotifications(prev => {
+        const updatedNotifications = prev.map(notification => {
+          if (notification.type === 'challenge' && notification.timer && notification.timer > 0) {
+            const newTimer = notification.timer - 1;
+            
+            // Auto-reject challenge when timer expires
+            if (newTimer === 0 && notification.challengeId) {
+              handleChallengeResponse(notification.challengeId, 'reject');
+            }
+            
+            return { ...notification, timer: newTimer };
+          }
+          return notification;
+        });
+        
+        // Remove notifications that have reached 0
+        return updatedNotifications.filter(notification => 
+          !(notification.type === 'challenge' && notification.timer === 0)
+        );
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Get unread notifications count
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
   
   useEffect(()=>{
     if(!socket) return;
@@ -131,6 +286,89 @@ const CodingSpace = () => {
       socket.off("rejectedJoinRequest", handleRejectedRequest);
     };
   }, [socket, router]);
+
+  // Listen for challenge events
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleReceiveChallenge = (data: ChallengeEvent) => {
+      console.log("Received challenge:", data);
+      const challengerName = data.challengerInfo.fullname?.firstname || data.challengerInfo.username || "Unknown User";
+      addNotification(
+        `${challengerName} has challenged you to solve "${data.question.title}"!`, 
+        'challenge', 
+        data
+      );
+      toast(`Challenge from ${challengerName}!`);
+    };
+    
+    const handleChallengeAccepted = (data: { challengeId: string; targetSocketId: string }) => {
+      console.log("Challenge accepted:", data);
+      toast.success("Your challenge was accepted!");
+    };
+    
+    const handleChallengeRejected = (data: { challengeId: string; targetSocketId: string }) => {
+      console.log("Challenge rejected:", data);
+      toast.error("Your challenge was rejected");
+    };
+    
+    const handleChallengeCancelled = (data: { challengeId: string }) => {
+      console.log("Challenge cancelled:", data);
+      toast.error("Challenge was cancelled");
+    };
+
+    const handleChallengeRoomCreated = (data: {
+      roomId: string;
+      question: DSAQuestion;
+      opponent: { socketId: string; userId: string };
+      role: 'challenger' | 'accepter';
+    }) => {
+      console.log("Challenge room created:", data);
+      setChallengeRoom(data);
+      toast.success("Challenge started! Good luck!");
+    };
+
+    const handlePointsUpdate = async (data: { userId: string; pointsChange: number; reason: string }) => {
+      console.log("Points update received:", data);
+      
+      // Update user points via API
+      try {
+        const result = await pointsService.updateUserPoints({
+          userId: data.userId,
+          pointsChange: data.pointsChange,
+          reason: data.reason
+        });
+        
+        console.log("Points updated successfully:", result);
+        
+        // Show notification to user about points change
+        if (data.pointsChange > 0) {
+          toast.success(`You earned ${data.pointsChange} points! ${data.reason}`);
+        } else {
+          toast.error(`You lost ${Math.abs(data.pointsChange)} points. ${data.reason}`);
+        }
+      } catch (error) {
+        console.error("Error updating points:", error);
+        toast.error("Failed to update points");
+      }
+    };
+    
+    socket.on("receiveChallenge", handleReceiveChallenge);
+    socket.on("challengeAccepted", handleChallengeAccepted);
+    socket.on("challengeRejected", handleChallengeRejected);
+    socket.on("challengeCancelled", handleChallengeCancelled);
+    socket.on("challengeRoomCreated", handleChallengeRoomCreated);
+    socket.on("pointsUpdate", handlePointsUpdate);
+    
+    return () => {
+      socket.off("receiveChallenge", handleReceiveChallenge);
+      socket.off("challengeAccepted", handleChallengeAccepted);
+      socket.off("challengeRejected", handleChallengeRejected);
+      socket.off("challengeCancelled", handleChallengeCancelled);
+      socket.off("challengeRoomCreated", handleChallengeRoomCreated);
+      socket.off("pointsUpdate", handlePointsUpdate);
+    };
+  }, [socket]);
 
   const toggleViewMode = () => {
     if (viewMode === "game") {
@@ -424,6 +662,12 @@ const CodingSpace = () => {
       className="flex h-screen overflow-hidden"
       style={{ backgroundColor: isDarkMode ? "#0f0f0f" : "#f8f9fa" }}
     >
+      <RoomInviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        roomId={roomId}
+        roomName="Coding Room"
+      />
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
         <PhaserGame mapType="general" roomId={roomId} />
@@ -467,6 +711,153 @@ const CodingSpace = () => {
         isMeetingViewAvailable={remoteUsers.length > 0}
         unreadCount={unreadCount}
       />
+
+      {/* Notification Icon */}
+      <div className="absolute top-4 right-4 z-50" ref={notificationRef}>
+        <button
+          onClick={toggleNotificationPanel}
+          className={`relative p-3 rounded-full transition-all duration-200 hover:scale-105 shadow-lg border ${
+            isDarkMode ? "border-gray-600" : "border-gray-200"
+          }`}
+          style={{
+            backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f5f5",
+            color: isDarkMode ? "#ffffff" : "#1a1a1a",
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="white" height={25} width={25}><path d="M320 64C302.3 64 288 78.3 288 96L288 99.2C215 114 160 178.6 160 256L160 277.7C160 325.8 143.6 372.5 113.6 410.1L103.8 422.3C98.7 428.6 96 436.4 96 444.5C96 464.1 111.9 480 131.5 480L508.4 480C528 480 543.9 464.1 543.9 444.5C543.9 436.4 541.2 428.6 536.1 422.3L526.3 410.1C496.4 372.5 480 325.8 480 277.7L480 256C480 178.6 425 114 352 99.2L352 96C352 78.3 337.7 64 320 64zM258 528C265.1 555.6 290.2 576 320 576C349.8 576 374.9 555.6 382 528L258 528z"/></svg>
+          
+          {/* Notification Badge */}
+          {unreadNotificationsCount > 0 && (
+            <span
+              className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ backgroundColor: primaryAccentColor }}
+            >
+              {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+            </span>
+          )}
+        </button>
+
+        {/* Notification Panel */}
+        {isNotificationPanelOpen && (
+          <div
+            className={`absolute top-14 right-0 w-80 max-h-96 overflow-y-auto rounded-lg shadow-xl`}
+            style={{
+              backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f5f5",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+            }}
+          >
+            <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
+              <h3 className="font-semibold text-lg">Notifications</h3>
+            </div>
+            
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`p-4 border-b border-gray-100 dark:border-gray-700 transition-colors ${
+                      !notification.read 
+                        ? "bg-blue-50 dark:bg-blue-900/20" 
+                        : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                    onClick={() => markAsRead(notification.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className={`text-sm ${!notification.read ? "font-medium" : ""}`}>
+                          {notification.message}
+                        </p>
+                        
+                        {/* Question details for challenge notifications */}
+                        {notification.type === 'challenge' && notification.question && (
+                          <div 
+                            className="mt-2 p-2 rounded border"
+                            style={{
+                              backgroundColor: isDarkMode ? "#2a2a2a" : "#f8f9fa",
+                              borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium" style={{ color: isDarkMode ? "#fff" : "#000" }}>
+                                {notification.question.title}
+                              </span>
+                              <span 
+                                className="text-xs px-2 py-1 rounded-full"
+                                style={{
+                                  backgroundColor: notification.question.difficulty === 'Easy' ? '#22c55e' : 
+                                                 notification.question.difficulty === 'Medium' ? '#f59e0b' : '#ef4444',
+                                  color: '#fff'
+                                }}
+                              >
+                                {notification.question.difficulty}
+                              </span>
+                            </div>
+                            <div className="text-xs mt-1" style={{ color: isDarkMode ? "#aaa" : "#666" }}>
+                              Time Limit: {notification.question.timeLimit} minutes
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(notification.timestamp).toLocaleTimeString()}
+                          </p>
+                          {notification.type === 'challenge' && notification.timer !== undefined && (
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                              <span className="text-xs font-medium" style={{ color: primaryAccentColor }}>
+                                {notification.timer}s
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Challenge Action Buttons */}
+                        {notification.type === 'challenge' && notification.challengeId && notification.timer && notification.timer > 0 && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleChallengeResponse(notification.challengeId!, 'accept');
+                              }}
+                              className="px-3 py-1 text-xs rounded-full font-medium"
+                              style={{
+                                backgroundColor: primaryAccentColor,
+                                color: isDarkMode ? "#18181b" : "#fff",
+                              }}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleChallengeResponse(notification.challengeId!, 'reject');
+                              }}
+                              className="px-3 py-1 text-xs rounded-full font-medium bg-red-500 text-white"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {!notification.read && (
+                        <div
+                          className="w-2 h-2 rounded-full ml-2"
+                          style={{ backgroundColor: primaryAccentColor }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Profile Box */}
       {profileBox !== "close" && (
@@ -584,6 +975,17 @@ const CodingSpace = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Coding Challenge Interface */}
+      {challengeRoom && (
+        <CodingChallengeInterface
+          question={challengeRoom.question}
+          roomId={challengeRoom.roomId}
+          role={challengeRoom.role}
+          opponent={challengeRoom.opponent}
+          onClose={() => setChallengeRoom(null)}
+        />
       )}
     </div>
   );

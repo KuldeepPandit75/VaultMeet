@@ -1,7 +1,20 @@
 import { Scene, Tilemaps } from "phaser";
 import { Socket } from "socket.io-client";
-import { PROXIMITY_RADIUS, LEADBOARD_DATA } from "@/data/game";
+import { PROXIMITY_RADIUS } from "@/data/game";
 import useAuthStore from "@/Zustand_Store/AuthStore";
+
+interface LeaderboardPlayer {
+  rank: number;
+  userId: string;
+  fullname: {
+    firstname: string;
+    lastname: string;
+  };
+  username: string;
+  avatar: string;
+  points: number;
+  createdAt: string;
+}
 
 class GeneralSpace extends Scene {
   private player?: Phaser.Physics.Arcade.Sprite;
@@ -22,6 +35,8 @@ class GeneralSpace extends Scene {
   };
   private isNearWhiteboard: boolean = false;
   private whiteboardPrompt?: Phaser.GameObjects.Text;
+  private isNearLeaderboard: boolean = false;
+  private leaderboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string;
   private roomId?: string; // NEW: Room-specific identifier
   private objectLayerData: { [key: string]: Phaser.Types.Tilemaps.TiledObject[] } = {};
@@ -67,9 +82,15 @@ class GeneralSpace extends Scene {
     // Load leaderboard image
     this.load.image("leaderboard_image", "/game/leaderboard.png");
 
-    // Load leaderboard logos
-    LEADBOARD_DATA.forEach((item, index) => {
-      this.load.image(`leaderboard_logo_${index + 1}`, item.logo);
+    // Load leaderboard logos (demo data)
+    const demoLeaderboardLogos = [
+      "/game/delete/top1.png",
+      "/game/delete/top2.png", 
+      "/game/delete/top3.png"
+    ];
+    
+    demoLeaderboardLogos.forEach((logo, index) => {
+      this.load.image(`leaderboard_logo_${index + 1}`, logo);
     });
 
     // Add loading error handler
@@ -437,7 +458,7 @@ class GeneralSpace extends Scene {
       }
     });
 
-    // Load all object layers
+    // Load all object layers with clean code
     const objectLayers = [
       "WhiteBoard",
       "LeaderBoard", 
@@ -446,12 +467,20 @@ class GeneralSpace extends Scene {
       "top3Logo",
       "top1Name",
       "top2Name",
-      "top3Name"
+      "top3Name",
+      "progLeaderBoard",
+      "top1Rank",
+      "top2Rank", 
+      "top3Rank",
+      "top1Prog",
+      "top2Prog",
+      "top3Prog"
     ];
 
     // Store object layer data for potential use
     this.objectLayerData = {};
 
+    // Clean loading of all object layers
     objectLayers.forEach(layerName => {
       const objects = map.getObjectLayer(layerName)?.objects;
       if (objects && objects.length > 0) {
@@ -475,45 +504,45 @@ class GeneralSpace extends Scene {
     console.log("All object layers loaded:", Object.keys(this.objectLayerData));
 
     // Create visual debug rectangles for object layers (optional - for development)
-    if (process.env.NODE_ENV === 'development') {
-      Object.entries(this.objectLayerData).forEach(([layerName, objects]) => {
-        objects.forEach((obj, index) => {
-          // Create a debug rectangle to visualize object areas
-          const debugRect = this.add.rectangle(
-            (obj.x || 0) + (obj.width || 0) / 2,
-            (obj.y || 0) + (obj.height || 0) / 2,
-            obj.width || 32,
-            obj.height || 32,
-            0xff0000,
-            0.3
-          );
-          debugRect.setDepth(600);
+    // if (process.env.NODE_ENV === 'development') {
+    //   Object.entries(this.objectLayerData).forEach(([layerName, objects]) => {
+    //     objects.forEach((obj, index) => {
+    //       // Create a debug rectangle to visualize object areas
+    //       const debugRect = this.add.rectangle(
+    //         (obj.x || 0) + (obj.width || 0) / 2,
+    //         (obj.y || 0) + (obj.height || 0) / 2,
+    //         obj.width || 32,
+    //         obj.height || 32,
+    //         0xff0000,
+    //         0.3
+    //       );
+    //       debugRect.setDepth(600);
           
-          // Add text label
-          const label = this.add.text(
-            (obj.x || 0) + (obj.width || 0) / 2,
-            (obj.y || 0) + (obj.height || 0) / 2,
-            `${layerName}${index}`,
-            {
-              fontSize: '8px',
-              color: '#ffffff',
-              backgroundColor: '#000000',
-              padding: { left: 2, right: 2, top: 1, bottom: 1 }
-            }
-          ).setOrigin(0.5);
-          label.setDepth(600);
-        });
-      });
-    }
+    //       // Add text label
+    //       const label = this.add.text(
+    //         (obj.x || 0) + (obj.width || 0) / 2,
+    //         (obj.y || 0) + (obj.height || 0) / 2,
+    //         `${layerName}${index}`,
+    //         {
+    //           fontSize: '8px',
+    //           color: '#ffffff',
+    //           backgroundColor: '#000000',
+    //           padding: { left: 2, right: 2, top: 1, bottom: 1 }
+    //         }
+    //       ).setOrigin(0.5);
+    //       label.setDepth(600);
+    //     });
+    //   });
+    // }
 
     // Add leaderboard image from image layer
     // Based on the JSON data, the LeaderBoard image layer has offsetx: 392, offsety: 418
-    const leaderboardImage = this.add.image(502, 488, "leaderboard_image");
+    const leaderboardImage = this.add.image(330, 760, "leaderboard_image");
+    const progLeaderBoard = this.add.image(720, 765, "leaderboard_image");
     
     // Set the depth to ensure it appears above tiles but below UI elements
-    leaderboardImage.setDepth(530);  
-    
-    console.log("Leaderboard image added at:", { x: 392, y: 418 });
+    leaderboardImage.setDepth(800);  
+    progLeaderBoard.setDepth(805);
 
     // Load leaderboard content (logos and names)
     this.createLeaderboardContent();
@@ -550,11 +579,13 @@ class GeneralSpace extends Scene {
     // Initialize cursor keys
     this.cursors = this.input.keyboard?.createCursorKeys();
 
-    // Add space key for whiteboard interaction
+    // Add space key for whiteboard and leaderboard interaction
     const spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     spaceKey?.on('down', () => {
       if (this.isNearWhiteboard) {
         this.openWhiteboard();
+      } else if (this.isNearLeaderboard) {
+        this.openLeaderboard();
       }
     });
 
@@ -757,6 +788,17 @@ class GeneralSpace extends Scene {
     window.dispatchEvent(event);
   }
 
+  private openLeaderboard() {
+    console.log("Opening leaderboard from GeneralSpace");
+    // Dispatch custom event to open leaderboard
+    const event = new CustomEvent("openLeaderboard", {
+      detail: {
+        source: "GeneralSpace"
+      }
+    });
+    window.dispatchEvent(event);
+  }
+
   // Helper method to check if player is near any object layer
   private isPlayerNearObjectLayer(layerName: string, proximityRadius: number = 80): boolean {
     if (!this.player || !this.objectLayerData[layerName]) {
@@ -869,6 +911,9 @@ class GeneralSpace extends Scene {
           if (dist <= PROXIMITY_RADIUS) {
             if (!this.nearbyPlayers.includes(id)) {
               this.nearbyPlayers.push(id);
+              this.socket?.emit("startConversation", {
+                targetSocketId: id,
+              });
             }
           } else {
             if (this.nearbyPlayers.includes(id)) {
@@ -924,6 +969,39 @@ class GeneralSpace extends Scene {
         this.whiteboardPrompt.setVisible(true);
       } else if (this.whiteboardPrompt) {
         this.whiteboardPrompt.setVisible(false);
+      }
+
+      // Check if player is near the leaderboard area
+      const LEADERBOARD_PROXIMITY_RADIUS = 80; // Adjust as needed
+      const leaderboardCenterX = 330; // Based on the leaderboard image position
+      const leaderboardCenterY = 760; // Based on the leaderboard image position
+      
+      const leaderboardDist = Phaser.Math.Distance.Between(
+        playerX,
+        playerY,
+        leaderboardCenterX,
+        leaderboardCenterY
+      );
+      
+      this.isNearLeaderboard = leaderboardDist <= LEADERBOARD_PROXIMITY_RADIUS;
+
+      // Show/hide leaderboard interaction prompt
+      if (this.isNearLeaderboard) {
+        if (!this.leaderboardPrompt) {
+          this.leaderboardPrompt = this.add.text(playerX, playerY - 60, "Press SPACE to see Leaderboard", {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#ffffff",
+            backgroundColor: "#000000",
+            padding: { left: 8, right: 8, top: 4, bottom: 4 },
+            align: "center",
+          }).setOrigin(0.5, 0);
+          this.leaderboardPrompt.setDepth(10000);
+        }
+        this.leaderboardPrompt.setPosition(playerX, playerY - 60);
+        this.leaderboardPrompt.setVisible(true);
+      } else if (this.leaderboardPrompt) {
+        this.leaderboardPrompt.setVisible(false);
       }
     }
 
@@ -992,6 +1070,11 @@ class GeneralSpace extends Scene {
       this.whiteboardPrompt.destroy();
     }
 
+    // Clean up leaderboard prompt
+    if (this.leaderboardPrompt && this.leaderboardPrompt.destroy) {
+      this.leaderboardPrompt.destroy();
+    }
+
     // Clean up proximity circle
     if (this.proximityCircle && this.proximityCircle.destroy) {
       this.proximityCircle.destroy();
@@ -1000,6 +1083,7 @@ class GeneralSpace extends Scene {
     // Reset state
     this.nearbyPlayers = [];
     this.isNearWhiteboard = false;
+    this.isNearLeaderboard = false;
     this.running = false;
     this.pendingPlayers = [];
     this.isReady = false;
@@ -1008,62 +1092,189 @@ class GeneralSpace extends Scene {
   }
 
   // Helper method to create leaderboard content
-  private createLeaderboardContent() {
+  private async createLeaderboardContent() {
     console.log("Creating leaderboard content...");
     
-    // Create logos for top 3 positions
-    LEADBOARD_DATA.forEach((item) => {
-      const logoLayerName = `top${item.rank}Logo`;
-      const nameLayerName = `top${item.rank}Name`;
+    try {
+      // Fetch real leaderboard data from API
+      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/leaderboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       
-      // Add logo if object layer exists
-      if (this.objectLayerData[logoLayerName] && this.objectLayerData[logoLayerName].length > 0) {
-        const logoObj = this.objectLayerData[logoLayerName][0];
-        const logoX = (logoObj.x || 0) + (logoObj.width || 0) / 2;
-        const logoY = (logoObj.y || 0) + (logoObj.height || 0) / 2;
+      if (!response.ok) {
+        throw new Error('Failed to fetch leaderboard data');
+      }
+      
+      const data = await response.json();
+      const top3Players = data.leaderboard.slice(0, 3);
+      
+      // Create logos and names for regular leaderboard (left side)
+      top3Players.forEach((player: LeaderboardPlayer) => {
+        const logoLayerName = `top${player.rank}Logo`;
+        const nameLayerName = `top${player.rank}Name`;
         
-        const logo = this.add.image(logoX, logoY, `leaderboard_logo_${item.rank}`);
-        logo.setDepth(540); // Above leaderboard background
+        // Add logo if object layer exists
+        if (this.objectLayerData[logoLayerName] && this.objectLayerData[logoLayerName].length > 0) {
+          const logoObj = this.objectLayerData[logoLayerName][0];
+          const logoX = (logoObj.x || 0) + (logoObj.width || 0) / 2;
+          const logoY = (logoObj.y || 0) + (logoObj.height || 0) / 2;
+          
+          // Add rank number on top of the logo
+          const rankText = this.add.text(logoX, logoY, `#${player.rank}`, {
+            fontSize: "12px",
+            fontFamily: "pixel-font",
+            color: "#FFD700", // Gold color
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 2,
+          }).setOrigin(0.5);
+          
+          rankText.setDepth(810); // Above logo
+        }
         
-        // Scale logo to fit the object area
-        const scaleX = (logoObj.width || 32) / logo.width;
-        const scaleY = (logoObj.height || 32) / logo.height;
-        const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
-        logo.setScale(scale);
+        // Add name text if object layer exists
+        if (this.objectLayerData[nameLayerName] && this.objectLayerData[nameLayerName].length > 0) {
+          const nameObj = this.objectLayerData[nameLayerName][0];
+          const nameX = (nameObj.x || 0) + (nameObj.width || 0) / 2;
+          const nameY = (nameObj.y || 0) + (nameObj.height || 0) / 2;
+          
+          const fullName = `${player.fullname.firstname} ${player.fullname.lastname}`;
+          const nameText = this.add.text(nameX, nameY, `${fullName} (${player.points})`, {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#000000",
+            fontStyle: "bold",
+            align: "center",
+          }).setOrigin(0.5);
+          
+          nameText.setDepth(810); // Above leaderboard background
+        }
+      });
+      
+      console.log("Leaderboard content created with real data:", top3Players);
+    } catch (error) {
+      console.error("Error fetching leaderboard data:", error);
+      
+      // Fallback to demo data if API fails
+      const leaderboardData = [
+        { rank: 1, name: "John Doe", points: 1250 },
+        { rank: 2, name: "Jane Smith", points: 1100 },
+        { rank: 3, name: "Mike Johnson", points: 950 }
+      ];
+      
+      // Create logos and names for regular leaderboard (left side)
+      leaderboardData.forEach((item) => {
+        const logoLayerName = `top${item.rank}Logo`;
+        const nameLayerName = `top${item.rank}Name`;
         
-        console.log(`Added logo for rank ${item.rank} at (${logoX}, ${logoY})`);
+        // Add logo if object layer exists
+        if (this.objectLayerData[logoLayerName] && this.objectLayerData[logoLayerName].length > 0) {
+          const logoObj = this.objectLayerData[logoLayerName][0];
+          const logoX = (logoObj.x || 0) + (logoObj.width || 0) / 2;
+          const logoY = (logoObj.y || 0) + (logoObj.height || 0) / 2;
+          
+          // Add rank number on top of the logo
+          const rankText = this.add.text(logoX, logoY, `#${item.rank}`, {
+            fontSize: "12px",
+            fontFamily: "pixel-font",
+            color: "#FFD700", // Gold color
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 2,
+          }).setOrigin(0.5);
+          
+          rankText.setDepth(810); // Above logo
+        }
         
-        // Add rank number on top of the logo
-        const rankText = this.add.text(logoX - 15, logoY - 15, `#${item.rank}`, {
-          fontSize: "14px",
+        // Add name text if object layer exists
+        if (this.objectLayerData[nameLayerName] && this.objectLayerData[nameLayerName].length > 0) {
+          const nameObj = this.objectLayerData[nameLayerName][0];
+          const nameX = (nameObj.x || 0) + (nameObj.width || 0) / 2;
+          const nameY = (nameObj.y || 0) + (nameObj.height || 0) / 2;
+          
+          const nameText = this.add.text(nameX, nameY, `${item.name} (${item.points})`, {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#000000",
+            fontStyle: "bold",
+            align: "center",
+          }).setOrigin(0.5);
+          
+          nameText.setDepth(810); // Above leaderboard background
+        }
+      });
+    }
+
+    // Create programming leaderboard content (right side)
+    this.createProgrammingLeaderboardContent();
+  }
+
+  // Helper method to create programming leaderboard content
+  private createProgrammingLeaderboardContent() {
+    console.log("Creating programming leaderboard content...");
+    
+    // Demo data for programming leaderboard
+    const progLeaderboardData = [
+      { rank: 1, name: "Alice", score: "95%", language: "Python" },
+      { rank: 2, name: "Bob", score: "87%", language: "JavaScript" },
+      { rank: 3, name: "Charlie", score: "82%", language: "Java" }
+    ];
+    
+    // Calculate offset for programming leaderboard (right side)
+    const progLeaderboardOffset = 400; // Adjust this value to position the programming leaderboard
+    
+    progLeaderboardData.forEach((item) => {
+      const rankLayerName = `top${item.rank}Rank`;
+      const progLayerName = `top${item.rank}Prog`;
+      
+      // Add rank indicator if object layer exists (with offset for right side)
+      if (this.objectLayerData[rankLayerName] && this.objectLayerData[rankLayerName].length > 0) {
+        const rankObj = this.objectLayerData[rankLayerName][0];
+        const rankX = (rankObj.x || 0) + (rankObj.width || 0) / 2 + progLeaderboardOffset;
+        const rankY = (rankObj.y || 0) + (rankObj.height || 0) / 2;
+        
+        // Add rank number
+        const rankText = this.add.text(rankX, rankY, `#${item.rank}`, {
+          fontSize: "12px",
           fontFamily: "pixel-font",
           color: "#FFD700", // Gold color
           fontStyle: "bold",
           stroke: "#000000",
-          strokeThickness: 2,
+          strokeThickness: 1,
         }).setOrigin(0.5);
         
-        rankText.setDepth(550); // Above logo
-        console.log(`Added rank #${item.rank} at (${logoX - 15}, ${logoY - 15})`);
+        rankText.setDepth(810); // Above background
       }
       
-      // Add name text if object layer exists
-      if (this.objectLayerData[nameLayerName] && this.objectLayerData[nameLayerName].length > 0) {
-        const nameObj = this.objectLayerData[nameLayerName][0];
-        const nameX = (nameObj.x || 0) + (nameObj.width || 0) / 2;
-        const nameY = (nameObj.y || 0) + (nameObj.height || 0) / 2;
+      // Add programming score/name if object layer exists (with offset for right side)
+      if (this.objectLayerData[progLayerName] && this.objectLayerData[progLayerName].length > 0) {
+        const progObj = this.objectLayerData[progLayerName][0];
+        const progX = (progObj.x || 0) + (progObj.width || 0) / 2 + progLeaderboardOffset;
+        const progY = (progObj.y || 0) + (progObj.height || 0) / 2;
         
-        const nameText = this.add.text(nameX, nameY, item.name, {
-          fontSize: "12px",
+        const progText = this.add.text(progX, progY, `${item.name} - ${item.language}`, {
+          fontSize: "10px",
           fontFamily: "pixel-font",
           color: "#000000",
           fontStyle: "bold",
           align: "center",
         }).setOrigin(0.5);
         
-        nameText.setDepth(540); // Above leaderboard background
+        progText.setDepth(810); // Above background
         
-        console.log(`Added name "${item.name}" for rank ${item.rank} at (${nameX}, ${nameY})`);
+        // Add score text below the name
+        const scoreText = this.add.text(progX, progY + 15, `Score: ${item.score}`, {
+          fontSize: "8px",
+          fontFamily: "pixel-font",
+          color: "#666666",
+          fontStyle: "bold",
+          align: "center",
+        }).setOrigin(0.5);
+        
+        scoreText.setDepth(810); // Above background
       }
     });
   }

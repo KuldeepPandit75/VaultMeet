@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Game } from 'phaser';
 import { useSocket } from "@/context/SocketContext";
 import useAuthStore from "@/Zustand_Store/AuthStore";
+import LeaderboardModal from "./Modals/LeaderboardModal";
 
 interface PhaserGameProps {
   eventId?: string; // Optional eventId for event-specific spaces
@@ -15,11 +16,25 @@ const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) 
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const { socket } = useSocket();
   const {user} = useAuthStore();
   
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  // Handle leaderboard modal events
+  useEffect(() => {
+    const handleOpenLeaderboard = () => {
+      setShowLeaderboard(true);
+    };
+
+    window.addEventListener('openLeaderboard', handleOpenLeaderboard);
+
+    return () => {
+      window.removeEventListener('openLeaderboard', handleOpenLeaderboard);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,11 +116,17 @@ const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) 
   }, [isClient, socket, eventId, roomId, user?._id]);
 
   return (
-    <div
-      ref={gameContainer}
-      id="game-container"
-      className="w-full h-full"
-    />
+    <>
+      <div
+        ref={gameContainer}
+        id="game-container"
+        className="w-full h-full"
+      />
+      <LeaderboardModal 
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+      />
+    </>
   );
 };
 

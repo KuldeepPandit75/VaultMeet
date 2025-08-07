@@ -474,8 +474,8 @@
          "imageheight":147,
          "imagewidth":220,
          "name":"LeaderBoard",
-         "offsetx":392,
-         "offsety":418,
+         "offsetx":218.666666666667,
+         "offsety":690,
          "opacity":1,
          "type":"imagelayer",
          "visible":true,
@@ -495,8 +495,8 @@
                  "type":"",
                  "visible":true,
                  "width":157.333,
-                 "x":422.667,
-                 "y":428
+                 "x":248.000333333333,
+                 "y":698.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -518,8 +518,8 @@
                  "type":"",
                  "visible":true,
                  "width":24.5,
-                 "x":435.5,
-                 "y":452.5
+                 "x":260.833333333333,
+                 "y":723.166666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -541,8 +541,8 @@
                  "type":"",
                  "visible":true,
                  "width":24.5,
-                 "x":435.5,
-                 "y":479.5
+                 "x":260.833333333333,
+                 "y":750.166666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -564,8 +564,8 @@
                  "type":"",
                  "visible":true,
                  "width":25,
-                 "x":435,
-                 "y":507
+                 "x":260.333333333333,
+                 "y":777.666666666667
                 }],
          "offsetx":0.5,
          "offsety":-0.5,
@@ -588,8 +588,8 @@
                  "type":"",
                  "visible":true,
                  "width":105,
-                 "x":465,
-                 "y":453
+                 "x":290.333333333333,
+                 "y":723.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -610,8 +610,8 @@
                  "type":"",
                  "visible":true,
                  "width":105.5,
-                 "x":465,
-                 "y":481
+                 "x":290.333333333333,
+                 "y":751.666666666667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -632,8 +632,170 @@
                  "type":"",
                  "visible":true,
                  "width":106,
-                 "x":464,
-                 "y":508
+                 "x":289.333333333333,
+                 "y":778.666666666667
+                }],
+         "offsetx":0.5,
+         "offsety":-0.5,
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":25,
+         "name":"progLeaderBoard",
+         "objects":[
+                {
+                 "height":109.333,
+                 "id":37,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":157.333,
+                 "x":248.000333333333,
+                 "y":698.666666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":24,
+         "name":"top1Rank",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":23.5,
+                 "id":36,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24.5,
+                 "x":260.833333333333,
+                 "y":723.166666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        },
+    
+        {
+         "draworder":"topdown",
+         "id":23,
+         "name":"top2Rank",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":23.5,
+                 "id":35,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":24.5,
+                 "x":260.833333333333,
+                 "y":750.166666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":22,
+         "name":"top3Rank",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":23.5,
+                 "id":34,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":25,
+                 "x":260.333333333333,
+                 "y":777.666666666667
+                }],
+         "offsetx":0.5,
+         "offsety":-0.5,
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":21,
+         "name":"top1Prog",
+         "objects":[
+                {
+                 "height":21,
+                 "id":33,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":105,
+                 "x":290.333333333333,
+                 "y":723.666666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":20,
+         "name":"top2Prog",
+         "objects":[
+                {
+                 "height":20,
+                 "id":32,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":105.5,
+                 "x":290.333333333333,
+                 "y":751.666666666667
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":19,
+         "name":"top3Prog",
+         "objects":[
+                {
+                 "height":19.5,
+                 "id":31,
+                 "name":"",
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":106,
+                 "x":289.333333333333,
+                 "y":778.666666666667
                 }],
          "offsetx":0.5,
          "offsety":-0.5,
@@ -643,8 +805,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":18,
- "nextobjectid":31,
+ "nextlayerid":27,
+ "nextobjectid":38,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",

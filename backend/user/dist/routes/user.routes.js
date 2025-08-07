@@ -89,4 +89,8 @@ router.get('/chat/messages/:conversationId', auth_middleware_js_1.default, chatC
 router.post('/chat/send', auth_middleware_js_1.default, chatController.sendMessage);
 router.patch('/chat/read', auth_middleware_js_1.default, chatController.markMessagesAsRead);
 router.get('/chat/unread-count', auth_middleware_js_1.default, chatController.getUnreadMessageCount);
+// Points routes
+router.post('/points/update', auth_middleware_js_1.default, userController.updateUserPoints);
+router.get('/points/:userId', auth_middleware_js_1.default, userController.getUserPoints);
+router.get('/leaderboard', auth_middleware_js_1.default, userController.getLeaderboard);
 exports.default = router;

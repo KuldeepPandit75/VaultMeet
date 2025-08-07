@@ -756,3 +756,106 @@ export const removeConnection = async (req: any, res: any) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Update user points
+export const updateUserPoints = async (req: any, res: any) => {
+  try {
+    const { userId, pointsChange, reason } = req.body;
+
+    if (!userId || pointsChange === undefined) {
+      return res.status(400).json({ message: "User ID and points change are required" });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Calculate new points, ensuring it doesn't go below 0
+    const newPoints = Math.max(0, user.points + pointsChange);
+    user.points = newPoints;
+    
+    // Add notification about points change
+    const notificationMessage = pointsChange > 0 
+      ? `You earned ${pointsChange} points! ${reason || ''}`
+      : `You lost ${Math.abs(pointsChange)} points. ${reason || ''}`;
+    
+    user.notifications.push({
+      type: 'points_update',
+      message: notificationMessage,
+      isRead: false,
+      createdAt: new Date()
+    });
+
+    await user.save();
+
+    res.status(200).json({ 
+      message: "Points updated successfully",
+      newPoints: user.points,
+      pointsChange
+    });
+  } catch (error) {
+    console.error('Error updating user points:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get user points
+export const getUserPoints = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await userModel.findById(userId).select('points');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ points: user.points });
+  } catch (error) {
+    console.error('Error fetching user points:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get leaderboard data
+export const getLeaderboard = async (req: any, res: any) => {
+  try {
+    const currentUserId = req.user._id;
+
+    // Get all users with points > 0, sorted by points (descending) and createdAt (ascending for tie-breaking)
+    const users = await userModel.find({ points: { $gt: 0 } })
+      .select('fullname username avatar points createdAt')
+      .sort({ points: -1, createdAt: 1 })
+      .limit(100); // Limit to top 100 users
+
+    // Calculate ranks and find current user's rank
+    let currentUserRank = null;
+    const leaderboardData = users.map((user, index) => {
+      const rank = index + 1;
+      
+      // Check if this is the current user
+      if (user._id.toString() === currentUserId.toString()) {
+        currentUserRank = rank;
+      }
+
+      return {
+        rank,
+        userId: user._id,
+        fullname: user.fullname,
+        username: user.username,
+        avatar: user.avatar,
+        points: user.points,
+        createdAt: user.createdAt
+      };
+    });
+
+    res.status(200).json({
+      leaderboard: leaderboardData,
+      currentUserRank,
+      totalUsers: users.length
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
