@@ -14,6 +14,8 @@ import {
   faUserPlus,
   faCheck,
   faTimes as faX,
+  faExclamationTriangle,
+  faQuestionCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
@@ -42,6 +44,8 @@ interface ControlBarProps {
   handleViewToggle: () => void;
   isMeetingViewAvailable: boolean;
   unreadCount?: number;
+  setIsReportModalOpen: (open: boolean) => void;
+  setIsHelpModalOpen: (open: boolean) => void;
 }
 
 export const ControlBar = ({
@@ -55,6 +59,8 @@ export const ControlBar = ({
   viewMode,
   handleViewToggle,
   unreadCount = 0,
+  setIsReportModalOpen,
+  setIsHelpModalOpen,
 }: ControlBarProps) => {
   const { user } = useAuthStore();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
@@ -456,6 +462,34 @@ export const ControlBar = ({
             }}
           >
             <FontAwesomeIcon icon={faCog} className="text-lg" />
+          </button>
+
+          {/* Help Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={() => setIsHelpModalOpen(true)}
+            title="Help & Instructions"
+            style={{
+              backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+            }}
+          >
+            <FontAwesomeIcon icon={faQuestionCircle} className="text-lg" />
+          </button>
+
+          {/* Report Button */}
+          <button
+            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+            onClick={() => setIsReportModalOpen(true)}
+            title="Report Issue / Feedback"
+            style={{
+              backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+              color: isDarkMode ? "#ffffff" : "#1a1a1a",
+              border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+            }}
+          >
+            <FontAwesomeIcon icon={faExclamationTriangle} className="text-lg" />
           </button>
 
           {/* Join Requests Button (Admin Only) */}

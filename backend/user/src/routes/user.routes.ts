@@ -74,4 +74,24 @@ router.post('/points/update', authMiddleware, userController.updateUserPoints);
 router.get('/points/:userId', authMiddleware, userController.getUserPoints);
 router.get('/leaderboard', authMiddleware, userController.getLeaderboard);
 
+// Report routes
+router.post('/reports', authMiddleware, [
+    body('type').isIn(['bug', 'feature', 'feedback', 'abuse', 'technical']).withMessage('Invalid report type'),
+    body('category').isIn(['game', 'whiteboard', 'chat', 'video', 'audio', 'general', 'other']).withMessage('Invalid category'),
+    body('title').notEmpty().withMessage('Title is required').isLength({ max: 200 }).withMessage('Title must be less than 200 characters'),
+    body('description').notEmpty().withMessage('Description is required').isLength({ max: 2000 }).withMessage('Description must be less than 2000 characters'),
+    body('severity').optional().isIn(['low', 'medium', 'high', 'critical']).withMessage('Invalid severity level'),
+    body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']).withMessage('Invalid priority level'),
+], userController.createReport);
+
+router.get('/reports', authMiddleware, userController.getUserReports);
+router.get('/reports/:reportId', authMiddleware, userController.getReportById);
+router.patch('/reports/:reportId/status', authMiddleware, [
+    body('status').isIn(['open', 'in_progress', 'resolved', 'closed']).withMessage('Invalid status'),
+    body('resolution').optional().isLength({ max: 1000 }).withMessage('Resolution must be less than 1000 characters'),
+], userController.updateReportStatus);
+
+// Admin routes for reports
+router.get('/admin/reports', authMiddleware, userController.getAllReports);
+
 export default router;

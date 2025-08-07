@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLeaderboard = exports.getUserPoints = exports.updateUserPoints = exports.removeConnection = exports.getConnections = exports.getConnectionsCount = exports.getUnreadNotificationCount = exports.markAllNotificationsAsRead = exports.markNotificationAsRead = exports.getNotifications = exports.getConnectionStatus = exports.respondToConnectionRequest = exports.sendConnectionRequest = exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileByUsername = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
+exports.getAllReports = exports.updateReportStatus = exports.getReportById = exports.getUserReports = exports.createReport = exports.getLeaderboard = exports.getUserPoints = exports.updateUserPoints = exports.removeConnection = exports.getConnections = exports.getConnectionsCount = exports.getUnreadNotificationCount = exports.markAllNotificationsAsRead = exports.markNotificationAsRead = exports.getNotifications = exports.getConnectionStatus = exports.respondToConnectionRequest = exports.sendConnectionRequest = exports.getUserBySocketId = exports.updateSocketId = exports.getUserProfileByUsername = exports.googleLogin = exports.updateProfilePicture = exports.updateBanner = exports.checkUsernameAvailability = exports.updateUser = exports.logoutUser = exports.getMe = exports.loginUser = exports.registerUser = void 0;
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
 const user_service_js_1 = __importDefault(require("../services/user.service.js"));
 const express_validator_1 = require("express-validator");
@@ -21,6 +21,7 @@ const cloudinary_js_1 = __importDefault(require("../config/cloudinary.js"));
 const promises_1 = __importDefault(require("fs/promises")); // Add fs promises for async file operations
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const user_model_js_2 = __importDefault(require("../models/user.model.js"));
+const report_model_js_1 = __importDefault(require("../models/report.model.js"));
 const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
@@ -749,3 +750,185 @@ const getLeaderboard = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.getLeaderboard = getLeaderboard;
+// Create a new report
+const createReport = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { type, category, title, description, severity, priority, roomId, eventId, tags } = req.body;
+        // Get browser and device information
+        const userAgent = req.headers['user-agent'];
+        const browserInfo = req.headers['sec-ch-ua'] || 'Unknown';
+        const deviceInfo = req.headers['sec-ch-ua-platform'] || 'Unknown';
+        const report = new report_model_js_1.default({
+            reporterId: req.user._id,
+            type,
+            category,
+            title,
+            description,
+            severity: severity || 'medium',
+            priority: priority || 'medium',
+            roomId,
+            eventId,
+            userAgent,
+            browserInfo,
+            deviceInfo,
+            tags: tags || []
+        });
+        yield report.save();
+        res.status(201).json({
+            message: "Report submitted successfully",
+            report: {
+                id: report._id,
+                title: report.title,
+                type: report.type,
+                category: report.category,
+                status: report.status,
+                createdAt: report.createdAt
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error creating report:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.createReport = createReport;
+// Get user's reports
+const getUserReports = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const status = req.query.status;
+        const type = req.query.type;
+        const filter = { reporterId: req.user._id };
+        if (status)
+            filter.status = status;
+        if (type)
+            filter.type = type;
+        const reports = yield report_model_js_1.default.find(filter)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('resolvedBy', 'fullname username');
+        const total = yield report_model_js_1.default.countDocuments(filter);
+        res.status(200).json({
+            reports,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error fetching user reports:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getUserReports = getUserReports;
+// Get a specific report by ID
+const getReportById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { reportId } = req.params;
+        const report = yield report_model_js_1.default.findById(reportId)
+            .populate('reporterId', 'fullname username avatar')
+            .populate('resolvedBy', 'fullname username');
+        if (!report) {
+            return res.status(404).json({ message: "Report not found" });
+        }
+        // Check if user is the reporter or an admin
+        if (report.reporterId._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: "Access denied" });
+        }
+        res.status(200).json({ report });
+    }
+    catch (error) {
+        console.error('Error fetching report:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getReportById = getReportById;
+// Update report status (admin only)
+const updateReportStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { reportId } = req.params;
+        const { status, resolution } = req.body;
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: "Admin access required" });
+        }
+        const report = yield report_model_js_1.default.findById(reportId);
+        if (!report) {
+            return res.status(404).json({ message: "Report not found" });
+        }
+        report.status = status;
+        if (resolution) {
+            report.resolution = resolution;
+        }
+        if (status === 'resolved' || status === 'closed') {
+            report.resolvedAt = new Date();
+            report.resolvedBy = req.user._id;
+        }
+        yield report.save();
+        res.status(200).json({
+            message: "Report status updated successfully",
+            report: {
+                id: report._id,
+                status: report.status,
+                resolution: report.resolution,
+                resolvedAt: report.resolvedAt
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error updating report status:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.updateReportStatus = updateReportStatus;
+// Get all reports (admin only)
+const getAllReports = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: "Admin access required" });
+        }
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const status = req.query.status;
+        const type = req.query.type;
+        const category = req.query.category;
+        const filter = {};
+        if (status)
+            filter.status = status;
+        if (type)
+            filter.type = type;
+        if (category)
+            filter.category = category;
+        const reports = yield report_model_js_1.default.find(filter)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('reporterId', 'fullname username avatar')
+            .populate('resolvedBy', 'fullname username');
+        const total = yield report_model_js_1.default.countDocuments(filter);
+        res.status(200).json({
+            reports,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error fetching all reports:', error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.getAllReports = getAllReports;

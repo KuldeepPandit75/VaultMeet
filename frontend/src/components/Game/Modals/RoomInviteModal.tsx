@@ -75,10 +75,20 @@ const RoomInviteModal: React.FC<RoomInviteModalProps> = ({
     toast("QR code feature coming soon!");
   };
 
+  // Handle backdrop click to close modal
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+    <div 
+      className="fixed inset-0 z-60 flex items-center justify-center bg-black/50"
+      onClick={handleBackdropClick}
+    >
       <div
         className="relative w-full max-w-md mx-4 rounded-xl shadow-2xl border overflow-hidden"
         style={{

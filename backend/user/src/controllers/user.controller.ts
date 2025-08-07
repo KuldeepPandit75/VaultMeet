@@ -6,6 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 import fs from "fs/promises"; // Add fs promises for async file operations
 import bcrypt from 'bcrypt';
 import User from "../models/user.model.js";
+import Report from "../models/report.model.js";
 
 export const registerUser = async (req: any, res: any) => {
   const errors = validationResult(req);
@@ -856,6 +857,214 @@ export const getLeaderboard = async (req: any, res: any) => {
     });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Create a new report
+export const createReport = async (req: any, res: any) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const {
+      type,
+      category,
+      title,
+      description,
+      severity,
+      priority,
+      roomId,
+      eventId,
+      tags
+    } = req.body;
+
+    // Get browser and device information
+    const userAgent = req.headers['user-agent'];
+    const browserInfo = req.headers['sec-ch-ua'] || 'Unknown';
+    const deviceInfo = req.headers['sec-ch-ua-platform'] || 'Unknown';
+
+    const report = new Report({
+      reporterId: req.user._id,
+      type,
+      category,
+      title,
+      description,
+      severity: severity || 'medium',
+      priority: priority || 'medium',
+      roomId,
+      eventId,
+      userAgent,
+      browserInfo,
+      deviceInfo,
+      tags: tags || []
+    });
+
+    await report.save();
+
+    res.status(201).json({
+      message: "Report submitted successfully",
+      report: {
+        id: report._id,
+        title: report.title,
+        type: report.type,
+        category: report.category,
+        status: report.status,
+        createdAt: report.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error creating report:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get user's reports
+export const getUserReports = async (req: any, res: any) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const status = req.query.status;
+    const type = req.query.type;
+
+    const filter: any = { reporterId: req.user._id };
+    
+    if (status) filter.status = status;
+    if (type) filter.type = type;
+
+    const reports = await Report.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('resolvedBy', 'fullname username');
+
+    const total = await Report.countDocuments(filter);
+
+    res.status(200).json({
+      reports,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user reports:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get a specific report by ID
+export const getReportById = async (req: any, res: any) => {
+  try {
+    const { reportId } = req.params;
+
+    const report = await Report.findById(reportId)
+      .populate('reporterId', 'fullname username avatar')
+      .populate('resolvedBy', 'fullname username');
+
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    // Check if user is the reporter or an admin
+    if (report.reporterId._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    res.status(200).json({ report });
+  } catch (error) {
+    console.error('Error fetching report:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Update report status (admin only)
+export const updateReportStatus = async (req: any, res: any) => {
+  try {
+    const { reportId } = req.params;
+    const { status, resolution } = req.body;
+
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    report.status = status;
+    if (resolution) {
+      report.resolution = resolution;
+    }
+    
+    if (status === 'resolved' || status === 'closed') {
+      report.resolvedAt = new Date();
+      report.resolvedBy = req.user._id;
+    }
+
+    await report.save();
+
+    res.status(200).json({
+      message: "Report status updated successfully",
+      report: {
+        id: report._id,
+        status: report.status,
+        resolution: report.resolution,
+        resolvedAt: report.resolvedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error updating report status:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get all reports (admin only)
+export const getAllReports = async (req: any, res: any) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const status = req.query.status;
+    const type = req.query.type;
+    const category = req.query.category;
+
+    const filter: any = {};
+    
+    if (status) filter.status = status;
+    if (type) filter.type = type;
+    if (category) filter.category = category;
+
+    const reports = await Report.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('reporterId', 'fullname username avatar')
+      .populate('resolvedBy', 'fullname username');
+
+    const total = await Report.countDocuments(filter);
+
+    res.status(200).json({
+      reports,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching all reports:', error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

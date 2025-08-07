@@ -704,6 +704,11 @@ const CodingChallengeInterface: React.FC<CodingChallengeInterfaceProps> = ({
                 theme={isDarkMode ? "vs-dark" : "light"}
                 value={code}
                 onChange={(value) => setCode(value || '')}
+                onMount={(editor) => {
+                    editor.onKeyDown((e) => {
+                      e.stopPropagation();
+                    });
+                  }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,

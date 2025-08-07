@@ -5,6 +5,7 @@ import type { Game } from 'phaser';
 import { useSocket } from "@/context/SocketContext";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import LeaderboardModal from "./Modals/LeaderboardModal";
+import TopDevelopersModal from "./Modals/TopDevelopersModal";
 
 interface PhaserGameProps {
   eventId?: string; // Optional eventId for event-specific spaces
@@ -17,6 +18,7 @@ const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) 
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showTopDevelopers, setShowTopDevelopers] = useState(false);
   const { socket } = useSocket();
   const {user} = useAuthStore();
   
@@ -30,10 +32,16 @@ const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) 
       setShowLeaderboard(true);
     };
 
+    const handleOpenProgLeaderboard = () => {
+      setShowTopDevelopers(true);
+    };
+
     window.addEventListener('openLeaderboard', handleOpenLeaderboard);
+    window.addEventListener('openProgLeaderboard', handleOpenProgLeaderboard);
 
     return () => {
       window.removeEventListener('openLeaderboard', handleOpenLeaderboard);
+      window.removeEventListener('openProgLeaderboard', handleOpenProgLeaderboard);
     };
   }, []);
 
@@ -125,6 +133,10 @@ const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) 
       <LeaderboardModal 
         isOpen={showLeaderboard}
         onClose={() => setShowLeaderboard(false)}
+      />
+      <TopDevelopersModal 
+        isOpen={showTopDevelopers}
+        onClose={() => setShowTopDevelopers(false)}
       />
     </>
   );

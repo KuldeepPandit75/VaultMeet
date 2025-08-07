@@ -33,6 +33,8 @@ import CodingChallengeInterface from "@/components/Game/CodingChallenge/CodingCh
 import type { DSAQuestion } from "@/data/dsaQuestions";
 import { pointsService } from "@/services/pointsService";
 import RoomInviteModal from "@/components/Game/Modals/RoomInviteModal";
+import ReportModal from "@/components/Game/Modals/ReportModal";
+import HelpModal from "@/components/Game/Modals/HelpModal";
 // import { useRouter } from "next/navigation";
 
 type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
@@ -98,6 +100,8 @@ const CodingSpace = () => {
   const [typedMsg, setTypedMsg] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(true);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
@@ -590,8 +594,6 @@ const CodingSpace = () => {
     const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
     const isAudioEnabled = !(user as ExtendedAgoraUser)._audio_muted_;
 
-    console.log(isVideoEnabled, isAudioEnabled);
-
     return (
       <div className="absolute bottom-2 right-2 flex gap-1">
         {!isAudioEnabled && (
@@ -710,6 +712,8 @@ const CodingSpace = () => {
         handleViewToggle={toggleViewMode}
         isMeetingViewAvailable={remoteUsers.length > 0}
         unreadCount={unreadCount}
+        setIsReportModalOpen={setIsReportModalOpen}
+        setIsHelpModalOpen={setIsHelpModalOpen}
       />
 
       {/* Notification Icon */}
@@ -985,6 +989,23 @@ const CodingSpace = () => {
           role={challengeRoom.role}
           opponent={challengeRoom.opponent}
           onClose={() => setChallengeRoom(null)}
+        />
+      )}
+
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          roomId={roomId}
+        />
+      )}
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={() => setIsHelpModalOpen(false)}
         />
       )}
     </div>

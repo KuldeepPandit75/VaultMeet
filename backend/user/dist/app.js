@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const db_js_1 = __importDefault(require("./db/db.js"));
 const user_routes_js_1 = __importDefault(require("./routes/user.routes.js"));
 const room_routes_js_1 = __importDefault(require("./routes/room.routes.js"));
+const project_routes_js_1 = __importDefault(require("./routes/project.routes.js"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 require("dotenv/config");
 const app = (0, express_1.default)();
@@ -28,6 +29,7 @@ app.use((req, _, next) => {
 });
 app.use('/', user_routes_js_1.default);
 app.use('/rooms', room_routes_js_1.default);
+app.use('/projects', project_routes_js_1.default);
 app.get('/', (req, res) => {
     res.send("Hello World");
 });

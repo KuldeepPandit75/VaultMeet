@@ -364,6 +364,11 @@ const CodeSnippetEditor = ({
             language={language}
             value={code}
             onChange={(value) => setCode(value || "")}
+            onMount={(editor) => {
+              editor.onKeyDown((e) => {
+                e.stopPropagation();
+              });
+            }}
             theme={isDarkMode ? "vs-dark" : "light"}
             options={{
               minimap: { enabled: false },

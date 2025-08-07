@@ -220,6 +220,19 @@ interface AuthState {
   getUnreadNotificationCount: () => Promise<void>;
   setNotifications: (notifications: Notification[]) => void;
   setUnreadNotificationCount: (count: number) => void;
+  
+  // Report methods
+  submitReport: (reportData: {
+    type: 'bug' | 'feature' | 'feedback' | 'abuse' | 'technical';
+    category: 'game' | 'whiteboard' | 'chat' | 'video' | 'audio' | 'general' | 'other';
+    title: string;
+    description: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    roomId?: string;
+    eventId?: string;
+    tags?: string[];
+  }) => Promise<{ message: string; report: Report }>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -688,8 +701,29 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
-      setNotifications: (notifications: Notification[]) => set({ notifications }),
-      setUnreadNotificationCount: (count: number) => set({ unreadNotificationCount: count })
+              setNotifications: (notifications: Notification[]) => set({ notifications }),
+      setUnreadNotificationCount: (count: number) => set({ unreadNotificationCount: count }),
+
+      // Report methods
+      submitReport: async (reportData: {
+        type: 'bug' | 'feature' | 'feedback' | 'abuse' | 'technical';
+        category: 'game' | 'whiteboard' | 'chat' | 'video' | 'audio' | 'general' | 'other';
+        title: string;
+        description: string;
+        severity?: 'low' | 'medium' | 'high' | 'critical';
+        priority?: 'low' | 'medium' | 'high' | 'urgent';
+        roomId?: string;
+        eventId?: string;
+        tags?: string[];
+      }) => {
+        try {
+          const response = await api.post('/reports', reportData);
+          return response.data;
+        } catch (error: unknown) {
+          console.error('Error submitting report:', error);
+          throw error;
+        }
+      },
     }),
     {
       name: 'hackmeet-auth',

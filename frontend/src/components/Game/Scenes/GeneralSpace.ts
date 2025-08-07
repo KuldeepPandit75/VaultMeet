@@ -16,6 +16,23 @@ interface LeaderboardPlayer {
   createdAt: string;
 }
 
+interface RankedProject {
+  _id: string;
+  projectName: string;
+  developer: string;
+  description: string;
+  techStack: string[];
+  githubUrl: string;
+  demoUrl?: string;
+  category: string;
+  stars?: number;
+  forks?: number;
+  status: string;
+  rank?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 class GeneralSpace extends Scene {
   private player?: Phaser.Physics.Arcade.Sprite;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -37,6 +54,8 @@ class GeneralSpace extends Scene {
   private whiteboardPrompt?: Phaser.GameObjects.Text;
   private isNearLeaderboard: boolean = false;
   private leaderboardPrompt?: Phaser.GameObjects.Text;
+  private isNearProgLeaderboard: boolean = false;
+  private progLeaderboardPrompt?: Phaser.GameObjects.Text;
   private eventId?: string;
   private roomId?: string; // NEW: Room-specific identifier
   private objectLayerData: { [key: string]: Phaser.Types.Tilemaps.TiledObject[] } = {};
@@ -586,6 +605,8 @@ class GeneralSpace extends Scene {
         this.openWhiteboard();
       } else if (this.isNearLeaderboard) {
         this.openLeaderboard();
+      } else if (this.isNearProgLeaderboard) {
+        this.openProgLeaderboard();
       }
     });
 
@@ -799,6 +820,17 @@ class GeneralSpace extends Scene {
     window.dispatchEvent(event);
   }
 
+  private openProgLeaderboard() {
+    console.log("Opening programming leaderboard from GeneralSpace");
+    // Dispatch custom event to open programming leaderboard
+    const event = new CustomEvent("openProgLeaderboard", {
+      detail: {
+        source: "GeneralSpace"
+      }
+    });
+    window.dispatchEvent(event);
+  }
+
   // Helper method to check if player is near any object layer
   private isPlayerNearObjectLayer(layerName: string, proximityRadius: number = 80): boolean {
     if (!this.player || !this.objectLayerData[layerName]) {
@@ -1003,6 +1035,38 @@ class GeneralSpace extends Scene {
       } else if (this.leaderboardPrompt) {
         this.leaderboardPrompt.setVisible(false);
       }
+
+      // Check if player is near the programming leaderboard area
+      const progLeaderboardCenterX = 720; // Based on the programming leaderboard image position
+      const progLeaderboardCenterY = 765; // Based on the programming leaderboard image position
+      
+      const progLeaderboardDist = Phaser.Math.Distance.Between(
+        playerX,
+        playerY,
+        progLeaderboardCenterX,
+        progLeaderboardCenterY
+      );
+      
+      this.isNearProgLeaderboard = progLeaderboardDist <= LEADERBOARD_PROXIMITY_RADIUS;
+
+      // Show/hide programming leaderboard interaction prompt
+      if (this.isNearProgLeaderboard) {
+        if (!this.progLeaderboardPrompt) {
+          this.progLeaderboardPrompt = this.add.text(playerX, playerY - 60, "Press SPACE to see Top Developers", {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#ffffff",
+            backgroundColor: "#000000",
+            padding: { left: 8, right: 8, top: 4, bottom: 4 },
+            align: "center",
+          }).setOrigin(0.5, 0);
+          this.progLeaderboardPrompt.setDepth(10000);
+        }
+        this.progLeaderboardPrompt.setPosition(playerX, playerY - 60);
+        this.progLeaderboardPrompt.setVisible(true);
+      } else if (this.progLeaderboardPrompt) {
+        this.progLeaderboardPrompt.setVisible(false);
+      }
     }
 
     if (this.socket && this.player) {
@@ -1075,6 +1139,11 @@ class GeneralSpace extends Scene {
       this.leaderboardPrompt.destroy();
     }
 
+    // Clean up programming leaderboard prompt
+    if (this.progLeaderboardPrompt && this.progLeaderboardPrompt.destroy) {
+      this.progLeaderboardPrompt.destroy();
+    }
+
     // Clean up proximity circle
     if (this.proximityCircle && this.proximityCircle.destroy) {
       this.proximityCircle.destroy();
@@ -1084,6 +1153,7 @@ class GeneralSpace extends Scene {
     this.nearbyPlayers = [];
     this.isNearWhiteboard = false;
     this.isNearLeaderboard = false;
+    this.isNearProgLeaderboard = false;
     this.running = false;
     this.pendingPlayers = [];
     this.isReady = false;
@@ -1213,31 +1283,139 @@ class GeneralSpace extends Scene {
   }
 
   // Helper method to create programming leaderboard content
-  private createProgrammingLeaderboardContent() {
+  private async createProgrammingLeaderboardContent() {
     console.log("Creating programming leaderboard content...");
     
-    // Demo data for programming leaderboard
-    const progLeaderboardData = [
-      { rank: 1, name: "Alice", score: "95%", language: "Python" },
-      { rank: 2, name: "Bob", score: "87%", language: "JavaScript" },
-      { rank: 3, name: "Charlie", score: "82%", language: "Java" }
-    ];
-    
-    // Calculate offset for programming leaderboard (right side)
-    const progLeaderboardOffset = 400; // Adjust this value to position the programming leaderboard
-    
-    progLeaderboardData.forEach((item) => {
-      const rankLayerName = `top${item.rank}Rank`;
-      const progLayerName = `top${item.rank}Prog`;
+    try {
+      // Fetch top ranked projects from API
+      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/user/projects/top-ranked`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       
-      // Add rank indicator if object layer exists (with offset for right side)
+      if (!response.ok) {
+        throw new Error('Failed to fetch top ranked projects');
+      }
+      
+      const data = await response.json();
+      const top3Projects = data.data?.slice(0, 3) || [];
+      
+      // Calculate offset for programming leaderboard (right side)
+      const progLeaderboardOffset = 400; // Adjust this value to position the programming leaderboard
+      
+             if (top3Projects.length > 0) {
+         // Display real project data
+         top3Projects.forEach((project: RankedProject, index: number) => {
+          const rank = index + 1;
+          const rankLayerName = `top${rank}Rank`;
+          const progLayerName = `top${rank}Prog`;
+          
+          // Add rank indicator if object layer exists (with offset for right side)
+          if (this.objectLayerData[rankLayerName] && this.objectLayerData[rankLayerName].length > 0) {
+            const rankObj = this.objectLayerData[rankLayerName][0];
+            const rankX = (rankObj.x || 0) + (rankObj.width || 0) / 2 + progLeaderboardOffset;
+            const rankY = (rankObj.y || 0) + (rankObj.height || 0) / 2;
+            
+            // Add rank number
+            const rankText = this.add.text(rankX, rankY, `#${rank}`, {
+              fontSize: "12px",
+              fontFamily: "pixel-font",
+              color: "#FFD700", // Gold color
+              fontStyle: "bold",
+              stroke: "#000000",
+              strokeThickness: 1,
+            }).setOrigin(0.5);
+            
+            rankText.setDepth(810); // Above background
+          }
+          
+          // Add project name and category if object layer exists (with offset for right side)
+          if (this.objectLayerData[progLayerName] && this.objectLayerData[progLayerName].length > 0) {
+            const progObj = this.objectLayerData[progLayerName][0];
+            const progX = (progObj.x || 0) + (progObj.width || 0) / 2 + progLeaderboardOffset;
+            const progY = (progObj.y || 0) + (progObj.height || 0) / 2;
+            
+            // Truncate project name if too long
+            const projectName = project.projectName.length > 20 
+              ? project.projectName.substring(0, 20) + '...' 
+              : project.projectName;
+            
+            const progText = this.add.text(progX, progY, projectName, {
+              fontSize: "10px",
+              fontFamily: "pixel-font",
+              color: "#000000",
+              fontStyle: "bold",
+              align: "center",
+            }).setOrigin(0.5);
+            
+            progText.setDepth(810); // Above background
+          }
+        });
+        
+        console.log("Programming leaderboard content created with real project data:", top3Projects);
+      } else {
+        // Show "No projects ranked yet" message
+        const rankLayerName = `top1Rank`;
+        const progLayerName = `top1Prog`;
+        
+        if (this.objectLayerData[rankLayerName] && this.objectLayerData[rankLayerName].length > 0) {
+          const rankObj = this.objectLayerData[rankLayerName][0];
+          const rankX = (rankObj.x || 0) + (rankObj.width || 0) / 2 + progLeaderboardOffset;
+          const rankY = (rankObj.y || 0) + (rankObj.height || 0) / 2;
+          
+          const rankText = this.add.text(rankX, rankY, "#1", {
+            fontSize: "12px",
+            fontFamily: "pixel-font",
+            color: "#FFD700", // Gold color
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 1,
+          }).setOrigin(0.5);
+          
+          rankText.setDepth(810); // Above background
+        }
+        
+        if (this.objectLayerData[progLayerName] && this.objectLayerData[progLayerName].length > 0) {
+          const progObj = this.objectLayerData[progLayerName][0];
+          const progX = (progObj.x || 0) + (progObj.width || 0) / 2 + progLeaderboardOffset;
+          const progY = (progObj.y || 0) + (progObj.height || 0) / 2;
+          
+          const noProjectsText = this.add.text(progX, progY, "No projects ranked yet", {
+            fontSize: "10px",
+            fontFamily: "pixel-font",
+            color: "#000000",
+            fontStyle: "bold",
+            align: "center",
+          }).setOrigin(0.5);
+          
+          noProjectsText.setDepth(810); // Above background
+          
+          const submitText = this.add.text(progX, progY + 15, "Submit yours to get ranked!", {
+            fontSize: "8px",
+            fontFamily: "pixel-font",
+            color: "#666666",
+            fontStyle: "bold",
+            align: "center",
+          }).setOrigin(0.5);
+          
+          submitText.setDepth(810); // Above background
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching top ranked projects for programming leaderboard:", error);
+      
+      // Show "No projects ranked yet" message on error
+      const rankLayerName = `top1Rank`;
+      const progLayerName = `top1Prog`;
+      
       if (this.objectLayerData[rankLayerName] && this.objectLayerData[rankLayerName].length > 0) {
         const rankObj = this.objectLayerData[rankLayerName][0];
-        const rankX = (rankObj.x || 0) + (rankObj.width || 0) / 2 + progLeaderboardOffset;
+        const rankX = (rankObj.x || 0) + (rankObj.width || 0) / 2 + 400; // progLeaderboardOffset
         const rankY = (rankObj.y || 0) + (rankObj.height || 0) / 2;
         
-        // Add rank number
-        const rankText = this.add.text(rankX, rankY, `#${item.rank}`, {
+        const rankText = this.add.text(rankX, rankY, "#1", {
           fontSize: "12px",
           fontFamily: "pixel-font",
           color: "#FFD700", // Gold color
@@ -1249,13 +1427,12 @@ class GeneralSpace extends Scene {
         rankText.setDepth(810); // Above background
       }
       
-      // Add programming score/name if object layer exists (with offset for right side)
       if (this.objectLayerData[progLayerName] && this.objectLayerData[progLayerName].length > 0) {
         const progObj = this.objectLayerData[progLayerName][0];
-        const progX = (progObj.x || 0) + (progObj.width || 0) / 2 + progLeaderboardOffset;
+        const progX = (progObj.x || 0) + (progObj.width || 0) / 2 + 400; // progLeaderboardOffset
         const progY = (progObj.y || 0) + (progObj.height || 0) / 2;
         
-        const progText = this.add.text(progX, progY, `${item.name} - ${item.language}`, {
+        const noProjectsText = this.add.text(progX, progY, "No projects ranked yet", {
           fontSize: "10px",
           fontFamily: "pixel-font",
           color: "#000000",
@@ -1263,10 +1440,9 @@ class GeneralSpace extends Scene {
           align: "center",
         }).setOrigin(0.5);
         
-        progText.setDepth(810); // Above background
+        noProjectsText.setDepth(810); // Above background
         
-        // Add score text below the name
-        const scoreText = this.add.text(progX, progY + 15, `Score: ${item.score}`, {
+        const submitText = this.add.text(progX, progY + 15, "Submit yours to get ranked!", {
           fontSize: "8px",
           fontFamily: "pixel-font",
           color: "#666666",
@@ -1274,9 +1450,9 @@ class GeneralSpace extends Scene {
           align: "center",
         }).setOrigin(0.5);
         
-        scoreText.setDepth(810); // Above background
+        submitText.setDepth(810); // Above background
       }
-    });
+    }
   }
 
   // Helper method to create proximity circle
