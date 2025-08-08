@@ -56,7 +56,7 @@ async function createLocalMediaTracks() {
       encoderConfig: "music_standard", // Better quality for voice
     });
     
-    // Initially mute audio track
+    // Initially enable but mute audio track
     if (localAudioTrack) {
       localAudioTrack.setEnabled(true);
       localAudioTrack.setMuted(true);
@@ -90,6 +90,12 @@ async function createLocalMediaTracks() {
 async function joinChannel(channelName: string, uid: string) {
   if (!client) return;
 
+  // Check if client is already connected to the same channel
+  if (client.connectionState === "CONNECTED" && currentChannel === channelName) {
+    console.log("Already connected to channel:", channelName);
+    return;
+  }
+
   try {
     console.log("Joining channel:", channelName, "with uid:", uid);
     await client.join(appId, channelName, token, uid);
@@ -98,16 +104,21 @@ async function joinChannel(channelName: string, uid: string) {
     // Publish available tracks after joining
     const tracksToPublish = [];
     
-    if (localAudioTrack) {
+    if (localAudioTrack && localAudioTrack.enabled) {
       tracksToPublish.push(localAudioTrack);
       console.log("Audio track added for publishing");
+    } else if (localAudioTrack && !localAudioTrack.enabled) {
+      console.log("Audio track exists but is disabled, skipping publish");
     } else {
       console.log("No audio track available");
     }
     
-    if (localVideoTrack) {
+    // Only publish video track if it's enabled
+    if (localVideoTrack && localVideoTrack.enabled) {
       tracksToPublish.push(localVideoTrack);
       console.log("Video track added for publishing");
+    } else if (localVideoTrack && !localVideoTrack.enabled) {
+      console.log("Video track exists but is disabled, skipping publish");
     } else {
       console.log("No video track available");
     }
@@ -142,6 +153,8 @@ function setupEventListeners(socket: Socket) {
         }
         // Join new channel
         await joinChannel(data.roomId, socket.id || "");
+      } else {
+        console.log("Already connected to channel:", data.roomId);
       }
     }
   );
@@ -289,22 +302,46 @@ async function leaveChannel() {
 }
 
 export const toggleCamera = async () => {
-  if (localVideoTrack) {
-    const isEnabled = localVideoTrack.enabled;
-    await localVideoTrack.setEnabled(!isEnabled); // Toggle enabled state
+  if (!localVideoTrack || !client) return;
 
-    const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
-    if (localPlayerContainer) {
-      if (!isEnabled) {
-        // We're enabling now — play the video
+  try {
+    const isEnabled = localVideoTrack.enabled;
+    
+    if (!isEnabled) {
+      // Enable video track first
+      await localVideoTrack.setEnabled(true);
+      
+      // Publish the video track if connected to a channel
+      if (currentChannel && client.connectionState === "CONNECTED") {
+        await client.publish(localVideoTrack);
+        console.log("Video track published after enabling");
+      }
+      
+      // Play the video locally
+      const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
+      if (localPlayerContainer) {
         await localVideoTrack.play(localPlayerContainer);
         localPlayerContainer.style.display = "block";
-      } else {
-        // We're disabling now — stop the video track
+      }
+    } else {
+      // Unpublish the video track before disabling
+      if (currentChannel && client.connectionState === "CONNECTED") {
+        await client.unpublish(localVideoTrack);
+        console.log("Video track unpublished before disabling");
+      }
+      
+      // Disable video track
+      await localVideoTrack.setEnabled(false);
+      
+      // Stop local video display
+      const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
+      if (localPlayerContainer) {
         localVideoTrack.stop();
         localPlayerContainer.style.display = "none";
       }
     }
+  } catch (error) {
+    console.error("Error toggling camera:", error);
   }
 };
 
@@ -405,9 +442,14 @@ export const switchVideoDevice = async (deviceId: string) => {
 };
 
 export const toggleMicrophone = async () => {
-  if (localAudioTrack) {
+  if (!localAudioTrack || !client) return;
+
+  try {
     const isMuted = localAudioTrack.muted;
     await localAudioTrack.setMuted(!isMuted);
+    console.log(`Microphone ${!isMuted ? 'muted' : 'unmuted'}`);
+  } catch (error) {
+    console.error("Error toggling microphone:", error);
   }
 };
 
