@@ -253,7 +253,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/login', { email, password });
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Login failed:', error);
@@ -271,7 +271,7 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/google-login', googleData);
           console.log("google login response", response.data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
           
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
@@ -289,7 +289,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/register', data);
           const { token, user } = response.data;
-          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60 *1000 *365 *5 }`; // 7 days
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Registration failed:', error);
@@ -322,7 +322,6 @@ const useAuthStore = create<AuthState>()(
 
       verifyUser: async () => {
         const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
-        console.log("token", token);
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
@@ -330,16 +329,10 @@ const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
-          const response = await api.get('/profile');
-          set({ 
-            isAuthenticated: true, 
-            user: response.data.user,
-            token,
-            loading: false 
-          });
+          await api.get('/me ');
         } catch (error) {
           console.error('Error verifying user:', error);
-          localStorage.removeItem('token');
+          document.cookie = `token=; path=/; secure; samesite=none; max-age=0`;
           set({ 
             isAuthenticated: false, 
             token: null, 

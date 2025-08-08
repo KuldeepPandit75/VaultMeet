@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { SocketProvider } from "@/context/SocketContext";
 import MobileWrapper from "@/components/Game/Warnings/MobileWrapper";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import VerifyUser from "@/components/Auth/VerifyUser";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,6 +34,7 @@ export default function RootLayout({
               </main>
             </MobileWrapper>
           </SocketProvider>
+          <VerifyUser/>
         </GoogleOAuthProvider>
       </body>
     </html>

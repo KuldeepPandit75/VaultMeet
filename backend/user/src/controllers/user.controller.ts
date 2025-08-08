@@ -46,6 +46,7 @@ export const registerUser = async (req: any, res: any) => {
     httpOnly: true,
     secure: false,
     sameSite: "none",
+    maxAge: 1000*60*60*24*365*5,
   });
 
   res.status(201).json({ token, user });
@@ -78,7 +79,7 @@ export const loginUser = async (req: any, res: any) => {
     secure: true,
     sameSite: "none",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000 * 365 *5,
   });
 
   res.status(200).json({ token, user });
@@ -330,7 +331,7 @@ export const googleLogin = async (req: any, res: any) => {
         secure: true,
         sameSite: 'none',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 1000*60*60*24*365*5 // 5 year
     });
     res.status(200).json({ token, user });
   } catch (error: any) {
