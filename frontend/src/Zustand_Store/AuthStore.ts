@@ -253,7 +253,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/login', { email, password });
           const { token, user } = response.data;
-          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Login failed:', error);
@@ -271,7 +271,7 @@ const useAuthStore = create<AuthState>()(
           const response = await api.post('/google-login', googleData);
           console.log("google login response", response.data);
           const { token, user } = response.data;
-          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60}`; // 7 days
           
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
@@ -289,7 +289,7 @@ const useAuthStore = create<AuthState>()(
         try {
           const response = await api.post('/register', data);
           const { token, user } = response.data;
-          // document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60 *1000 *365 *5 }`; // 7 days
+          document.cookie = `token=${token}; path=/; secure; samesite=none; max-age=${7 * 24 * 60 * 60 *1000 *365 *5 }`; // 7 days
           set({ token, user, isAuthenticated: true, loading: false });
         } catch (error: unknown) {
           console.error('Registration failed:', error);

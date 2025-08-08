@@ -17,7 +17,6 @@ import {
   faHandshake,
   faMapMarkerAlt,
   faKeyboard,
-  faMouse,
   faQuestionCircle,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
@@ -43,14 +42,8 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
     {
       icon: faKeyboard,
       title: "Movement",
-      description: "Use WASD or Arrow keys to move your character around the space",
-      keys: ["W", "A", "S", "D"],
-    },
-    {
-      icon: faMouse,
-      title: "Camera",
-      description: "Click and drag to rotate the camera view",
-      keys: ["Mouse Drag"],
+      description: "Use Arrow keys to move your character around the space",
+      keys: ["↑", "↓", "←", "→"],
     },
     {
       icon: faUsers,
@@ -61,14 +54,14 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
     {
       icon: faChalkboard,
       title: "Whiteboard",
-      description: "Press 'W' or click the whiteboard icon to open collaborative whiteboard",
-      keys: ["W", "Whiteboard Icon"],
+      description: "Press 'SpaceBar' to open collaborative whiteboard",
+      keys: ["SpaceBar"],
     },
     {
       icon: faComments,
       title: "Chat",
-      description: "Press 'T' or click the chat icon to open the chat panel",
-      keys: ["T", "Chat Icon"],
+      description: "Click the chat icon to open the chat panel",
+      keys: ["Chat Icon"],
     },
     {
       icon: faVideo,
@@ -96,6 +89,12 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
       title: "Proximity-Based Interactions",
       description: "Get closer to other users to interact with them. Click on their avatars to start conversations or collaborations.",
       color: "#3b82f6",
+    },
+    {
+      icon: faCode,
+      title: "Send Code Snippets",
+      description: "Share code snippets in any programming language directly in the chat. Use the code block button or wrap your code with triple backticks (```) and specify the language for syntax highlighting.",
+      color: "#6366f1",
     },
     {
       icon: faChalkboard,
@@ -151,7 +150,7 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
     {
       icon: faHandshake,
       title: "Avatar Interactions",
-      description: "Click on any user's avatar to view their profile, send messages, or start collaborations.",
+      description: "Click on any user's avatar to view their profile, send messages, or start challenges.",
       color: "#10b981",
     },
     {
@@ -196,7 +195,7 @@ const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
     {
       icon: faDesktop,
       title: "Screen Share Problems",
-      description: "Ensure you're using a supported browser (Chrome, Firefox, Safari). Check screen sharing permissions.",
+      description: "Ensure you're connected to a User & using a supported browser (Chrome, Firefox, Safari). Check screen sharing permissions.",
       color: "#3b82f6",
     },
     {

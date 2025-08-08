@@ -103,9 +103,10 @@ const CodingSpace = () => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(true);
+  const [isRoomAdmin, setIsRoomAdmin] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
-  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount, checkRoomPermission, setCurrentRoom, joinRoomRequest } = useSocketStore();
+  const { messages, addMessage, remoteUsers, setIsWhiteboardOpen, unreadCount, incrementUnreadCount, clearUnreadCount, checkRoomPermission, setCurrentRoom, joinRoomRequest,currentRoom } = useSocketStore();
   const { getUserBySocketId, profileBox, setProfileBox } = useAuthStore();
   const { isInGameChatOpen, setIsInGameChatOpen } = useChatStore();
   const { isDarkMode, primaryAccentColor } = useThemeStore();
@@ -193,6 +194,13 @@ const CodingSpace = () => {
       toast.error("Challenge rejected");
     }
   };
+
+  // Check if current user is room admin
+  useEffect(()=>{
+    if(!currentRoom) return;
+    console.log(currentRoom?.adminId.toString(), user?._id.toString())
+    setIsRoomAdmin(currentRoom?.adminId.toString() === user?._id.toString());
+  },[currentRoom]);
 
   // Timer effect for challenge notifications
   useEffect(() => {
@@ -664,12 +672,14 @@ const CodingSpace = () => {
       className="flex h-screen overflow-hidden"
       style={{ backgroundColor: isDarkMode ? "#0f0f0f" : "#f8f9fa" }}
     >
+      {isRoomAdmin && (
       <RoomInviteModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         roomId={roomId}
         roomName="Coding Room"
       />
+      )}
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
         <PhaserGame mapType="general" roomId={roomId} />
