@@ -1424,8 +1424,8 @@ export const bulkUpdateParticipants = async (req, res) => {
 export const postNews=async(req,res)=>{
   try{
     const {link}=req.body;
-    const response= await axios.post("http://localhost:5000/post-news",{link})
-    // const response= await axios.post("https://vaultmeet-bot.onrender.com/post-news",{link})
+    // const response= await axios.post("http://localhost:5000/post-news",{link})
+    const response= await axios.post("https://vaultmeet-bot.onrender.com/post-news",{link})
 
     console.log(response.data);
 

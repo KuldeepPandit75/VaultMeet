@@ -77,7 +77,7 @@ def post_news():
         
         # Create a new Gemini model instance for this request
         model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",
+            model_name="gemini-2.0-flash",
             generation_config=generation_config,
             system_instruction="user will give you whole website source code of any news page, you have to return the title, description, imageUrl, source, date, category of the news in json format if anything is not found return null, if category (must be single only) not found judge it from the title",
         )
