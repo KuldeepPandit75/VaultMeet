@@ -6,20 +6,23 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import TypingText from "../Misc/TypingText";
 import { useRouter } from "next/navigation";
 import RoomModal from "../Game/Modals/RoomModal";
+import useAuthStore from "@/Zustand_Store/AuthStore";
 
 export default function HeroSection() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
   const router = useRouter();
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const {isAuthenticated,loading}=useAuthStore();
 
   const words = ["Build.", "Connect.", "Compete.", "All in One Place."];
 
   const handleCodSpaceClick = () => {
-    // if(user){
+    if(loading) return;
+    if(isAuthenticated){
       setIsRoomModalOpen(true);
-    // }else{
-    //   router.push('/login')
-    // }
+    }else{
+      router.push('/login')
+    }
   };
 
   return (
