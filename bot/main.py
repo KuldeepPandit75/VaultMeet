@@ -9,7 +9,7 @@ import json
 
 # Configure the API key
 load_dotenv()
-api_key = "AIzaSyAOu5I-ZsaZMTkaV78xIiOfBAazGY-nWV0"
+api_key = "AIzaSyBC5Ew9rmGn-ljyucOUCXp2EWsmhCC72rE"
 genai.configure(api_key=api_key)
 
 # Create the model configuration
