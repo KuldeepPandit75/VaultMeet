@@ -580,7 +580,7 @@ export default function AdminPage() {
           </div>
           <div className="mt-4 space-y-2">
             <button 
-              onClick={() => setActiveSection('news')}
+              onClick={() => router.push('/admin/news')}
               className="w-full bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
             >
               News Management

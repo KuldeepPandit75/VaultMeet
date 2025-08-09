@@ -1,6 +1,8 @@
 import { Event, EventParticipant, Registration, Team } from '../models/event.model.js';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs/promises';
+import News from '../models/news.model.js';
+import axios from 'axios';
 
 // Upload company logo to Cloudinary
 export const uploadCompanyLogo = async (req, res) => {
@@ -1418,3 +1420,76 @@ export const bulkUpdateParticipants = async (req, res) => {
     });
   }
 };
+
+export const postNews=async(req,res)=>{
+  try{
+    const {link}=req.body;
+    const response= await axios.post("https://vaultmeet-bot.onrender.com/post-news",{link})
+
+    console.log(response.data);
+
+    const news=await News.create({
+      title:response.data.title,
+      description:response.data.description,
+      imageUrl:response.data.imageUrl,
+      source:response.data.source,
+      date:new Date(),
+      category:response.data.category,
+      link:response.data.link
+    })
+    await news.save();  
+    return res.status(200).json({
+      success:true,
+      message:"News posted successfully",
+      data:news
+    })
+  }catch(error){
+    return res.status(500).json({
+      success:false,
+      message:"Error posting news",
+      error:error.message
+    })
+  }
+}
+
+export const getNews = async (req, res) => {
+  try {
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6; // Default to 6 items per page
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const totalNews = await News.countDocuments();
+
+    // Get paginated news, sorted by newest first (by _id, which is monotonic)
+    const news = await News.find()
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalNews / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return res.status(200).json({
+      success: true,
+      data: news,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalNews,
+        itemsPerPage: limit,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error getting news",
+      error: error.message
+    });
+  }
+}

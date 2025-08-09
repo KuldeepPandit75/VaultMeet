@@ -8,9 +8,8 @@ export default function VerifyUser() {
   useEffect(() => {
     if (user && !loading) {
       verifyUser();
-      console.log("user", user);
     }
-  }, [loading,user]);
+  }, []);
 
   return <></>;
 }

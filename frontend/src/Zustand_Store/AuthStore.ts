@@ -329,9 +329,11 @@ const useAuthStore = create<AuthState>()(
 
         try {
           set({ loading: true, error: null });
-          await api.get('/me ');
+          await api.get('/me');
+          set({ loading: false });
         } catch (error) {
           console.error('Error verifying user:', error);
+          localStorage.removeItem('hackmeet-auth');
           document.cookie = `token=; path=/; secure; samesite=none; max-age=0`;
           set({ 
             isAuthenticated: false, 

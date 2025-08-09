@@ -99,6 +99,16 @@ export interface Registration {
   createdAt: Date;
 }
 
+interface NewsItem {
+  _id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  source: string;
+  date: string;
+  category: string;
+}
+
 interface TeamMember {
   userId: {
     _id: string;
@@ -184,6 +194,15 @@ interface EventState {
   bulkUpdateParticipants: (eventId: string, participantIds: string[], status: string) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  postNews: (link: string) => Promise<void>;
+  getNews: (page?: number, limit?: number) => Promise<{success:boolean,data:NewsItem[], pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  }}>;
 }
 
 const useEventStore = create<EventState>()((set) => ({
@@ -654,7 +673,43 @@ const useEventStore = create<EventState>()((set) => ({
   },
 
   setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error })
+  setError: (error) => set({ error }),
+
+  postNews: async (link) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post('/post-news', { link });
+      set({ loading: false });
+      return response.data.data;
+    } catch (error: unknown) {
+      console.error('Error posting news:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to post news',
+        loading: false 
+      });
+      throw error;
+    }
+  },
+
+  getNews: async (page = 1, limit = 6) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/get-news?page=${page}&limit=${limit}`);
+      set({ loading: false });
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        pagination: response.data.pagination
+      };
+    } catch (error: unknown) {
+      console.error('Error getting news:', error);
+      set({ 
+        error: error instanceof AxiosError ? error.response?.data?.message : 'Failed to get news',
+        loading: false 
+      });
+      throw error;
+    }
+  }
 }));
 
 export default useEventStore; 
