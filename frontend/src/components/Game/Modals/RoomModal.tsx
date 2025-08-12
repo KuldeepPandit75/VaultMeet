@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
-import { useSocketStore, Room } from "@/Zustand_Store/SocketStore"; 
-import { toast } from "react-hot-toast";
+import { useSocketStore, Room } from "@/Zustand_Store/SocketStore";
 
 interface RoomModalProps {
   isOpen: boolean;
@@ -20,7 +19,7 @@ export default function RoomModal({ isOpen, onClose }: RoomModalProps) {
   
   const router = useRouter();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } = useThemeStore();
-  const { createRoom, getUserRooms, checkRoomPermission } = useSocketStore();
+  const { createRoom, getUserRooms } = useSocketStore();
 
   // Load user's rooms when modal opens
   useEffect(() => {
@@ -76,17 +75,8 @@ export default function RoomModal({ isOpen, onClose }: RoomModalProps) {
         return;
       }
 
-      // Check permission before navigating
-      (async () => {
-        if (typeof window === "undefined") return;
-        const permission = await checkRoomPermission(trimmedRoomId);
-        if (permission && permission.canJoin) {
-          router.push(`/room/${trimmedRoomId}`);
-          onClose();
-        } else {
-          toast.error(permission?.message || "You are not authorized to join this room.");
-        }
-      })();
+      router.push(`/room/${trimmedRoomId}`);
+      onClose();
     }
   };
 
