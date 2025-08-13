@@ -339,7 +339,7 @@ export default function ChatWindow({
             {conversation.otherUser.avatar ? (
               <Image
                 src={conversation.otherUser.avatar}
-                alt={`${conversation.otherUser.fullname.firstname} ${conversation.otherUser.fullname.lastname}`}
+                alt={`${conversation.otherUser.fullname.firstname} ${conversation.otherUser.fullname.lastname || ''}`}
                 width={32}
                 height={32}
                 className="rounded-full"
@@ -361,14 +361,11 @@ export default function ChatWindow({
 
           {/* User Info */}
           <div className="flex-1 min-w-0">
-            <div
-              className={`font-medium text-sm truncate ${
-                isDarkMode ? "text-white" : "text-gray-800"
-              }`}
+            <a href={`/profile/${conversation.otherUser.username}`} className="hover:underline text-white"
             >
               {conversation.otherUser.fullname.firstname}{" "}
-              {conversation.otherUser.fullname.lastname}
-            </div>
+              {conversation.otherUser.fullname.lastname || ""}
+            </a>
             <div
               className={`text-xs ${
                 isDarkMode ? "text-gray-400" : "text-gray-500"
