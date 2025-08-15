@@ -73,6 +73,9 @@ class GeneralSpace extends Scene {
     // Load the general space tilemap JSON
     this.load.tilemapTiledJSON("generalMap", "/game/generalSpace.json");
 
+    this.load.image("india1", "/game/festival/independence.svg");
+    this.load.image("india2", "/game/festival/independence2.svg");
+
     this.load.spritesheet("player", "/game/tilesets/male.png", {
       frameWidth: 64,
       frameHeight: 64,
@@ -430,7 +433,13 @@ class GeneralSpace extends Scene {
     const mapWidth = map.width * map.tileWidth;
     const mapHeight = map.height * map.tileHeight;
 
-    console.log("General Space Map Dimensions:", mapWidth, mapHeight);
+    const india1 = this.add.image(185, 160, "india1");
+    const india2 = this.add.image(515, 120, "india2");
+    const india3 = this.add.image(845, 160, "india1");
+    india3.setScale(-1, 1);
+    india1.setDepth(1000);
+    india2.setDepth(1000);
+    india3.setDepth(1000);
 
     const tileset = [
       map.addTilesetImage(
@@ -518,6 +527,17 @@ class GeneralSpace extends Scene {
         height: whiteboardObj.height || 46.67
       };
     }
+
+    // Add "79th" text above the whiteboard
+    const whiteboardCenterX = this.whiteboardArea.x + this.whiteboardArea.width / 2;
+    const textAboveWhiteboard = this.add.text(whiteboardCenterX, this.whiteboardArea.y +20, "79th", {
+      fontSize: "16px",
+      fontFamily: "Arial, sans-serif",
+      color: "#000080",
+      padding: { left: 4, right: 4, top: 2, bottom: 2 },
+      align: "center",
+    }).setOrigin(0.5, 0.5);
+    textAboveWhiteboard.setDepth(1000);
 
     // Log all loaded object layers for debugging
     console.log("All object layers loaded:", Object.keys(this.objectLayerData));
