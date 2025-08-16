@@ -23,7 +23,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'VaulMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',
-    creator: '@vaultmeet',
+    creator: '@Kuldeepk75',
   },
   robots: {
     index: true,

@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: 'VaultMeet - Host & Join Events in a 2D Virtual World',
     description: 'VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.',
     images: ['/banner.png'],
-    creator: '@vaultmeet', // Replace with your actual Twitter handle
+    creator: '@Kuldeepk75', // VaultMeet's X/Twitter handle
   },
   robots: {
     index: true,
@@ -107,30 +107,42 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
-        {/* Structured Data for Organization */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "VaultMeet",
-              "url": "https://www.vaultmeet.xyz",
-              "logo": "https://www.vaultmeet.xyz/logo_final.png",
-              "description": "VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.",
-              "sameAs": [
-                "https://twitter.com/vaultmeet",
-                "https://linkedin.com/company/vaultmeet",
-                "https://github.com/vaultmeet"
-              ],
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "customer service",
-                "email": "support@vaultmeet.xyz"
-              }
-            })
-          }}
-        />
+                 {/* Structured Data for Organization */}
+         <script
+           type="application/ld+json"
+           dangerouslySetInnerHTML={{
+             __html: JSON.stringify({
+               "@context": "https://schema.org",
+               "@type": "Organization",
+               "name": "VaultMeet",
+               "url": "https://www.vaultmeet.xyz",
+               "logo": "https://www.vaultmeet.xyz/logo_final.png",
+               "description": "VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.",
+               "sameAs": [
+                 "https://x.com/Kuldeepk75",
+                 "https://linkedin.com/company/vaultmeet",
+                 "https://www.instagram.com/vaultmeet/",
+                 "https://github.com/KuldeepPandit75",
+                 "https://chat.whatsapp.com/HoMRaLQgIx85LneXJzPJbQ?mode=ac_t"
+               ],
+               "founder": {
+                 "@type": "Person",
+                 "name": "Kuldeep Kumar Pandit",
+                 "jobTitle": "Founder & CEO",
+                 "url": "https://www.linkedin.com/in/kuldeepk-pandit/",
+                 "sameAs": [
+                   "https://x.com/Kuldeepk75",
+                   "https://github.com/KuldeepPandit75"
+                 ]
+               },
+               "contactPoint": {
+                 "@type": "ContactPoint",
+                 "contactType": "customer service",
+                 "email": "support@vaultmeet.xyz"
+               }
+             })
+           }}
+         />
       </head>
       <body className={inter.className}>
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>

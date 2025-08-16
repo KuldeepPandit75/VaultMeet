@@ -51,7 +51,18 @@ export default function SEOHead({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={`https://www.vaultmeet.xyz${ogImage}`} />
-      <meta name="twitter:creator" content="@vaultmeet" />
+      <meta name="twitter:creator" content="@Kuldeepk75" />
+      <meta name="twitter:site" content="@Kuldeepk75" />
+      
+      {/* Additional Social Media Meta Tags */}
+      <meta property="og:site_name" content="VaultMeet" />
+      <meta property="og:locale" content="en_US" />
+      <meta property="og:type" content="website" />
+      
+      {/* LinkedIn specific meta tags */}
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="VaultMeet - 2D Virtual Event Platform" />
       
       {/* Structured Data */}
       {structuredData && (
