@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))',
+        source: '/:path*.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)',
         headers: [
           {
             key: 'Cache-Control',
@@ -78,7 +78,6 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  swcMinify: true,
 };
 
 export default nextConfig;
