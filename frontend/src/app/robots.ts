@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         '*.json',
       ],
     },
-    sitemap: 'https://www.vaultmeet.com/sitemap.xml',
+    sitemap: 'https://www.vaultmeet.xyz/sitemap.xml',
   }
 }

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Host Events - Create Hackathons & Tech Events | VaultMeet",
     description: "Host your own hackathons, workshops, and tech events on VaultMeet. Create engaging virtual experiences for developers worldwide.",
-    url: "https://www.vaultmeet.com/host",
+    url: "https://www.vaultmeet.xyz/host",
     siteName: "VaultMeet",
     images: [
       {
@@ -55,7 +55,7 @@ export default function HostPage() {
             "@type": "WebPage",
             "name": "Host Events on VaultMeet",
             "description": "Host your own hackathons, workshops, and tech events on VaultMeet",
-            "url": "https://www.vaultmeet.com/host",
+            "url": "https://www.vaultmeet.xyz/host",
             "mainEntity": {
               "@type": "Service",
               "name": "Event Hosting Service",

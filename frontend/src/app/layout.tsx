@@ -35,14 +35,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://www.vaultmeet.com'), // Replace with your actual domain
+  metadataBase: new URL('https://www.vaultmeet.xyz'), // Replace with your actual domain
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://www.vaultmeet.com',
+    url: 'https://www.vaultmeet.xyz',
     siteName: 'VaultMeet',
     title: 'VaultMeet - Host & Join Events in a 2D Virtual World',
     description: 'VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.',
@@ -115,8 +115,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "VaultMeet",
-              "url": "https://www.vaultmeet.com",
-              "logo": "https://www.vaultmeet.com/logo_final.png",
+              "url": "https://www.vaultmeet.xyz",
+              "logo": "https://www.vaultmeet.xyz/logo_final.png",
               "description": "VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.",
               "sameAs": [
                 "https://twitter.com/vaultmeet",
@@ -126,7 +126,7 @@ export default function RootLayout({
               "contactPoint": {
                 "@type": "ContactPoint",
                 "contactType": "customer service",
-                "email": "support@vaultmeet.com"
+                "email": "support@vaultmeet.xyz"
               }
             })
           }}

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Events - Discover Hackathons & Tech Events | VaultMeet",
     description: "Discover and join exciting hackathons, workshops, and tech events on VaultMeet.",
-    url: "https://www.vaultmeet.com/events",
+    url: "https://www.vaultmeet.xyz/events",
     siteName: "VaultMeet",
     images: [
       {
@@ -55,7 +55,7 @@ export default function EventsPage() {
             "@type": "ItemList",
             "name": "VaultMeet Events",
             "description": "A collection of hackathons, workshops, and tech events",
-            "url": "https://www.vaultmeet.com/events",
+            "url": "https://www.vaultmeet.xyz/events",
             "numberOfItems": 0, // This will be dynamic based on actual events
             "itemListElement": [] // This will be populated with actual events
           })

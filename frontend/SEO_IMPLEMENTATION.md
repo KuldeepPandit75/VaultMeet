@@ -82,8 +82,8 @@ Each page includes:
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "VaultMeet",
-  "url": "https://www.vaultmeet.com",
-  "logo": "https://www.vaultmeet.com/logo_final.png",
+  "url": "https://www.vaultmeet.xyz",
+  "logo": "https://www.vaultmeet.xyz/logo_final.png",
   "description": "VaultMeet is a revolutionary platform...",
   "sameAs": [
     "https://twitter.com/vaultmeet",
@@ -99,10 +99,10 @@ Each page includes:
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "VaultMeet",
-  "url": "https://www.vaultmeet.com",
+  "url": "https://www.vaultmeet.xyz",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://www.vaultmeet.com/events?search={search_term_string}",
+    "target": "https://www.vaultmeet.xyz/events?search={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 }
@@ -148,7 +148,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Page Title",
     description: "Page description",
-    url: "https://www.vaultmeet.com/page",
+    url: "https://www.vaultmeet.xyz/page",
   },
   // ... other metadata
 };
@@ -231,7 +231,7 @@ export const metadata: Metadata = {
 
 ## Notes
 
-- Replace placeholder URLs (vaultmeet.com) with actual domain
+- Replace placeholder URLs (vaultmeet.xyz) with actual domain
 - Update social media handles with actual accounts
 - Add Google Analytics and other tracking codes
 - Configure Google Search Console verification

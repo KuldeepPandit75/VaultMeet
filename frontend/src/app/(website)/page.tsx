@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "VaultMeet - Host & Join Events in a 2D Virtual World",
     description: "VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.",
-    url: "https://www.vaultmeet.com",
+    url: "https://www.vaultmeet.xyz",
     siteName: "VaultMeet",
     images: [
       {
@@ -59,11 +59,11 @@ export default function Home() {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "VaultMeet",
-            "url": "https://www.vaultmeet.com",
+            "url": "https://www.vaultmeet.xyz",
             "description": "VaultMeet is a revolutionary platform for hosting and participating in hackathons, workshops, and tech events in an immersive 2D virtual world.",
             "potentialAction": {
               "@type": "SearchAction",
-              "target": "https://www.vaultmeet.com/events?search={search_term_string}",
+              "target": "https://www.vaultmeet.xyz/events?search={search_term_string}",
               "query-input": "required name=search_term_string"
             }
           })

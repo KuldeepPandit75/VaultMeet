@@ -22,7 +22,7 @@ export default function SEOHead({
   noIndex = false,
 }: SEOHeadProps) {
   const fullTitle = title.includes('VaultMeet') ? title : `${title} | VaultMeet`;
-  const fullUrl = ogUrl || `https://www.vaultmeet.com${canonical || ''}`;
+  const fullUrl = ogUrl || `https://www.vaultmeet.xyz${canonical || ''}`;
 
   return (
     <Head>
@@ -32,7 +32,7 @@ export default function SEOHead({
       {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
       
       {/* Canonical URL */}
-      {canonical && <link rel="canonical" href={`https://www.vaultmeet.com${canonical}`} />}
+      {canonical && <link rel="canonical" href={`https://www.vaultmeet.xyz${canonical}`} />}
       
       {/* Robots */}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
@@ -40,7 +40,7 @@ export default function SEOHead({
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={`https://www.vaultmeet.com${ogImage}`} />
+      <meta property="og:image" content={`https://www.vaultmeet.xyz${ogImage}`} />
       <meta property="og:url" content={fullUrl} />
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content="VaultMeet" />
@@ -50,7 +50,7 @@ export default function SEOHead({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={`https://www.vaultmeet.com${ogImage}`} />
+      <meta name="twitter:image" content={`https://www.vaultmeet.xyz${ogImage}`} />
       <meta name="twitter:creator" content="@vaultmeet" />
       
       {/* Structured Data */}

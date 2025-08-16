@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About VaultMeet - Where Innovation Meets Immersion",
     description: "Learn about VaultMeet, the revolutionary platform that redefines how hackathons are experienced online.",
-    url: "https://www.vaultmeet.com/about",
+    url: "https://www.vaultmeet.xyz/about",
     siteName: "VaultMeet",
     images: [
       {
@@ -54,7 +54,7 @@ export default function AboutPage() {
                 "@type": "AboutPage",
                 "name": "About VaultMeet",
                 "description": "Learn about VaultMeet, the revolutionary platform that redefines how hackathons are experienced online.",
-                "url": "https://www.vaultmeet.com/about",
+                "url": "https://www.vaultmeet.xyz/about",
                 "mainEntity": {
                   "@type": "Organization",
                   "name": "VaultMeet",
