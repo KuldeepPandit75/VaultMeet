@@ -16,7 +16,7 @@ interface Stage {
   stageDescription?: string;
   stageStartDate: Date;
   stageEndDate?: Date;
-  onHackMeet: boolean;
+  onVaultMeet: boolean;
 }
 
 interface Sponsor {
@@ -120,9 +120,9 @@ const StageCard = ({ stage }: { stage: Stage }) => {
             <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>{new Date(stage.stageEndDate).toLocaleDateString()}</span>
           </div>
         )}
-        {stage.onHackMeet && (
+        {stage.onVaultMeet && (
           <span className="px-3 py-1 rounded-full text-sm bg-green-500/20 text-green-400">
-            On HackMeet
+            On VaultMeet
           </span>
         )}
       </div>

@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 const app = express();
 
 app.use(cors({
-    origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'https://hack-meet-nine.vercel.app', 'http://192.168.1.38:3000', 'https://www.vaultmeet.xyz', 'https://vaultmeet.xyz', 'https://api.vaultmeet.xyz'],
+    origin: [process.env.FRONTEND_URL, 'http://localhost:3000', 'https://hack-meet-nine.vercel.app', 'http://192.168.1.38:3000', 'https://www.vaultmeet.xyz', 'https://www.vaultmeet.xyz', 'https://api.vaultmeet.xyz'],
     credentials: true,
     // secure: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'],

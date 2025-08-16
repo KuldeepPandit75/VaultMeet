@@ -95,7 +95,7 @@ export default function AdminPage() {
   const fetchProjects = async () => {
     try {
       setLoadingProjects(true);
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/projects/admin/all`,
         {
@@ -120,7 +120,7 @@ export default function AdminPage() {
   const fetchReports = async () => {
     try {
       setLoadingReports(true);
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/admin/reports`,
         {
@@ -144,7 +144,7 @@ export default function AdminPage() {
   // Update report status
   const updateReportStatus = async (reportId: string, status: string, resolution?: string) => {
     try {
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       await axios.patch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/reports/${reportId}/status`,
         { status, resolution },
@@ -166,7 +166,7 @@ export default function AdminPage() {
   // Update project rank and status
   const updateProject = async (projectId: string, updates: Partial<Project>) => {
     try {
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       await axios.patch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/projects/admin/${projectId}`,
         updates,

@@ -1187,7 +1187,7 @@ class GeneralSpace extends Scene {
     
     try {
       // Fetch real leaderboard data from API
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/leaderboard`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1308,7 +1308,7 @@ class GeneralSpace extends Scene {
     
     try {
       // Fetch top ranked projects from API
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/user/projects/top-ranked`, {
         headers: {
           Authorization: `Bearer ${token}`,

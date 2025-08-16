@@ -19,7 +19,7 @@ export const features: Feature[] = [
     },
     {
         title: "Gamification & Leaderboards",
-        description: "Earn XP, climb leaderboards, and win rewards. HackMeet makes participating fun and competitive at the same time."
+        description: "Earn XP, climb leaderboards, and win rewards. VaultMeet makes participating fun and competitive at the same time."
     },
     {
         title: "AI & Collaboration Tools",

@@ -579,9 +579,9 @@ export default function EventDashboard() {
                       <p className="text-gray-300 text-sm">{stage.stageDescription}</p>
                       <p className="text-gray-400 text-xs mt-1">
                         {formatDate(new Date(stage.stageStartDate))}
-                        {stage.onHackMeet && (
+                        {stage.onVaultMeet && (
                           <span className="ml-2 px-2 py-1 bg-green-600 text-white text-xs rounded">
-                            On HackMeet
+                            On VaultMeet
                           </span>
                         )}
                       </p>

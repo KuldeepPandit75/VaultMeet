@@ -18,7 +18,7 @@ interface Stage {
   stageDescription: string;
   stageStartDate: string;
   stageEndDate: string;
-  onHackMeet: boolean;
+  onVaultMeet: boolean;
 }
 
 export default function CompanyHostPage() {
@@ -293,7 +293,7 @@ export default function CompanyHostPage() {
         stageDescription: '',
         stageStartDate: '',
         stageEndDate: '',
-        onHackMeet: false
+        onVaultMeet: false
       }]
     }));
   };
@@ -619,13 +619,13 @@ export default function CompanyHostPage() {
                       <div className="flex items-center">
                         <input
                           type="checkbox"
-                          id={`onHackMeet-${index}`}
-                          checked={stage.onHackMeet}
-                          onChange={(e) => handleStageChange(index, 'onHackMeet', e.target.checked)}
+                          id={`onVaultMeet-${index}`}
+                          checked={stage.onVaultMeet}
+                          onChange={(e) => handleStageChange(index, 'onVaultMeet', e.target.checked)}
                           className="mr-2"
                         />
-                        <label htmlFor={`onHackMeet-${index}`} style={{ color: secondaryAccentColor }}>
-                          Host this stage on HackMeet
+                        <label htmlFor={`onVaultMeet-${index}`} style={{ color: secondaryAccentColor }}>
+                          Host this stage on VaultMeet
                         </label>
                       </div>
                     </div>

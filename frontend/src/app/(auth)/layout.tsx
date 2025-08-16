@@ -2,7 +2,7 @@ import "../globals.css";
 import ThemeInitializer from "@/components/Misc/ThemeInitializer";
 
 export const metadata = {
-  metadataBase: new URL('https://vaultmeet.xyz'),
+  metadataBase: new URL('https://www.vaultmeet.xyz'),
   title: {
     default: 'VaulMeet',
     template: '%s | VaulMeet'
@@ -14,7 +14,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://vaultmeet.xyz',
+    url: 'https://www.vaultmeet.xyz',
     siteName: 'VaulMeet',
     title: 'VaulMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',

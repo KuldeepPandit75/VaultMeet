@@ -22,7 +22,7 @@ const api = axios.create({
 
 // Add request interceptor to add auth token
 api.interceptors.request.use((config) => {
-  const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+  const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -308,20 +308,20 @@ const useAuthStore = create<AuthState>()(
           console.error('Logout failed:', error);
         } finally {
           document.cookie = `token=; path=/; secure; samesite=none; max-age=0`; // 7 days
-          localStorage.removeItem('hackmeet-auth');
+          localStorage.removeItem('vaultmeet-auth');
           set({ token: null, isAuthenticated: false, user: null, error: null });
         }
       },
 
       checkAuth: () => {
-        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
+        const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state.token;
         const isAuth = !!token;
         set({ isAuthenticated: isAuth, token });
         return isAuth;
       },
 
       verifyUser: async () => {
-        const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state.token;
+        const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state.token;
         if (!token) {
           set({ isAuthenticated: false, user: null });
           return;
@@ -333,7 +333,7 @@ const useAuthStore = create<AuthState>()(
           set({ loading: false });
         } catch (error) {
           console.error('Error verifying user:', error);
-          localStorage.removeItem('hackmeet-auth');
+          localStorage.removeItem('vaultmeet-auth');
           document.cookie = `token=; path=/; secure; samesite=none; max-age=0`;
           set({ 
             isAuthenticated: false, 
@@ -721,7 +721,7 @@ const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'hackmeet-auth',
+      name: 'vaultmeet-auth',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,

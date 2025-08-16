@@ -25,7 +25,7 @@ const pointsApi = axios.create({
 
 // Add request interceptor to add auth token
 pointsApi.interceptors.request.use((config) => {
-  const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+  const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

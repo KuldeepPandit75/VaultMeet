@@ -17,9 +17,9 @@ export const metadata: Metadata = {
     icon: '/favicon.ico'
   },
   description: 'Host & Join Hackathons in a 2D Virtual World',
-  keywords: ['hackathon', 'virtual hackathon', 'HackMeet', 'coding competition', 'developer community'],
-  authors: [{ name: 'HackMeet Team' }],
-  creator: 'HackMeet',
+  keywords: ['hackathon', 'virtual hackathon', 'VaultMeet', 'coding competition', 'developer community'],
+  authors: [{ name: 'VaultMeet Team' }],
+  creator: 'VaultMeet',
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HackMeet - Host & Join Hackathons in a 2D Virtual World',
+    title: 'VaultMeet - Host & Join Hackathons in a 2D Virtual World',
     description: 'Host & Join Hackathons in a 2D Virtual World',
-    creator: '@hackmeet',
+    creator: '@vaultmeet',
   },
   robots: {
     index: true,

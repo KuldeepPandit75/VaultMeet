@@ -218,7 +218,7 @@ const TopDevelopersModal: React.FC<TopDevelopersModalProps> = ({ isOpen, onClose
     setSubmissionMessage(null);
 
     try {
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000'}/user/projects/submit`,
         formData,

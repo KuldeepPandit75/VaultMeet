@@ -39,7 +39,7 @@ class Lobby extends Scene {
 
   preload() {
     // Load the tilemap JSON
-    this.load.tilemapTiledJSON("map", "/game/hackmeetSpawnSpace.json");
+    this.load.tilemapTiledJSON("map", "/game/vaultmeetSpawnSpace.json");
 
     this.load.spritesheet("player", "/game/tilesets/male.png", {
       frameWidth: 64,

@@ -646,7 +646,7 @@ Success Response (200):
         "stageDescription": "Team registration and verification",
         "stageStartDate": "2024-03-01T09:00:00.000Z",
         "stageEndDate": "2024-03-01T10:00:00.000Z",
-        "onHackMeet": true
+        "onVaultMeet": true
       }
     ],
     "prizes": {

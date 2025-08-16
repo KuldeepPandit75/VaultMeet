@@ -10,10 +10,10 @@ import TopDevelopersModal from "./Modals/TopDevelopersModal";
 interface PhaserGameProps {
   eventId?: string; // Optional eventId for event-specific spaces
   roomId?: string; // Optional roomId for room-specific spaces
-  mapType?: string; // NEW: Map type to load (e.g., "general", "hackmeet")
+  mapType?: string; // NEW: Map type to load (e.g., "general", "vaultmeet")
 }
 
-const PhaserGame = ({ eventId, roomId, mapType = "hackmeet" }: PhaserGameProps) => {
+const PhaserGame = ({ eventId, roomId, mapType = "vaultmeet" }: PhaserGameProps) => {
   const gameContainer = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Game | null>(null);
   const [isClient, setIsClient] = useState(false);

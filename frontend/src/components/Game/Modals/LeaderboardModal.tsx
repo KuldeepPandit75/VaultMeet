@@ -39,7 +39,7 @@ const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onClose }) 
     setLoading(true);
     setError(null);
     try {
-      const token = JSON.parse(localStorage.getItem('hackmeet-auth') || '{}').state?.token;
+      const token = JSON.parse(localStorage.getItem('vaultmeet-auth') || '{}').state?.token;
       const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001'}/user/leaderboard`, {
         headers: {
           Authorization: `Bearer ${token}`,

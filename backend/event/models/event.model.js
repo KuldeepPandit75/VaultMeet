@@ -124,7 +124,7 @@ const eventSchema = new mongoose.Schema({
     stageEndDate:{
         type: Date,
     },
-    onHackMeet:{
+    onVaultMeet:{
         type: Boolean,
         default: false
     }
