@@ -88,6 +88,7 @@ def post_news():
         try:
             # Parse the JSON response from Gemini
             news_data = json.loads(response.text)
+            print(news_data)
             return jsonify({**news_data, "link": link})
         except json.JSONDecodeError:
             # If JSON parsing fails, return the raw response
