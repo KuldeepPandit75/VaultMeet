@@ -290,7 +290,15 @@ const CodingSpace = () => {
   useEffect(()=>{
     if(!currentRoom) return;
     console.log(currentRoom?.adminId.toString(), user?._id.toString())
-    setIsRoomAdmin(currentRoom?.adminId.toString() === user?._id.toString());
+    // A user is room admin if they are the adminId or their participant status is "admin"
+    setIsRoomAdmin(
+      currentRoom?.adminId.toString() === user?._id.toString() ||
+      currentRoom?.participants?.some(
+        (p: {id:string, status:string}) =>
+          (p.id?.toString?.() === user?._id?.toString?.()) &&
+          p.status === "admin"
+      )
+    );
   },[currentRoom]);
 
   // Timer effect for challenge notifications
@@ -354,7 +362,13 @@ const CodingSpace = () => {
         setWaiting("")
         
         // Set room admin if user is the admin
-        if (permission.room?.adminId === user?._id) {
+        // Treat user as admin if they are the room admin or a participant with status "admin"
+        if (
+          permission.room?.adminId === user?._id ||
+          permission.room?.participants?.some(
+            (p: {id: string, status: string}) => p.id === user?._id && p.status === "admin"
+          ) 
+        ) {
           socket.emit("setRoomAdmin", { roomId });
         }
         
