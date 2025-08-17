@@ -191,7 +191,7 @@ const ModerationModal: React.FC<ModerationModalProps> = ({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-50"
+        className="fixed inset-0 bg-black/30 bg-opacity-50 z-50"
         onClick={onClose}
       />
 
