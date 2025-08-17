@@ -356,31 +356,25 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
     <div className="h-full w-full flex relative">
       {/* Whiteboard main area */}
       <div className="flex-1 h-full relative">
-        <Excalidraw
-          excalidrawAPI={(api) => {
-            setExcalidrawAPI(api);
-            // Set initial load complete after a short delay to ensure API is ready
-            setTimeout(() => {
-              initialLoadCompleteRef.current = true;
-              console.log("Excalidraw API initialized and ready");
-            }, 1000);
-          }}
-          onChange={handleExcalidrawChange}
-          UIOptions={{
-            canvasActions: {
-              saveToActiveFile: false,
-              loadScene: false,
-              export: false,
-              saveAsImage: false,
-            },
-          }}
-          theme={isDarkMode ? "dark" : "light"}
-          initialData={{
-            elements: initialWhiteboardData.elements as unknown as readonly ExcalidrawElement[],
-            appState: initialWhiteboardData.appState as unknown as ExcalidrawAppState,
-            files: initialWhiteboardData.files as unknown as ExcalidrawFiles
-          } as Record<string, unknown>}
-        />
+        <div onKeyDown={(e) => e.stopPropagation()}>
+          <Excalidraw
+            excalidrawAPI={(api) => {
+              setExcalidrawAPI(api);
+              // Set initial load complete after a short delay to ensure API is ready
+              setTimeout(() => {
+                initialLoadCompleteRef.current = true;
+                console.log("Excalidraw API initialized and ready");
+              }, 1000);
+            }}
+            onChange={handleExcalidrawChange}
+            theme={isDarkMode ? "dark" : "light"}
+            initialData={{
+              elements: initialWhiteboardData.elements as unknown as readonly ExcalidrawElement[],
+              appState: initialWhiteboardData.appState as unknown as ExcalidrawAppState,
+              files: initialWhiteboardData.files as unknown as ExcalidrawFiles
+            } as Record<string, unknown>}
+          />
+        </div>
         
         {/* Toggle Button */}
         <button
