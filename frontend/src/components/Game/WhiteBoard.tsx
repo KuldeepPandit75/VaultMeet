@@ -355,7 +355,9 @@ export const WhiteBoard = ({ roomId }: WhiteBoardProps) => {
   return (
     <div className="h-full w-full flex relative">
       {/* Whiteboard main area */}
-      <div className="flex-1 h-full relative">
+      <div className="flex-1 h-full relative" onKeyDown={(e) => {
+        e.stopPropagation();
+      }}>
         <Excalidraw
           excalidrawAPI={(api) => {
             setExcalidrawAPI(api);
