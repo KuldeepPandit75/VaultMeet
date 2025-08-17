@@ -27,10 +27,7 @@ const WhiteBoard = dynamic(
     ssr: false,
   }
 );
-const GoogleMeetView = dynamic(() => import("@/components/Game/GoogleMeetView"), {
-  ssr: false,
-});
-import initializeClient from "@/components/Game/agora";
+import initializeClient, { onMicStateChange, onVideoStateChange } from "@/components/Game/agora";
 import useAuthStore, { User } from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
@@ -46,8 +43,8 @@ type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
 };
 
 const EventSpace = () => {
-  const [mic, setMic] = useState(false);
-  const [video, setVideo] = useState(false);
+  const [mic, setMic] = useState(false); // Initially muted (matches Agora audio track initial state)
+  const [video, setVideo] = useState(false); // Initially disabled (matches Agora video track initial state)
   const [screenShare, setScreenShare] = useState(false);
   const [typedMsg, setTypedMsg] = useState("");
   const { socket } = useSocket();
@@ -166,6 +163,15 @@ const EventSpace = () => {
     const handleConnect = () => {
       console.log("Socket connected, initializing Agora client");
       initializeClient(socket);
+      
+      // Register callbacks for mic and video state changes
+      onMicStateChange((isMuted: boolean) => {
+        setMic(!isMuted); // ControlBar expects mic to be true when unmuted
+      });
+      
+      onVideoStateChange((isEnabled: boolean) => {
+        setVideo(isEnabled); // ControlBar expects video to be true when enabled
+      });
     };
 
     if (socket.connected) {
@@ -259,12 +265,12 @@ const EventSpace = () => {
 
   const handleMicToggle = async () => {
     await toggleMicrophone();
-    setMic(!mic);
+    // State will be updated by the callback registered with onMicStateChange
   };
 
   const handleVideoToggle = async () => {
     await toggleCamera();
-    setVideo(!video);
+    // State will be updated by the callback registered with onVideoStateChange
   };
 
   const handleScreenShareToggle = async () => {
@@ -437,6 +443,7 @@ const EventSpace = () => {
         unreadCount={unreadCount}
         setIsReportModalOpen={setIsReportModalOpen}
         setIsHelpModalOpen={setIsHelpModalOpen}
+        setIsModerationModalOpen={() => {}}
       />
 
       {/* Profile Box */}
@@ -452,106 +459,108 @@ const EventSpace = () => {
           className={`connectedUsers absolute z-40 transition-all duration-500 ${
             viewMode === "game"
               ? "top-6 left-1/2 -translate-x-1/2 flex gap-4 max-w-[85vw] flex-wrap justify-center"
-              : "top-0 left-0 w-full h-full"
+              : "top-0 left-0 w-full h-full p-4 pb-[80px] grid gap-4 place-items-center"
           }
           ${viewMode === "whiteboard" ? "hidden" : ""}
           `}
+          style={{
+            gridTemplateColumns:
+              viewMode === "meeting"
+                ? "repeat(auto-fit, minmax(300px, 1fr))"
+                : undefined,
+          }}
         >
-          {viewMode === "game" ? (
-            // Game mode: Show users in horizontal layout
-            remoteUsers.map((user) => (
+          {remoteUsers.map((user) => (
+            <div
+              key={user.uid}
+              className={`relative group ${
+                viewMode === "meeting"
+                  ? "w-full max-w-[700px] aspect-[16/9]"
+                  : ""
+              }`}
+              style={{
+                transform: "translateZ(0)",
+                transition: "all 0.3s ease",
+              }}
+            >
               <div
-                key={user.uid}
-                className="relative group"
+                id={`user-container-${user.uid}`}
+                className={`video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 w-full ${
+                  viewMode === "meeting" ? "h-auto aspect-[16/9]" : "h-full"
+                }`}
                 style={{
-                  transform: "translateZ(0)",
-                  transition: "all 0.3s ease",
+                  width: viewMode === "game" ? "12vw" : "100%",
+                  height: viewMode === "game" ? "14vh" : "100%",
+                  minWidth: "140px",
+                  minHeight: "100px",
+                  backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+                  borderColor: isDarkMode ? "#333333" : "#e5e5e5",
+                  boxShadow: isDarkMode
+                    ? "0 8px 25px -8px rgba(0, 0, 0, 0.5)"
+                    : "0 8px 25px -8px rgba(0, 0, 0, 0.15)",
                 }}
               >
-                <div
-                  id={`user-container-${user.uid}`}
-                  className="video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 h-full"
-                  style={{
-                    width: "12vw",
-                    height: "14vh",
-                    minWidth: "140px",
-                    minHeight: "100px",
-                    backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-                    borderColor: isDarkMode ? "#333333" : "#e5e5e5",
-                    boxShadow: isDarkMode
-                      ? "0 8px 25px -8px rgba(0, 0, 0, 0.5)"
-                      : "0 8px 25px -8px rgba(0, 0, 0, 0.15)",
-                  }}
-                >
-                  {!user.hasVideo && (
-                    <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
-                        backgroundImage: isDarkMode
-                          ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
-                          : "linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)",
-                      }}
-                    >
-                      <div
-                        className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
-                        style={{
-                          backgroundColor: primaryAccentColor,
-                          boxShadow: `0 4px 12px ${primaryAccentColor}40`,
-                        }}
-                      >
-                        {userDatas?.[user.uid]?.avatar ? (
-                          <Image
-                            src={userDatas?.[user.uid]?.avatar || ""}
-                            alt="User Avatar"
-                            height={100}
-                            width={100}
-                            className="h-[70px] w-[70px] rounded-full object-cover"
-                            style={{ backgroundColor: primaryAccentColor }}
-                          />
-                        ) : (
-                          <div
-                            className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
-                            style={{
-                              backgroundColor: primaryAccentColor,
-                              boxShadow: `0 4px 12px ${primaryAccentColor}40`,
-                            }}
-                          >
-                            {userDatas?.[user.uid]?.fullname?.firstname?.charAt(
-                              0
-                            ) || "U"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {renderUserState(user)}
-
-                  {/* User Name Badge */}
+                {!user.hasVideo && (
                   <div
-                    className="absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-medium shadow-lg"
+                    className="w-full h-full flex items-center justify-center"
                     style={{
-                      backgroundColor: isDarkMode
-                        ? "rgba(0, 0, 0, 0.7)"
-                        : "rgba(255, 255, 255, 0.9)",
-                      color: isDarkMode ? "#ffffff" : "#1a1a1a",
-                      backdropFilter: "blur(8px)",
+                      backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                      backgroundImage: isDarkMode
+                        ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
+                        : "linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)",
                     }}
                   >
-                    {userDatas?.[user.uid]?.fullname?.firstname ||
-                      `User ${String(user.uid).slice(-4)}`}
+                    <div
+                      className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
+                      style={{
+                        backgroundColor: primaryAccentColor,
+                        boxShadow: `0 4px 12px ${primaryAccentColor}40`,
+                      }}
+                    >
+                      {userDatas?.[user.uid]?.avatar ? (
+                        <Image
+                          src={userDatas?.[user.uid]?.avatar || ""}
+                          alt="User Avatar"
+                          height={100}
+                          width={100}
+                          className="h-[70px] w-[70px] rounded-full object-cover"
+                          style={{ backgroundColor: primaryAccentColor }}
+                        />
+                      ) : (
+                        <div
+                          className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
+                          style={{
+                            backgroundColor: primaryAccentColor,
+                            boxShadow: `0 4px 12px ${primaryAccentColor}40`,
+                          }}
+                        >
+                          {userDatas?.[user.uid]?.fullname?.firstname?.charAt(
+                            0
+                          ) || "U"}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                )}
+                {renderUserState(user)}
+
+                {/* User Name Badge */}
+                <div
+                  className="absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-medium shadow-lg"
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? "rgba(0, 0, 0, 0.7)"
+                      : "rgba(255, 255, 255, 0.9)",
+                    color: isDarkMode ? "#ffffff" : "#1a1a1a",
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  {userDatas?.[user.uid]?.fullname?.firstname ||
+                    `User ${String(user.uid).slice(-4)}`}
                 </div>
               </div>
-            ))
-          ) : (
-            // Meeting mode: Use Google Meet style layout
-            <GoogleMeetView 
-              remoteUsers={remoteUsers}
-              userDatas={userDatas}
-              maxVisibleUsers={8}
-            />
-          )}
+            </div>
+          ))}
         </div>
       )}
 

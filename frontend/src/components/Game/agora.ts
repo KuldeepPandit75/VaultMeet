@@ -22,9 +22,23 @@ let isScreenSharing = false;
 // Callback function for screen share state changes
 let screenShareStateCallback: ((isSharing: boolean) => void) | null = null;
 
+// Callback functions for mic and video state changes
+let micStateCallback: ((isMuted: boolean) => void) | null = null;
+let videoStateCallback: ((isEnabled: boolean) => void) | null = null;
+
 // Function to register screen share state callback
 export const onScreenShareStateChange = (callback: (isSharing: boolean) => void) => {
   screenShareStateCallback = callback;
+};
+
+// Function to register mic state callback
+export const onMicStateChange = (callback: (isMuted: boolean) => void) => {
+  micStateCallback = callback;
+};
+
+// Function to register video state callback
+export const onVideoStateChange = (callback: (isEnabled: boolean) => void) => {
+  videoStateCallback = callback;
 };
 
 // Function to notify about screen share state changes
@@ -323,6 +337,11 @@ export const toggleCamera = async () => {
         await localVideoTrack.play(localPlayerContainer);
         localPlayerContainer.style.display = "block";
       }
+      
+      // Notify about video state change
+      if (videoStateCallback) {
+        videoStateCallback(true); // Video is now enabled
+      }
     } else {
       // Unpublish the video track before disabling
       if (currentChannel && client.connectionState === "CONNECTED") {
@@ -338,6 +357,11 @@ export const toggleCamera = async () => {
       if (localPlayerContainer) {
         localVideoTrack.stop();
         localPlayerContainer.style.display = "none";
+      }
+      
+      // Notify about video state change
+      if (videoStateCallback) {
+        videoStateCallback(false); // Video is now disabled
       }
     }
   } catch (error) {
@@ -448,6 +472,11 @@ export const toggleMicrophone = async () => {
     const isMuted = localAudioTrack.muted;
     await localAudioTrack.setMuted(!isMuted);
     console.log(`Microphone ${!isMuted ? 'muted' : 'unmuted'}`);
+    
+    // Notify about mic state change
+    if (micStateCallback) {
+      micStateCallback(!isMuted); // Pass the new muted state
+    }
   } catch (error) {
     console.error("Error toggling microphone:", error);
   }
@@ -668,3 +697,91 @@ export const cleanupAgoraClient = async () => {
     console.error("Error during Agora client cleanup:", error);
   }
 };
+
+// Moderation functions for remote users
+export const muteRemoteUserAudio = async () => {
+  if (!client) return false;
+  
+  localAudioTrack?.setMuted(true);
+  
+  // Notify about mic state change
+  if (micStateCallback) {
+    micStateCallback(true); // Mic is now muted
+  }
+  
+  return true;
+};
+
+// export const unmuteRemoteUserAudio = async () => {
+//   if (!client) return false;
+//   localAudioTrack?.setMuted(false);
+//   return true;
+// };
+
+export const muteRemoteUserVideo = async () => {
+  if (!client) return false;
+  
+  try {
+    // Only disable the local video track (do not enable)
+    if (localVideoTrack && localVideoTrack.enabled) {
+      // Unpublish the video track before disabling
+      if (currentChannel && client.connectionState === "CONNECTED") {
+        await client.unpublish(localVideoTrack);
+        console.log("Video track unpublished before disabling");
+      }
+
+      // Disable video track
+      await localVideoTrack.setEnabled(false);
+
+      // Stop local video display
+      const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
+      if (localPlayerContainer) {
+        localVideoTrack.stop();
+        localPlayerContainer.style.display = "none";
+      }
+      
+      // Notify about video state change
+      if (videoStateCallback) {
+        videoStateCallback(false); // Video is now disabled
+      }
+      
+      console.log("Local video muted (disabled)");
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error muting remote user video:", error);
+    return false;
+  }
+};
+
+// export const unmuteRemoteUserVideo = async () => {
+//   if (!client) return false;
+  
+//   try {
+//     // Only enable the local video track (do not disable)
+//     if (localVideoTrack && !localVideoTrack.enabled) {
+//       // Enable video track
+//       await localVideoTrack.setEnabled(true);
+
+//       // Publish the video track if connected to a channel
+//       if (currentChannel && client.connectionState === "CONNECTED") {
+//         await client.publish(localVideoTrack);
+//         console.log("Video track published after enabling");
+//       }
+
+//       // Play the video locally
+//       const localPlayerContainer = document.getElementById("user-1") as HTMLVideoElement;
+//       if (localPlayerContainer) {
+//         await localVideoTrack.play(localPlayerContainer);
+//         localPlayerContainer.style.display = "block";
+//       }
+//       console.log("Local video unmuted (enabled)");
+//       return true;
+//     }
+//     return false;
+//   } catch (error) {
+//     console.error("Error unmuting remote user video:", error);
+//     return false;
+//   }
+// };

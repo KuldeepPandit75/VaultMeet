@@ -22,7 +22,7 @@ const roomSchema = new mongoose.Schema({
     {
       status: {
         type: String,
-        enum: ["pending", "allowed", "banned"],
+        enum: ["pending", "allowed", "banned","admin"],
         required: true,
       },
       id: {

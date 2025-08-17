@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPendingRequests = exports.manualCleanup = exports.updateRoomActivity = exports.getUserRooms = exports.getRoomDetails = exports.deleteRoom = exports.rejectJoinRequest = exports.approveJoinRequest = exports.joinRoomRequest = exports.checkRoomPermission = exports.createRoom = void 0;
+exports.makeAdmin = exports.setParticipantPending = exports.banParticipant = exports.getPendingRequests = exports.manualCleanup = exports.updateRoomActivity = exports.getUserRooms = exports.getRoomDetails = exports.deleteRoom = exports.rejectJoinRequest = exports.approveJoinRequest = exports.joinRoomRequest = exports.checkRoomPermission = exports.createRoom = void 0;
 const room_model_js_1 = __importDefault(require("../models/room.model.js"));
 const user_model_js_1 = __importDefault(require("../models/user.model.js"));
 const room_service_js_1 = require("../services/room.service.js");
@@ -37,7 +37,7 @@ const canJoinRoom = (roomId, userId) => __awaiter(void 0, void 0, void 0, functi
             return { canJoin: true, room: room };
         }
         // Check if user is an allowed participant
-        const allowedParticipant = room.participants.find((p) => p.id.toString() === userId.toString() && p.status === "allowed");
+        const allowedParticipant = room.participants.find((p) => p.id.toString() === userId.toString() && (p.status === "allowed" || p.status === "admin"));
         if (allowedParticipant) {
             return { canJoin: true, room: room };
         }
@@ -118,7 +118,7 @@ const createRoom = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createRoom = createRoom;
 // Check if user can join room
 const checkRoomPermission = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const { roomId } = req.params;
         const userId = req.user._id;
@@ -127,7 +127,8 @@ const checkRoomPermission = (req, res) => __awaiter(void 0, void 0, void 0, func
             canJoin: permission.canJoin,
             message: permission.message,
             room: permission.room,
-            isAdmin: ((_a = permission.room) === null || _a === void 0 ? void 0 : _a.adminId.toString()) === userId.toString(),
+            isAdmin: ((_a = permission.room) === null || _a === void 0 ? void 0 : _a.adminId.toString()) === userId.toString() ||
+                ((_b = permission.room) === null || _b === void 0 ? void 0 : _b.participants.some((p) => p.id.toString() === userId.toString() && p.status === "admin")),
         });
     }
     catch (error) {
@@ -196,8 +197,10 @@ const approveJoinRequest = (req, res) => __awaiter(void 0, void 0, void 0, funct
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
-        // Check if the user is the admin
-        if (room.adminId.toString() !== adminId.toString()) {
+        // Check if the user is the main admin or has admin status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
             return res.status(403).json({ message: "Only room admins can approve join requests" });
         }
         // Find and update the participant status
@@ -236,8 +239,10 @@ const rejectJoinRequest = (req, res) => __awaiter(void 0, void 0, void 0, functi
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
-        // Check if the user is the admin
-        if (room.adminId.toString() !== adminId.toString()) {
+        // Check if the user is the main admin or has admin status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
             return res.status(403).json({ message: "Only room admins can reject join requests" });
         }
         // Find and update the participant status
@@ -273,8 +278,10 @@ const deleteRoom = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
-        // Check if the user is the admin
-        if (room.adminId.toString() !== adminId.toString()) {
+        // Check if the user is the main admin or has admin status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
             return res.status(403).json({ message: "Only room admins can delete the room" });
         }
         yield room_model_js_1.default.findByIdAndDelete(room._id);
@@ -399,8 +406,10 @@ const getPendingRequests = (req, res) => __awaiter(void 0, void 0, void 0, funct
         if (!room) {
             return res.status(404).json({ message: "Room not found" });
         }
-        // Check if the user is the admin
-        if (room.adminId.toString() !== adminId.toString()) {
+        // Check if the user is the main admin or has admin status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
             return res.status(403).json({ message: "Only room admins can view pending requests" });
         }
         // Get pending participants with user details
@@ -431,3 +440,151 @@ const getPendingRequests = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.getPendingRequests = getPendingRequests;
+// Ban participant from room (admin only)
+const banParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { roomId, participantId } = req.body;
+        const adminId = req.user._id;
+        if (!roomId || !participantId) {
+            return res.status(400).json({ message: "Room ID and Participant ID are required" });
+        }
+        const room = yield room_model_js_1.default.findOne({ roomId });
+        if (!room) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        // Check if the user is the main admin or has admin status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
+            return res.status(403).json({ message: "Only room admins can ban participants" });
+        }
+        // Check if trying to ban the admin
+        if (room.adminId.toString() === participantId.toString()) {
+            return res.status(400).json({ message: "Cannot ban the room admin" });
+        }
+        const user = yield user_model_js_1.default.findOne({ socketId: participantId });
+        // Find and update the participant status to banned
+        const participant = room.participants.find((p) => p.id.toString() === user._id.toString());
+        if (!participant) {
+            console.log("Participant not found in room");
+            return res.status(404).json({ message: "Participant not found in room" });
+        }
+        participant.status = "banned";
+        room.lastActive = new Date();
+        yield room.save();
+        res.status(200).json({
+            message: "Participant banned successfully",
+            room: {
+                roomId: room.roomId,
+                adminId: room.adminId,
+                participants: room.participants,
+                lastActive: room.lastActive,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error banning participant:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.banParticipant = banParticipant;
+// Set participant status as pending (admin only)
+const setParticipantPending = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { roomId, participantId } = req.body;
+        const adminId = req.user._id;
+        if (!roomId || !participantId) {
+            return res.status(400).json({ message: "Room ID and Participant ID are required" });
+        }
+        const room = yield room_model_js_1.default.findOne({ roomId });
+        if (!room) {
+            return res.status(404).json({ message: "Room not found" });
+        }
+        // Check if the user is the admin
+        // Allow both the main admin and participants with status 'admin' to modify participant status
+        const isMainAdmin = room.adminId.toString() === adminId.toString();
+        const isAdminParticipant = room.participants.some((p) => p.id.toString() === adminId.toString() && p.status === "admin");
+        if (!isMainAdmin && !isAdminParticipant) {
+            return res.status(403).json({ message: "Only room admins can modify participant status" });
+        }
+        // Check if trying to modify the admin
+        if (room.adminId.toString() === participantId.toString()) {
+            return res.status(400).json({ message: "Cannot modify the room admin status" });
+        }
+        const user = yield user_model_js_1.default.findOne({ socketId: participantId });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        // Find and update the participant status to pending
+        const participant = room.participants.find((p) => p.id.toString() === user._id.toString());
+        if (!participant) {
+            console.log("Participant not found in room");
+            return res.status(404).json({ message: "Participant not found in room" });
+        }
+        participant.status = "pending";
+        room.lastActive = new Date();
+        yield room.save();
+        res.status(200).json({
+            message: "Participant status set to pending successfully",
+            room: {
+                roomId: room.roomId,
+                adminId: room.adminId,
+                participants: room.participants,
+                lastActive: room.lastActive,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error setting participant status to pending:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.setParticipantPending = setParticipantPending;
+const makeAdmin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { roomId, adminId, participantId } = req.body;
+        // Find the room
+        const room = yield room_model_js_1.default.findOne({ roomId });
+        if (!room) {
+            console.log("Room not found");
+            return res.status(404).json({ message: "Room not found" });
+        }
+        // Check if the user is the current admin
+        if (room.adminId.equals(adminId)) {
+            return res.status(403).json({ message: "Only the current admin can assign a new admin" });
+        }
+        // Find the user to be made admin
+        const user = yield user_model_js_1.default.findOne({ socketId: participantId });
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+        // Find the participant in the room
+        const participant = room.participants.find((p) => p.id.toString() === user._id.toString());
+        if (!participant) {
+            return res.status(404).json({ message: "Participant not found in room" });
+        }
+        // Set all participants' status to "participant" except the new admin
+        room.participants.forEach((p) => {
+            if (p.id.toString() === user._id.toString()) {
+                p.status = "admin";
+            }
+        });
+        room.lastActive = new Date();
+        yield room.save();
+        res.status(200).json({
+            message: "Admin created successfully",
+            room: {
+                roomId: room.roomId,
+                adminId: room.adminId,
+                participants: room.participants,
+                lastActive: room.lastActive,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Error making admin:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+exports.makeAdmin = makeAdmin;

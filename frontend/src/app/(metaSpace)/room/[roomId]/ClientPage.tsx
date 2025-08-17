@@ -12,6 +12,8 @@ import {
   toggleScreenShare,
   cleanupAgoraClient,
   onScreenShareStateChange,
+  muteRemoteUserAudio,
+  muteRemoteUserVideo,
 } from "@/components/Game/agora";
 const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
   ssr: false,
@@ -19,15 +21,10 @@ const PhaserGame = dynamic(() => import("@/components/Game/PhaserGame"), {
 const WhiteBoard = dynamic(() => import("@/components/Game/WhiteBoard").then(mod => ({ default: mod.WhiteBoard })), {
   ssr: false,
 });
-const GoogleMeetView = dynamic(() => import("@/components/Game/GoogleMeetView"), {
-  ssr: false,
-});
-import initializeClient from "@/components/Game/agora";
+import initializeClient, { onMicStateChange, onVideoStateChange } from "@/components/Game/agora";
 import useAuthStore, { User } from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
-import { IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import UserSummaryCard from "@/components/Game/Modals/UserSummaryCard";
-import Image from "next/image";
 import useChatStore from "@/Zustand_Store/ChatStore";
 import { useParams } from "next/navigation";
 import { useRouter, usePathname } from "next/navigation";
@@ -38,12 +35,8 @@ import { pointsService } from "@/services/pointsService";
 import RoomInviteModal from "@/components/Game/Modals/RoomInviteModal";
 import ReportModal from "@/components/Game/Modals/ReportModal";
 import HelpModal from "@/components/Game/Modals/HelpModal";
-// import { useRouter } from "next/navigation";
-
-type ExtendedAgoraUser = IAgoraRTCRemoteUser & {
-  _video_muted_?: boolean;
-  _audio_muted_?: boolean;
-};
+import ModerationModal from "@/components/Game/Modals/ModerationModal";
+import { VCCards } from "@/components/Game/VCCards";
 
 interface Notification {
   id: string;
@@ -96,8 +89,8 @@ const CodingSpace = () => {
   const params = useParams();
   const roomId = params.roomId as string;
   
-  const [mic, setMic] = useState(false);
-  const [video, setVideo] = useState(false);
+  const [mic, setMic] = useState(false); // Initially muted (matches Agora audio track initial state)
+  const [video, setVideo] = useState(false); // Initially disabled (matches Agora video track initial state)
   const [screenShare, setScreenShare] = useState(false);
   const [waiting, setWaiting] = useState("Getting the room ready....");
   const [typedMsg, setTypedMsg] = useState("");
@@ -105,6 +98,7 @@ const CodingSpace = () => {
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isModerationModalOpen, setIsModerationModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(true);
   const [isRoomAdmin, setIsRoomAdmin] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -129,8 +123,101 @@ const CodingSpace = () => {
   const pathname = usePathname();
   const {user} = useAuthStore();
 
+  // const demoUsers = [
+  //   {
+  //     uid: "demo1",
+  //     hasVideo: true,
+  //     hasAudio: true,
+  //     _video_muted_: false,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Alice", lastname: "Johnson" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo2", 
+  //     hasVideo: false,
+  //     hasAudio: true,
+  //     _video_muted_: true,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Bob", lastname: "Smith" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo3",
+  //     hasVideo: true,
+  //     hasAudio: false,
+  //     _video_muted_: false,
+  //     _audio_muted_: true,
+  //     fullname: { firstname: "Carol", lastname: "Davis" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo4",
+  //     hasVideo: true,
+  //     hasAudio: true,
+  //     _video_muted_: false,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "David", lastname: "Wilson" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo5",
+  //     hasVideo: false,
+  //     hasAudio: false,
+  //     _video_muted_: true,
+  //     _audio_muted_: true,
+  //     fullname: { firstname: "Eva", lastname: "Brown" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo6",
+  //     hasVideo: true,
+  //     hasAudio: true,
+  //     _video_muted_: false,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Frank", lastname: "Miller" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo7",
+  //     hasVideo: true,
+  //     hasAudio: true,
+  //     _video_muted_: false,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Grace", lastname: "Taylor" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo8",
+  //     hasVideo: false,
+  //     hasAudio: true,
+  //     _video_muted_: true,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Henry", lastname: "Anderson" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo9",
+  //     hasVideo: true,
+  //     hasAudio: true,
+  //     _video_muted_: false,
+  //     _audio_muted_: false,
+  //     fullname: { firstname: "Ivy", lastname: "Thomas" },
+  //     avatar: null
+  //   },
+  //   {
+  //     uid: "demo10",
+  //     hasVideo: true,
+  //     hasAudio: false,
+  //     _video_muted_: false,
+  //     _audio_muted_: true,
+  //     fullname: { firstname: "Jack", lastname: "Jackson" },
+  //     avatar: null
+  //   }
+  // ];
 
   // Handle click outside notification panel
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -386,6 +473,73 @@ const CodingSpace = () => {
     };
   }, [socket]);
 
+  // Listen for moderation events
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleModerationAction = async (data: {
+      roomId: string;
+      actionType: string;
+      targetUserIds: string[];
+      action: string;
+    }) => {
+      console.log("Moderation action received:", data);
+      
+      try {
+        let success = false;
+        
+        switch (data.actionType) {
+          case 'mute-audio':
+            if (data.targetUserIds.includes(socket.id || "")) {
+              success = await muteRemoteUserAudio();
+            }
+            break;
+            
+          case 'mute-video':
+            if (data.targetUserIds.includes(socket.id || "")) {
+              success = await muteRemoteUserVideo();
+            }
+            break;
+            
+          default:
+            console.warn("Unknown moderation action:", data.actionType);
+        }
+        
+        if (success) {
+          const actionText = data.actionType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+          toast.success(`${actionText} applied successfully`);
+        }
+      } catch (error) {
+        console.error("Error applying moderation action:", error);
+        toast.error("Failed to apply moderation action");
+      }
+    };
+
+    const handleUserBanned = (data: { roomId: string; reason: string }) => {
+      console.log("User banned from room:", data);
+      toast.error(`You have been banned from the room: ${data.reason}`);
+      // Redirect to home page
+      router.push("/");
+    };
+
+    const handleParticipantRemoved = (data: { roomId: string; reason: string }) => {
+      console.log("Participant removed from room:", data);
+      toast.error(`You have been removed from the room: ${data.reason}`);
+      // Redirect to home page
+      router.push("/");
+    };
+    
+    socket.on("moderationAction", handleModerationAction);
+    socket.on("userBanned", handleUserBanned);
+    socket.on("participantRemoved", handleParticipantRemoved);
+    
+    return () => {
+      socket.off("moderationAction", handleModerationAction);
+      socket.off("userBanned", handleUserBanned);
+      socket.off("participantRemoved", handleParticipantRemoved);
+    };
+  }, [socket, remoteUsers, router]);
+
   const toggleViewMode = () => {
     if (viewMode === "game") {
       setViewMode("meeting");
@@ -472,6 +626,15 @@ const CodingSpace = () => {
     const handleConnect = () => {
       console.log("Socket connected, initializing Agora client");
       initializeClient(socket);
+      
+      // Register callbacks for mic and video state changes
+      onMicStateChange((isMuted: boolean) => {
+        setMic(!isMuted); // ControlBar expects mic to be true when unmuted
+      });
+      
+      onVideoStateChange((isEnabled: boolean) => {
+        setVideo(isEnabled); // ControlBar expects video to be true when enabled
+      });
     };
 
     if (socket.connected) {
@@ -515,7 +678,7 @@ const CodingSpace = () => {
 
     return () => {
       console.log("Cleaning up coding space socket listeners...");
-      socket.off("connect", handleConnect);
+      socket.off("connect", handleConnect); 
       socket.off("receiveMessage");
       socket.off("joinedRoom");
       socket.off("whiteboardInteraction");
@@ -563,12 +726,12 @@ const CodingSpace = () => {
 
   const handleMicToggle = async () => {
     await toggleMicrophone();
-    setMic(!mic);
+    // State will be updated by the callback registered with onMicStateChange
   };
 
   const handleVideoToggle = async () => {
     await toggleCamera();
-    setVideo(!video);
+    // State will be updated by the callback registered with onVideoStateChange
   };
 
   const handleScreenShareToggle = async () => {
@@ -601,50 +764,6 @@ const CodingSpace = () => {
       setIsWhiteboardOpen(false);
     };
   }, [setIsWhiteboardOpen]);
-
-  const renderUserState = (user: IAgoraRTCRemoteUser) => {
-    const isVideoEnabled = !(user as ExtendedAgoraUser)._video_muted_;
-    const isAudioEnabled = !(user as ExtendedAgoraUser)._audio_muted_;
-
-    return (
-      <div className="absolute bottom-2 right-2 flex gap-1">
-        {!isAudioEnabled && (
-          <div
-            className="rounded-full p-1.5 shadow-lg"
-            style={{ backgroundColor: "#ef4444" }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 text-white"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </div>
-        )}
-        {!isVideoEnabled && (
-          <div
-            className="rounded-full p-1.5 shadow-lg"
-            style={{ backgroundColor: "#ef4444" }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 text-white"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-            </svg>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Waiting screen
   if (waiting!=="") {
@@ -728,6 +847,7 @@ const CodingSpace = () => {
         unreadCount={unreadCount}
         setIsReportModalOpen={setIsReportModalOpen}
         setIsHelpModalOpen={setIsHelpModalOpen}
+        setIsModerationModalOpen={setIsModerationModalOpen}
       />
 
       {/* Notification Icon */}
@@ -885,169 +1005,9 @@ const CodingSpace = () => {
       )}
 
       {/* Remote Users Video Containers */}
-      {remoteUsers.length >= 0 && (
-        <div
-          className={`connectedUsers absolute z-40 transition-all duration-500 ${
-            viewMode === "game"
-              ? "top-6 left-1/2 -translate-x-1/2 flex gap-4 max-w-[85vw] flex-wrap justify-center"
-              : "top-0 left-0 w-full h-full"
-          }
-          ${viewMode === "whiteboard" ? "hidden" : ""}
-          `}
-        >
-          {viewMode === "game" ? (
-            // Game mode: Show users in horizontal layout (limit to 3 + overflow)
-            <>
-              {remoteUsers.slice(0, 3).map((user) => (
-              <div
-                key={user.uid}
-                className="relative group"
-                style={{
-                  transform: "translateZ(0)",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                <div
-                  id={`user-container-${user.uid}`}
-                  className="video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 h-full"
-                  style={{
-                    width: "12vw",
-                    height: "14vh",
-                    minWidth: "140px",
-                    minHeight: "100px",
-                    backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-                    borderColor: isDarkMode ? "#333333" : "#e5e5e5",
-                    boxShadow: isDarkMode
-                      ? "0 8px 25px -8px rgba(0, 0, 0, 0.5)"
-                      : "0 8px 25px -8px rgba(0, 0, 0, 0.15)",
-                  }}
-                >
-                  {!user.hasVideo && (
-                    <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
-                        backgroundImage: isDarkMode
-                          ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
-                          : "linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)",
-                      }}
-                    >
-                      <div
-                        className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
-                        style={{
-                          backgroundColor: primaryAccentColor,
-                          boxShadow: `0 4px 12px ${primaryAccentColor}40`,
-                        }}
-                      >
-                        {userDatas?.[user.uid]?.avatar ? (
-                          <Image
-                            src={userDatas?.[user.uid]?.avatar || ""}
-                            alt="User Avatar"
-                            height={100}
-                            width={100}
-                            className="h-[70px] w-[70px] rounded-full object-cover"
-                            style={{ backgroundColor: primaryAccentColor }}
-                          />
-                        ) : (
-                          <div
-                            className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg"
-                            style={{
-                              backgroundColor: primaryAccentColor,
-                              boxShadow: `0 4px 12px ${primaryAccentColor}40`,
-                            }}
-                          >
-                            {userDatas?.[user.uid]?.fullname?.firstname?.charAt(
-                              0
-                            ) || "U"}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {renderUserState(user)}
-
-                  {/* User Name Badge */}
-                  <div
-                    className="absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-medium shadow-lg"
-                    style={{
-                      backgroundColor: isDarkMode
-                        ? "rgba(0, 0, 0, 0.7)"
-                        : "rgba(255, 255, 255, 0.9)",
-                      color: isDarkMode ? "#ffffff" : "#1a1a1a",
-                      backdropFilter: "blur(8px)",
-                    }}
-                  >
-                    {userDatas?.[user.uid]?.fullname?.firstname ||
-                      `User ${String(user.uid).slice(-4)}`}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {/* Overflow Card for Game Mode */}
-            {remoteUsers.length > 3 && (
-              <div
-                className="relative group cursor-pointer"
-                style={{
-                  transform: "translateZ(0)",
-                  transition: "all 0.3s ease",
-                }}
-                onClick={() => setIsInGameChatOpen(true)}
-              >
-                <div
-                  className="video-player rounded-xl relative overflow-hidden shadow-lg border-2 transition-all duration-300 h-full flex items-center justify-center"
-                  style={{
-                    width: "12vw",
-                    height: "14vh",
-                    minWidth: "140px",
-                    minHeight: "100px",
-                    backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-                    borderColor: isDarkMode ? "#333333" : "#e5e5e5",
-                    boxShadow: isDarkMode
-                      ? "0 8px 25px -8px rgba(0, 0, 0, 0.5)"
-                      : "0 8px 25px -8px rgba(0, 0, 0, 0.15)",
-                  }}
-                >
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{
-                      backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
-                      backgroundImage: isDarkMode
-                        ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
-                        : "linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)",
-                    }}
-                  >
-                    <div className="text-center">
-                      <div
-                        className="h-[70px] w-[70px] flex items-center justify-center rounded-full text-white font-bold text-lg shadow-lg mx-auto mb-2"
-                        style={{
-                          backgroundColor: primaryAccentColor,
-                          boxShadow: `0 4px 12px ${primaryAccentColor}40`,
-                        }}
-                      >
-                        +{remoteUsers.length - 3}
-                      </div>
-                      <p className={`text-xs font-medium ${
-                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                      }`}>
-                        More
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            </>
-          ) : (
-            // Meeting mode: Use Google Meet style layout
-            <GoogleMeetView 
-              remoteUsers={remoteUsers}
-              userDatas={userDatas}
-              maxVisibleUsers={12}
-            />
-          )}
-        </div>
-      )}
+      {remoteUsers.length > 0 && 
+        <VCCards remoteUsers={remoteUsers} viewMode={viewMode} userDatas={userDatas || {}} />
+      } 
 
       {/* Coding Challenge Interface */}
       {challengeRoom && (
@@ -1074,6 +1034,18 @@ const CodingSpace = () => {
         <HelpModal
           isOpen={isHelpModalOpen}
           onClose={() => setIsHelpModalOpen(false)}
+        />
+      )}
+
+      {/* Moderation Modal */}
+      {isModerationModalOpen && (
+        <ModerationModal
+          isOpen={isModerationModalOpen}
+          onClose={() => setIsModerationModalOpen(false)}
+          remoteUsers={remoteUsers}
+          userDatas={userDatas || {}}
+          roomId={roomId}
+          socket={socket}
         />
       )}
     </div>

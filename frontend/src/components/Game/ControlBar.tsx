@@ -16,6 +16,7 @@ import {
   faTimes as faX,
   faExclamationTriangle,
   faQuestionCircle,
+  faShieldAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import useAuthStore from "@/Zustand_Store/AuthStore";
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
@@ -46,6 +47,7 @@ interface ControlBarProps {
   unreadCount?: number;
   setIsReportModalOpen: (open: boolean) => void;
   setIsHelpModalOpen: (open: boolean) => void;
+  setIsModerationModalOpen: (open: boolean) => void;
 }
 
 export const ControlBar = ({
@@ -61,6 +63,7 @@ export const ControlBar = ({
   unreadCount = 0,
   setIsReportModalOpen,
   setIsHelpModalOpen,
+  setIsModerationModalOpen,
 }: ControlBarProps) => {
   const { user } = useAuthStore();
   const { primaryAccentColor, secondaryAccentColor, isDarkMode } =
@@ -88,9 +91,12 @@ export const ControlBar = ({
   
   // Check if current user is room admin
   useEffect(()=>{
-    if(!currentRoom) return;
-    console.log(currentRoom?.adminId.toString(), user?._id.toString())
-    setIsRoomAdmin(currentRoom?.adminId.toString() === user?._id.toString());
+    if (!currentRoom || !user?._id) return;
+    const isMainAdmin = currentRoom.adminId?.toString() === user._id.toString();
+    const isAdminParticipant = currentRoom.participants?.some(
+      (p: { id: string; status: string }) => p.id?.toString() === user._id.toString() && p.status === "admin"
+    );
+    setIsRoomAdmin(isMainAdmin || isAdminParticipant);
   },[currentRoom]);
   
   // Fetch pending requests from server when user becomes admin
@@ -529,6 +535,22 @@ export const ControlBar = ({
                   {pendingRequests.length > 99 ? "99+" : pendingRequests.length}
                 </div>
               )}
+            </button>
+          )}
+
+          {/* Moderation Button (Admin Only) */}
+          {isRoomAdmin && (
+            <button
+              className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+              onClick={() => setIsModerationModalOpen(true)}
+              title="Room Moderation"
+              style={{
+                backgroundColor: isDarkMode ? "#2a2a2a" : "#f5f5f5",
+                color: isDarkMode ? "#ffffff" : "#1a1a1a",
+                border: `2px solid ${isDarkMode ? "#333333" : "#e5e5e5"}`,
+              }}
+            >
+              <FontAwesomeIcon icon={faShieldAlt} className="text-lg" />
             </button>
           )}
         </div>

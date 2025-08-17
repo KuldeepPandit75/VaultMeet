@@ -31,4 +31,10 @@ router.put("/update-activity", room_controller_js_1.updateRoomActivity);
 router.post("/cleanup", room_controller_js_1.manualCleanup);
 // Get pending join requests for a room (admin only)
 router.get("/:roomId/pending-requests", room_controller_js_1.getPendingRequests);
+// Ban participant from room (admin only)
+router.post("/ban-participant", room_controller_js_1.banParticipant);
+// Set participant status as pending (admin only)
+router.post("/set-participant-pending", room_controller_js_1.setParticipantPending);
+// Make participant admin (admin only)
+router.post("/make-admin", room_controller_js_1.makeAdmin);
 exports.default = router;

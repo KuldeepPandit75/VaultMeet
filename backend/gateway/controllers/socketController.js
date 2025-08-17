@@ -291,6 +291,85 @@ const handleSocketEvents = (io) => {
       console.log(`Set admin for room ${roomId}: ${socket.id}`);
     });
 
+    // NEW: Handle moderation actions
+    socket.on("moderationAction", ({ roomId, actionType, targetUserIds, action }) => {
+      console.log(`Moderation action: ${actionType} for room ${roomId}, targets: ${targetUserIds}`);
+      
+      // Check if the user is the admin of this room
+      const adminSocketId = roomAdmins.get(roomId);
+      if (adminSocketId !== socket.id) {
+        socket.emit("moderationError", { message: "Only room admins can perform moderation actions" });
+        return;
+      }
+
+      // Handle different moderation actions
+      switch (actionType) {
+        case 'mute-audio':
+        case 'mute-video':
+          // For audio/video moderation, broadcast to all users in the room
+          socket.to(roomId).emit("moderationAction", {
+            roomId,
+            actionType,
+            targetUserIds,
+            action
+          });
+          
+          // Also emit to the admin who initiated the action
+          socket.emit("moderationAction", {
+            roomId,
+            actionType,
+            targetUserIds,
+            action
+          });
+          break;
+        
+        case 'remove-participant':
+          // Handle remove participant action - remove users from room and add to banned list
+          targetUserIds.forEach(userId => {
+            if (userId) {
+              // Remove user from room
+              const userSocket = io.sockets.sockets.get(userId);
+              if (userSocket) {
+                userSocket.leave(roomId);
+                // Notify the removed user
+                io.to(userId).emit("participantRemoved", {
+                  roomId,
+                  reason: "Removed by room admin"
+                });
+                console.log("Participant removed from room");
+              }
+            }
+          });
+          break;
+
+        case 'ban':
+          // Handle ban action - remove users from room and add to banned list
+          targetUserIds.forEach(userId => {
+            if (userId) {
+              // Remove user from room
+              const userSocket = io.sockets.sockets.get(userId);
+              if (userSocket) {
+                userSocket.leave(roomId);
+                
+                // Notify the banned user
+                io.to(userId).emit("userBanned", {
+                  roomId,
+                  reason: "Banned by room admin"
+                });
+                console.log("User banned from room");
+              }
+            }
+          });
+          break;
+          
+        default:
+          socket.emit("moderationError", { message: "Unknown moderation action" });
+          return;
+      }
+      
+      console.log(`Moderation action ${actionType} applied successfully for room ${roomId}`);
+    });
+
     // NEW: Join event-specific virtual space
     socket.on("joinEventSpace", ({ eventId, userId }) => {
       console.log(`User ${socket.id} joining event space for event ${eventId}`);

@@ -11,6 +11,9 @@ import {
   manualCleanup,
   checkRoomPermission,
   getPendingRequests,
+  banParticipant,
+  setParticipantPending,
+  makeAdmin,
 } from "../controllers/room.controller.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
 
@@ -51,5 +54,14 @@ router.post("/cleanup", manualCleanup as any);
 
 // Get pending join requests for a room (admin only)
 router.get("/:roomId/pending-requests", getPendingRequests as any);
+
+// Ban participant from room (admin only)
+router.post("/ban-participant", banParticipant as any);
+
+// Set participant status as pending (admin only)
+router.post("/set-participant-pending", setParticipantPending as any);
+
+// Make participant admin (admin only)
+router.post("/make-admin", makeAdmin as any);
 
 export default router; 

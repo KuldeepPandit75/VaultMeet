@@ -10,7 +10,7 @@ export interface Message {
 }
 
 export interface RoomParticipant {
-  status: 'pending' | 'allowed' | 'banned';
+  status: 'pending' | 'allowed' | 'banned' | 'admin';
   id: string;
   socketId: string;
 }
@@ -83,6 +83,9 @@ interface SocketStore {
   updateRoomActivity: (roomId: string) => Promise<{ success: boolean; message?: string }>;
   manualCleanup: () => Promise<{ success: boolean; deletedCount?: number; message?: string }>;
   getPendingRequests: (roomId: string) => Promise<{ success: boolean; pendingRequests?: PendingRequest[]; message?: string }>;
+  banParticipant: (banData: ApproveRequestData) => Promise<{ success: boolean; room?: Room; message?: string }>;
+  setParticipantPending: (pendingData: ApproveRequestData) => Promise<{ success: boolean; room?: Room; message?: string }>;
+  makeAdmin: (adminData: ApproveRequestData) => Promise<{ success: boolean; room?: Room; message?: string }>;
 }
 
 const BackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
@@ -299,6 +302,48 @@ export const useSocketStore = create<SocketStore>((set, get) => ({
       return { success: true, pendingRequests };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get pending requests';
+      return { 
+        success: false, 
+        message: errorMessage
+      };
+    }
+  },
+
+  banParticipant: async (banData: ApproveRequestData) => {
+    try {
+      const response = await api.post('/rooms/ban-participant', banData);
+      const { room } = response.data;
+      return { success: true, room };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to ban participant';
+      return { 
+        success: false, 
+        message: errorMessage
+      };
+    }
+  },
+
+  setParticipantPending: async (pendingData: ApproveRequestData) => {
+    try {
+      const response = await api.post('/rooms/set-participant-pending', pendingData);
+      const { room } = response.data;
+      return { success: true, room };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to set participant pending';
+      return { 
+        success: false, 
+        message: errorMessage
+      };
+    }
+  },
+
+  makeAdmin: async (adminData: ApproveRequestData) => {
+    try {
+      const response = await api.post('/rooms/make-admin', adminData);
+      const { room } = response.data;
+      return { success: true, room };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to make participant admin';
       return { 
         success: false, 
         message: errorMessage

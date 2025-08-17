@@ -14,7 +14,7 @@ const roomSchema = new mongoose_1.default.Schema({
         {
             status: {
                 type: String,
-                enum: ["pending", "allowed", "banned"],
+                enum: ["pending", "allowed", "banned", "admin"],
                 required: true,
             },
             id: {
