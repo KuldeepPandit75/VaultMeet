@@ -401,7 +401,7 @@ const EventSpace = () => {
 
       {/* Main game container */}
       <div className={`flex-1 relative ${viewMode !== "game" ? "hidden" : ""}`}>
-        <PhaserGame eventId={eventId} />
+        <PhaserGame eventId={eventId} mapType="event"/>
       </div>
 
       {/* Whiteboard View */}

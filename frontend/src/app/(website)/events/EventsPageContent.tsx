@@ -5,7 +5,7 @@ import useEventStore from "@/Zustand_Store/EventStore";
 import Image from "next/image";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+// import toast from "react-hot-toast";
 
 // Types
 type EventStatus = 'upcoming' | 'ongoing' | 'completed';
@@ -193,14 +193,14 @@ export default function EventsPageContent() {
   const [selectedType, setSelectedType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const router=useRouter();
+  // const router=useRouter();
 
-  useEffect(()=>{
-    if(process.env.NODE_ENV!=="development"){
-      toast("Under Development")
-      router.push("/")
-    }
-  })
+  // useEffect(()=>{
+  //   if(process.env.NODE_ENV!=="development"){
+  //     toast("Under Development")
+  //     router.push("/")
+  //   }
+  // })
 
   useEffect(() => {
     fetchEvents();

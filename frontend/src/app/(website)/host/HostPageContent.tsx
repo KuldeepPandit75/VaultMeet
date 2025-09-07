@@ -2,20 +2,20 @@
 
 import { useThemeStore } from "@/Zustand_Store/ThemeStore";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import toast from "react-hot-toast";
+// import { useRouter } from "next/navigation";
+// import { useEffect } from "react";
+// import toast from "react-hot-toast";
 
 export default function HostPageContent() {
   const { primaryAccentColor, secondaryAccentColor } = useThemeStore();
-  const router=useRouter();
+  // const router=useRouter();
 
-  useEffect(()=>{
-    if(process.env.NODE_ENV!=="development"){
-      toast("Under Development")
-      router.push("/")
-    }
-  })
+  // useEffect(()=>{
+  //   if(process.env.NODE_ENV!=="development"){
+  //     toast("Under Development")
+  //     router.push("/")
+  //   }
+  // })
 
   return (
     <div className="min-h-screen px-[40px] md:px-[80px] py-[40px] text-white">
